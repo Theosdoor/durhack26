@@ -7,7 +7,14 @@ so it lands in the Inspect .eval log. `export` (added later) turns an .eval samp
 tests/fixtures/replay_min.json before the engine exists.
 
 Coordinates are (x, y): x = column, y = row, origin top-left, matching levels/*.txt.
-Time `t` is whole game seconds since the start of the current phase (round or practice).
+
+A phase is identified by the pair (phase, round):
+- briefing and practice: round = 0.
+- chat: round = the round it plans for (the chat before round 2 has round = 2).
+- round: round = 1..N.
+- debrief: round = the round just played (the debrief after round 2 has round = 2).
+Time `t`: in practice and rounds, whole game seconds since the phase started. In briefing,
+chat and debrief (no game clock), `t` is the turn index within the phase (0, 1, 2, ...).
 """
 
 from __future__ import annotations
@@ -82,7 +89,12 @@ class Event(BaseModel):
     """Something that happened. `type` values:
     pickup, putdown, add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
     bump (blocked by another agent), order_new, order_missed, decision_start, decision_land,
-    cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end."""
+    cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end.
+
+    Keys used in `data` (include those that apply): item ("onion"|"dish"|"soup"),
+    at ("x,y" of the tile acted on), pot (pot id), onions (count after the action),
+    order (order id), points (score change, +reward or -penalty), reason (why it failed),
+    action (the plan step as a string), duration_s (phase_end only)."""
 
     kind: Literal["event"] = "event"
     phase: Phase
@@ -134,10 +146,25 @@ class Replay(BaseModel):
     header: Header
     records: list[Record]          # in log order (frames, events, posts, decisions interleaved)
 
-    def frames(self, phase: Phase | None = None, round: int | None = None) -> list[Frame]:
+    def select(self, kind: type | None = None, phase: Phase | None = None,
+               round: int | None = None, agent: str | None = None) -> list:
+        """Records filtered by type, phase, round and agent (any filter may be None)."""
         return [
             r for r in self.records
-            if isinstance(r, Frame)
+            if (kind is None or isinstance(r, kind))
             and (phase is None or r.phase == phase)
             and (round is None or r.round == round)
+            and (agent is None or getattr(r, "agent", None) == agent)
         ]
+
+    def frames(self, phase: Phase | None = None, round: int | None = None) -> list[Frame]:
+        return self.select(Frame, phase, round)
+
+    def phases(self) -> list[tuple[str, int]]:
+        """(phase, round) pairs in the order they first appear."""
+        seen: list[tuple[str, int]] = []
+        for r in self.records:
+            key = (r.phase, r.round)
+            if key not in seen:
+                seen.append(key)
+        return seen
