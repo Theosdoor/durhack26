@@ -16,6 +16,7 @@ The design lives in the "Implementation plan" tab of the team's Claude Doc (summ
   `transcript().info(rec.model_dump(mode="json"), source="kitchen")`; the viewer reads `Replay`.
 - `levels/*.txt`: `X` counter, ` ` floor, `O` onion crate, `D` dish rack, `P` pot,
   `S` serving hatch, `1`..`9` start positions. Coordinates are (x=column, y=row), origin top-left.
+  levels/README.md lists them and credits the Overcooked-AI layouts.
 
 ## Rules of the game (MVP)
 1 tick = 1 s = 1 tile, no diagonals. Interactions take 1 s. Per tick: interactions first (every

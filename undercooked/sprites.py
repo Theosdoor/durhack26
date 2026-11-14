@@ -12,7 +12,9 @@ Each helper below draws one element and takes the tile's top-left corner (x0, y0
 from __future__ import annotations
 
 import html
+from functools import lru_cache
 
+from undercooked.engine.kitchen import Kitchen
 from undercooked.replay import AgentState, Frame, Header, OrderState, PotState
 
 T = 88            # tile size in SVG pixels (the SVG scales to its container via the viewBox)
@@ -133,11 +135,17 @@ def pass_counter_tile(x0: int, y0: int) -> str:
             "</g>")
 
 
+@lru_cache(maxsize=64)
+def _pass_counters(rows: tuple[str, ...]) -> frozenset[tuple[int, int]]:
+    """Counters reachable from two or more rooms (the engine's shared counters)."""
+    return frozenset(o.pos for o in Kitchen("map", list(rows)).shared_counters())
+
+
 def is_pass_through(rows: list[str], x: int, y: int) -> bool:
-    """A counter with walkable floor on both sides (left+right, or above+below) hands items between rooms."""
-    def floor(fx: int, fy: int) -> bool:
-        return 0 <= fy < len(rows) and 0 <= fx < len(rows[fy]) and rows[fy][fx] == " "
-    return (floor(x - 1, y) and floor(x + 1, y)) or (floor(x, y - 1) and floor(x, y + 1))
+    """A counter that touches floor in two different rooms: the only way items cross between
+    rooms. A counter with floor on both sides inside one room (an island, as in counter_circuit)
+    is an ordinary counter."""
+    return (x, y) in _pass_counters(tuple(rows))
 
 
 def crate_tile(x0: int, y0: int) -> str:
@@ -163,7 +171,7 @@ def rack_tile(x0: int, y0: int) -> str:
 
 def hatch_tile(x0: int, y0: int) -> str:
     """Serving hatch: counter with a green mat, a bell and an arrow pointing out."""
-    s = counter_tile(x0, y0)
+    s = "<g data-tile='hatch'>" + counter_tile(x0, y0)
     s += (f"<rect x='{x0 + 8}' y='{y0 + 8}' width='{T - 16}' height='{T - 22}' rx='8' fill='#2f9e6b' "
           f"stroke='{INK}' stroke-width='2.5'/>"
           f"<rect x='{x0 + 14}' y='{y0 + 14}' width='{T - 28}' height='{T - 34}' rx='5' fill='none' "
@@ -176,7 +184,7 @@ def hatch_tile(x0: int, y0: int) -> str:
           # arrow
           f"<path d='M{x0 + 66} {y0 + 30} h10 m-4 -4 l4 4 l-4 4' fill='none' stroke='#ffffff' stroke-width='3' "
           f"stroke-linecap='round' stroke-linejoin='round'/>")
-    return s
+    return s + "</g>"
 
 
 def pot_tile(x0: int, y0: int, pot: PotState | None, cook_s: int = 20) -> str:
