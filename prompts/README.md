@@ -106,6 +106,13 @@ starting with `Board:` when there is no board, so keep that prefix on `board_unr
 `act.accepted`, `post.message_param`, `post.ignored`, `post.empty`, `post.posted`,
 `post.lands_later`, `read_board.*`, `note.*`, `ready.*`) have no placeholders.
 
+## Rendered example
+
+`EXAMPLE.md` is generated (not a prompt file, nothing loads it): every message one agent sees in
+a short fake season, each piece of text marked with the file and section it comes from. It is
+stale after any edit here; regenerate with `uv run python -m analysis.render_prompts` (add
+`--plain` to drop the markers, which writes `EXAMPLE.plain.md`).
+
 ## Not here
 
 The engine's plan-result words (`Last plan: done`, `failed: <reason>`) and parse errors come from
