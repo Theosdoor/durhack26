@@ -1,0 +1,19 @@
+# Every level, no communication: one season per level and epoch (6 levels x 5 epochs), run in
+# parallel. Each level's order rate is tuned with the scripted bots (analysis/bot_tuning.py):
+# two bots must clearly beat one without serving every order.
+name: all_levels_nocomms
+levels: [forced_coordination, split_room, cramped_room, asymmetric_advantages, coordination_ring,
+         counter_circuit]
+level_overrides:
+  forced_coordination: {orders: {every_s: 20}}     # bots: 2 = 160 (8 served), 1 = -70
+  split_room: {orders: {every_s: 20}}              # bots: 2 = 110 (6 served), 1 = -70
+  cramped_room: {orders: {every_s: 15}}            # bots: 2 = 92 (5.6 served), 1 = 70
+  asymmetric_advantages: {orders: {every_s: 15}}   # bots: 2 = 220 (11 of 12), 1 = 150
+  coordination_ring: {orders: {every_s: 20}}       # bots: 2 = 103 (5.9 served), 1 = 50
+  counter_circuit: {orders: {every_s: 30}}         # bots: 2 = 66 (3.9 of 6), 1 = 10
+rounds: 5
+epochs: 5
+comms: none
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

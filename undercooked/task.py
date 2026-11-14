@@ -16,7 +16,7 @@ from typing import Any
 
 from inspect_ai import Task, task
 from inspect_ai.dataset import Sample
-from inspect_ai.scorer import Score, Target, mean, scorer, stderr
+from inspect_ai.scorer import Score, Target, grouped, mean, scorer, stderr
 from inspect_ai.solver import TaskState
 
 from undercooked.config import REPO_ROOT, Config
@@ -59,13 +59,21 @@ def season_explanation(s: dict[str, Any]) -> str:
     def per(key: str) -> str:
         return " / ".join(f"{n} {c}" for n, c in zip(names, s[key]))
 
-    return (f"{' & '.join(f'{n} ({m})' for n, m in zip(names, s['models']))}: team score "
+    team = " & ".join(f"{n} ({m})" for n, m in zip(names, s["models"]))
+    return (f"{s.get('level', '?')}: {team}: team score "
             f"{v['total']:g} ({rounds}); served {v['served']:g}, missed {v['missed']:g}. "
             f"Posts {per('posts')}; read_board {per('read_board')}; cutoffs {per('cutoffs')}; "
             f"round decisions {per('decisions')}.")
 
 
-@scorer(metrics={"*": [mean(), stderr()]})
+def _by_level() -> list:
+    """mean() per level (sample metadata "level"); one value per level, named `grouped_<level>`
+    in the log's metrics."""
+    return [mean(), stderr(), grouped(mean(), "level", all=False)]
+
+
+@scorer(metrics={"total": _by_level(), "served": _by_level(), "missed": _by_level(),
+                 "*": [mean(), stderr()]})
 def season_score():
     async def score(state: TaskState, target: Target) -> Score:
         s = state.store.get(STORE_KEY)
@@ -77,9 +85,19 @@ def season_score():
     return score
 
 
+def dataset(cfg: Config) -> list[Sample]:
+    """One sample per level (sample id = the level when `levels` is set, else the config name);
+    the season reads its level from the sample metadata."""
+    if cfg.levels is None:
+        return [Sample(id=cfg.name, input=f"Undercooked season ({cfg.name}, level {cfg.level})",
+                       metadata={"level": cfg.level})]
+    return [Sample(id=level, input=f"Undercooked season ({cfg.name}, level {level})",
+                   metadata={"level": level}) for level in cfg.levels]
+
+
 def make_task(cfg: Config) -> Task:
     return Task(
-        dataset=[Sample(id=cfg.name, input=f"Undercooked season ({cfg.name}, level {cfg.level})")],
+        dataset=dataset(cfg),
         solver=season_solver(cfg),
         scorer=season_score(),
         epochs=cfg.epochs,
@@ -94,9 +112,13 @@ def undercooked(config: str = "configs/split_room.yaml", rounds: int | None = No
                 round_s: int | None = None, practice: bool | None = None,
                 epochs: int | None = None, pipeline: bool | None = None,
                 reasoning: str | None = None, comms: str | None = None,
-                debrief: str | None = None) -> Task:
+                debrief: str | None = None, levels: str | list[str] | None = None) -> Task:
+    """`levels`: a list, or names joined by commas ("cramped_room,split_room"); replaces the
+    config's level / levels."""
+    if isinstance(levels, str):
+        levels = [x.strip() for x in levels.split(",") if x.strip()]
     cfg = load_config(config, rounds=rounds, round_s=round_s, practice=practice, epochs=epochs,
-                      comms=comms, debrief=debrief)
+                      comms=comms, debrief=debrief, levels=levels)
     if pipeline is not None:
         cfg = cfg.model_copy(update={"decision": cfg.decision.model_copy(
             update={"pipeline": pipeline})})

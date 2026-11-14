@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # NATO alphabet minus "Alpha" (it reads as "leader", a confound for hierarchy) and minus the
 # names whose first letter is a map symbol (Delta=D dish rack, Oscar=O onion crate, Papa=P pot,
@@ -58,9 +58,21 @@ class AgentSpec(_Strict):
     provider: str | None = None         # OpenRouter endpoint tag, e.g. "baidu/fp8"; None = auto-pick
 
 
+class LevelOverride(_Strict):
+    """Settings that differ for one level of a multi-level run (Config.level_overrides). Only
+    the fields given change: `orders: {every_s: 20}` keeps the run's other order settings."""
+
+    orders: Orders | None = None
+    round_s: int | None = None
+
+
 class Config(_Strict):
     name: str
-    level: str                          # file stem in levels/
+    level: str | None = None            # file stem in levels/ (a single-level run)
+    # several levels per run: one Inspect sample (one season) per level, each repeated `epochs`
+    # times; when set, it replaces `level`
+    levels: list[str] | None = None
+    level_overrides: dict[str, LevelOverride] = {}    # per-level orders / round_s
     rounds: int = 3
     round_s: int = 180
     practice: bool = True
@@ -84,6 +96,42 @@ class Config(_Strict):
     compact_at_tokens: int = 32000
     providers: Providers = Field(default_factory=Providers)
     agents: list[AgentSpec]
+
+    @model_validator(mode="after")
+    def _check_levels(self) -> "Config":
+        if self.levels is not None:
+            if not self.levels:
+                raise ValueError("levels is empty; give at least one level (or use level)")
+            if len(set(self.levels)) != len(self.levels):
+                raise ValueError(f"levels has duplicates: {self.levels}")
+        elif self.level is None:
+            raise ValueError("set level (one level) or levels (several)")
+        # an override for a level this run doesn't play is fine (--levels may pick a subset),
+        # but not one for a level that doesn't exist (a typo would silently do nothing)
+        unknown = sorted(k for k in self.level_overrides if not (LEVELS_DIR / f"{k}.txt").exists())
+        if unknown:
+            raise ValueError(f"level_overrides for unknown levels {unknown} "
+                             f"(no levels/<name>.txt)")
+        return self
+
+    def run_levels(self) -> list[str]:
+        """The levels this run plays: `levels`, or [`level`]."""
+        return list(self.levels) if self.levels is not None else [self.level]  # type: ignore[list-item]
+
+    def for_level(self, level: str) -> "Config":
+        """The config one season plays: `level` set, its level_overrides applied (only the
+        fields the override gives), `levels` and `level_overrides` kept as they were."""
+        if level not in self.run_levels():
+            raise ValueError(f"{level!r} is not one of this run's levels {self.run_levels()}")
+        update: dict = {"level": level}
+        ov = self.level_overrides.get(level)
+        if ov is not None:
+            if ov.orders is not None:
+                update["orders"] = self.orders.model_copy(
+                    update=ov.orders.model_dump(exclude_unset=True))
+            if ov.round_s is not None:
+                update["round_s"] = ov.round_s
+        return self.model_copy(update=update)
 
     @classmethod
     def load(cls, path: str | Path) -> "Config":

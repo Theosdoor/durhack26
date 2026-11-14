@@ -77,22 +77,35 @@ FORCED_MAX_TOKENS = 400            # max_tokens of the forced-answer follow-up c
 FORCED_COST_S = 1                  # game seconds a forced answer adds to its decision
 
 
-def pick_names(seed: int, epoch: int, n: int = 2) -> list[str]:
+def _stream(seed: int, level: str | None) -> str:
+    """The seed part of every per-season stream: `seed`, plus the level in multi-level runs
+    (`level` None: single-level runs keep the streams they always had)."""
+    return str(seed) if level is None else f"{seed}|{level}"
+
+
+def pick_names(seed: int, epoch: int, n: int = 2, level: str | None = None) -> list[str]:
     """Distinct NATO names for a season; agents[i] gets names[i]."""
-    return random.Random(seed * 1000 + epoch).sample(NATO_NAMES, n)
+    key: int | str = seed * 1000 + epoch if level is None else f"names|{seed}|{level}|{epoch}"
+    return random.Random(key).sample(NATO_NAMES, n)
 
 
-def assign_seats(seed: int, epoch: int, n: int = 2) -> list[int]:
+def assign_seats(seed: int, epoch: int, n: int = 2, level: str | None = None) -> list[int]:
     """Start positions (level digits 1..n) for a season: cfg.agents[i] starts at seats[i]. A
     seeded permutation from its own stream (independent of the names)."""
     seats = list(range(1, n + 1))
-    random.Random(f"seats|{seed}|{epoch}").shuffle(seats)
+    random.Random(f"seats|{_stream(seed, level)}|{epoch}").shuffle(seats)
     return seats
 
 
-def first_speaker(seed: int, epoch: int, round: int, n: int = 2) -> int:
+def first_speaker(seed: int, epoch: int, round: int, n: int = 2,
+                  level: str | None = None) -> int:
     """Index (into cfg.agents) of the agent who speaks first in the chat before `round`."""
-    return random.Random(f"first|{seed}|{epoch}|{round}").randrange(n)
+    return random.Random(f"first|{_stream(seed, level)}|{epoch}|{round}").randrange(n)
+
+
+def stream_level(cfg: Config) -> str | None:
+    """The level mixed into a season's seed streams: its level in a multi-level run, else None."""
+    return cfg.level if cfg.levels is not None else None
 
 
 @dataclass
@@ -274,10 +287,13 @@ class Season:
     def __init__(self, cfg: Config, models: list[AgentModel], epoch: int):
         if len(models) != 2:
             raise ValueError(f"a season needs exactly 2 agents, got {len(models)}")
+        if cfg.level is None:
+            raise ValueError("a season plays one level: pass cfg.for_level(level)")
         self.cfg = cfg
         self.epoch = epoch
-        names = pick_names(cfg.seed, epoch, len(models))
-        seats = assign_seats(cfg.seed, epoch, len(models))
+        self.stream = stream_level(cfg)
+        names = pick_names(cfg.seed, epoch, len(models), level=self.stream)
+        seats = assign_seats(cfg.seed, epoch, len(models), level=self.stream)
         self.agents: list[Agent] = []
         for i, (name, am, seat) in enumerate(zip(names, models, seats)):
             mate = names[1 - i]
@@ -359,6 +375,7 @@ class Season:
 
     def summary(self) -> dict[str, Any]:
         return {
+            "level": self.cfg.level,
             "agents": [a.name for a in self.agents],
             "models": [a.am.spec.model for a in self.agents],
             "providers": [a.am.provider for a in self.agents],
@@ -785,12 +802,13 @@ class Season:
 
     def _game_seed(self, phase: Phase, round: int, *extra: str) -> str:
         """Seed of a game's tie-order RNG: one stream per season, phase, round (and agent)."""
-        return "|".join([str(self.cfg.seed), str(self.epoch), phase, str(round), *extra])
+        return "|".join([_stream(self.cfg.seed, self.stream), str(self.epoch), phase, str(round),
+                         *extra])
 
     async def chat(self, r: int) -> None:
         cfg = self.cfg
         clock = time.monotonic()
-        first = first_speaker(cfg.seed, self.epoch, r, len(self.agents))
+        first = first_speaker(cfg.seed, self.epoch, r, len(self.agents), level=self.stream)
         names = [a.name for a in self.agents]
         self.event("chat", r, 0, "phase_start", first=names[first])
         preview = Game(Kitchen.load(cfg.level), self.seated, cfg, phase="round", round=r)
@@ -882,8 +900,10 @@ def _conversation(messages: list[ChatMessage]) -> list[dict[str, Any]]:
 
 
 @solver
-def season_solver(cfg: Config) -> Solver:
+def season_solver(run_cfg: Config) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
+        # the sample's level (task.dataset); its season plays cfg with that level's overrides
+        cfg = run_cfg.for_level(state.metadata.get("level") or run_cfg.run_levels()[0])
         models = [agent_model(spec, cfg) for spec in cfg.agents]
         # endpoints are only fetched (and logged) when the provider is picked automatically; a
         # provider pinned in the config is used as is, with endpoints None and no fetch

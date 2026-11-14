@@ -338,6 +338,10 @@ def main() -> None:
     except (OSError, ValueError, NotImplementedError) as exc:
         st.error(f"Could not load {path}: {exc}")
         return
+    # a multi-level run has one season per level and epoch: pick the level, then the season
+    levels = list(dict.fromkeys(r.header.level for r in replays))
+    level = st.sidebar.selectbox("Level", levels) if len(levels) > 1 else levels[0]
+    replays = [r for r in replays if r.header.level == level]
     epoch = st.sidebar.selectbox("Season (epoch)", [r.header.epoch for r in replays])
     rep = next(r for r in replays if r.header.epoch == epoch)
     phases = rep.phases()
@@ -368,7 +372,7 @@ def main() -> None:
     fs = bool(st.session_state.get("fs_on")) and bool(frames)   # full screen only makes sense with a map
     ctx = dict(rep=rep, frames=frames, decisions=decisions, posts=posts, agents=agents, graphics=graphics,
                hi=rep.header.round_s if phase == "round" else max((f.t for f in frames), default=0),
-               key=f"t_{epoch}_{phase}_{rnd}", fs=fs)   # per-phase key so each phase keeps its own position
+               key=f"t_{level}_{epoch}_{phase}_{rnd}", fs=fs)   # per-phase key so each phase keeps its own position
     if st.session_state.get("_phase_key") != ctx["key"]:
         st.session_state["_phase_key"] = ctx["key"]
         st.session_state["playing"] = False   # never carry playback into another phase
