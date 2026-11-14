@@ -19,6 +19,7 @@ import streamlit as st
 # `streamlit run undercooked/viewer.py` puts undercooked/ on sys.path, not the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from undercooked.engine import Kitchen  # noqa: E402
 from undercooked.replay import DecisionRecord, Event, Frame, Post, Replay  # noqa: E402
 from undercooked.replay_io import load_replay  # noqa: E402
 from undercooked.sprites import render_svg  # noqa: E402
@@ -111,11 +112,15 @@ def step_time(key: str, delta: int, lo: int, hi: int) -> None:
     st.session_state[key] = max(lo, min(hi, st.session_state[key] + delta))
 
 
-def show_status(frame: Frame, t: int) -> None:
+def show_scores(frame: Frame) -> None:
+    """Compact Score / Served / Missed row, drawn above the map so it is visible without scrolling."""
     c1, c2, c3 = st.columns(3)
     c1.metric("Score", frame.score)
     c2.metric("Served", frame.served)
     c3.metric("Missed", frame.missed)
+
+
+def show_status(frame: Frame, t: int) -> None:
     if frame.orders:
         st.caption("Open orders: " + ", ".join(
             f"#{o.id} {o.dish} (due t={o.due_t}, {o.due_t - t}s left)" for o in frame.orders))
@@ -182,9 +187,9 @@ def show_conversation(rep: Replay, phase: str, rnd: int, agents: list[str]) -> N
     for r in rep.select(None, phase, rnd):
         if isinstance(r, Post) and r.agent in agents:
             with st.chat_message("user" if r.agent == agents[0] else "assistant"):
-                st.markdown(f"**{r.agent}** (t={r.t}): {r.text}")
+                st.markdown(f"**{r.agent}** (turn {r.t}): {r.text}")
         elif isinstance(r, DecisionRecord) and r.agent in agents:
-            with st.expander(f"{r.agent}'s decision at t={r.t}"):
+            with st.expander(f"{r.agent}'s decision at turn {r.t}"):
                 decision_details(r)
 
 
@@ -228,6 +233,16 @@ def main() -> None:
     decisions = rep.select(DecisionRecord, phase, rnd)
     posts = rep.select(Post, phase, rnd)
     events = rep.select(Event, phase, rnd)
+    # Practice: each agent plays its own game, all logged as ("practice", 0); show one at a time.
+    players = [n for n in names if any(a.name == n for f in frames for a in f.agents)]
+    if len(players) > 1 and all(len(f.agents) == 1 for f in frames):
+        who = st.sidebar.selectbox("Practice of", players)
+        frames = [f for f in frames if f.agents[0].name == who]
+        decisions = [d for d in decisions if d.agent == who]
+        events = [e for e in events if e.agent in (None, who)]
+    if phase == "practice":   # practice is played in levels/practice.txt, not the header's level
+        practice_map = Kitchen.load("practice").map_rows()
+        rep = rep.model_copy(update={"header": rep.header.model_copy(update={"map": practice_map})})
 
     tab_replay, tab_dec, tab_ev = st.tabs(["Replay", "Decisions", "Events"])
 
@@ -240,11 +255,14 @@ def main() -> None:
             st.session_state.setdefault(key, 0)
             left, right = st.columns([3, 2])
             with left:
+                scores_slot = st.container()   # filled once the frame is known, shown above the slider
                 t = st.slider("Time (s)", 0, hi, key=key)
                 b1, b2, _ = st.columns([1, 1, 6])
                 b1.button("< -1 s", on_click=step_time, args=(key, -1, 0, hi))
                 b2.button("+1 s >", on_click=step_time, args=(key, +1, 0, hi))
                 frame = frame_at(frames, t)
+                with scores_slot:
+                    show_scores(frame)
                 st.markdown(render_svg(rep.header, frame) if graphics else render_map(rep, frame),
                             unsafe_allow_html=True)
                 show_status(frame, t)

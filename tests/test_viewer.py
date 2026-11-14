@@ -25,7 +25,7 @@ def test_fixture_validates():
 
 def test_load_replay():
     assert len(load_replay(FIXTURE)) == 1
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(FileNotFoundError):   # .eval export exists now (tests/test_season.py)
         load_replay("x.eval")
 
 
