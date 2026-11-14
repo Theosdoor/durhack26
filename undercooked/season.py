@@ -76,6 +76,8 @@ ROUND_EXTRA_GENERATIONS = 2        # generations allowed after one without act()
 FORCED_MAX_TOKENS = 400            # max_tokens of the forced-answer follow-up call (no reasoning)
 FORCED_COST_S = 1                  # game seconds a forced answer adds to its decision
 PHASE_COUNTS = ("practice", "round", "chat", "debrief")   # phases cutoffs / forced are counted in
+# discovery: an agent's first event of each type (by its own hand), practice included
+DISCOVERY = {"add_to_pot": "onion", "cook_start": "cook", "plate": "plate", "serve": "serve"}
 
 
 def _stream(seed: int, level: str | None) -> str:
@@ -313,12 +315,17 @@ class Season:
         self._chat_turn_limit: dict[int, bool] = {}     # round -> its chat hit the turn cap
         self.board = Board(names)
         self.rounds: list[dict[str, int]] = []
+        # agent -> discovery kind -> {"round", "t"} of its first such event (practice: round 0)
+        self.firsts: dict[str, dict[str, dict[str, int]]] = {}
         self._buf: _LogBuffer | None = None          # set while a pipelined play() runs
 
     # ------------------------------------------------------------------ logging
-    @staticmethod
-    def _emit(data: dict[str, Any]) -> None:
+    def _emit(self, data: dict[str, Any]) -> None:
+        """Write one record to the transcript (in log order) and note discovery firsts."""
         transcript().info(data, source="kitchen")
+        if data.get("kind") == "event" and data.get("type") in DISCOVERY:
+            mine = self.firsts.setdefault(data.get("agent") or "", {})
+            mine.setdefault(DISCOVERY[data["type"]], {"round": data["round"], "t": data["t"]})
 
     def log(self, rec: Any) -> None:
         data = rec.model_dump(mode="json")
@@ -394,6 +401,7 @@ class Season:
                for kind in ("cutoffs", "forced", "decisions") for phase in PHASE_COUNTS
                if phase in getattr(self.agents[0], kind)},
             "practice_finished": [a.practice_finished for a in self.agents],
+            "firsts": [self.firsts.get(a.name, {}) for a in self.agents],
             "compactions": [a.compactions for a in self.agents],
         }
 
@@ -509,7 +517,7 @@ class Season:
             turn.kept = [] if error is not None else [x.raw for x in g.agent(a.name).plan]
             return error
 
-        tools = [act_tool(turn, check, self.cfg.max_plan_len)]
+        tools = [act_tool(turn, check, self.cfg.max_plan_len, rules=self.cfg.rules)]
         if board is not None:
             upto, rnd = len(board.posts), game.round
             tools += [post_tool(turn),
@@ -925,7 +933,8 @@ class Season:
 
 def condition(cfg: Config) -> dict[str, str]:
     """The experimental condition, for grouping runs in analysis (also in the Header)."""
-    return {"reasoning": cfg.decision.reasoning, "comms": cfg.comms, "debrief": cfg.debrief}
+    return {"reasoning": cfg.decision.reasoning, "comms": cfg.comms, "debrief": cfg.debrief,
+            "rules": cfg.rules}
 
 
 def _conversation(messages: list[ChatMessage]) -> list[dict[str, Any]]:

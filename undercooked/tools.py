@@ -52,7 +52,10 @@ def plan_list(plan: list[str] | str) -> list[str]:
     return [str(p) for p in plan]
 
 
-def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int) -> ToolDef:
+def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int,
+             rules: str = "full") -> ToolDef:
+    """`rules` (Config.rules): other than "full", the description's example plan does not
+    show what goes into a pot (tools.md act.description_no_recipe)."""
     async def act(plan: list[str] | str) -> str:
         if turn.plan is not None:
             return load("tools", "act.ignored")
@@ -68,7 +71,8 @@ def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int)
 
     return ToolDef(
         act, name="act",
-        description=load("tools", "act.description", max_len=max_len),
+        description=load("tools", "act.description" if rules == "full"
+                         else "act.description_no_recipe", max_len=max_len),
         parameters={"plan": load("tools", "act.plan_param", max_len=max_len)},
     )
 

@@ -52,6 +52,7 @@ class Header(BaseModel):
     reasoning: Literal["on", "off"] = "on"
     comms: Literal["full", "planning_only", "none"] = "full"
     debrief: Literal["full", "score_only"] = "full"
+    rules: Literal["full", "recipe", "minimal", "minimal_hint"] = "full"   # config.rules
 
 
 class AgentState(BaseModel):

@@ -49,6 +49,9 @@ def _grid() -> list[tuple[str, Config]]:
     out.append(("odd_numbers", cfg(rounds=2, chat_max_posts=2, cook_s=15, max_plan_len=3,
                                    orders={"every_s": 20, "due_s": 50, "max_open": 2,
                                            "reward": 30, "penalty": 5})))
+    for rules in ("recipe", "minimal", "minimal_hint"):
+        out.append((f"rules={rules}", cfg(rules=rules)))
+        out.append((f"rules={rules}|none", cfg(rules=rules, comms="none")))
     return out
 
 
@@ -89,6 +92,7 @@ def _tool_texts() -> dict[str, Any]:
         p = post_tool(t, cap_error=lambda: "you have used all 2 posts for this chat",
                       lands_later=lands_later)
         out[k + ".cap"] = _call(p, "hi")
+    out["act.desc.no_recipe"] = _desc(act_tool(Turn(), lambda p: None, 5, rules="minimal"))
     t = Turn()
     r = read_board_tool(t, lambda: "BOARD")
     out["read_board"] = [*_desc(r), _call(r)]
@@ -130,6 +134,11 @@ def _state_texts() -> dict[str, Any]:
     for n in (0, 1, 2):
         out[f"engine.unread{n}"] = g.state_text("Kilo", unread_posts=n, notepad="n",
                                                 last_plan_result="failed: blocked by Tango.")
+    for rules in ("recipe", "minimal"):
+        g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], cfg(rules=rules),
+                 phase="round", round=1)
+        out[f"engine.rules={rules}"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+                                                    last_plan_result="none yet")
     return out
 
 

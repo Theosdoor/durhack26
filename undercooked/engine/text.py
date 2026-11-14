@@ -59,7 +59,9 @@ def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | No
     lines = [load("state", "header", t=game.t, duration=game.duration, score=game.score,
                   where=where)]
     if game.orders:
-        orders = ", ".join(load("state", "order_item", due_t=o.due_t)
+        # rules minimal / minimal_hint: the order line names no dish (prompts/state.md)
+        item = "order_item_minimal" if game.cfg.rules.startswith("minimal") else "order_item"
+        orders = ", ".join(load("state", item, due_t=o.due_t)
                            for o in sorted(game.orders, key=lambda o: o.due_t))
         lines.append(load("state", "orders", orders=orders))
     else:
@@ -91,10 +93,19 @@ def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | No
 
 def rules_text(cfg: Config) -> str:
     """Plain-English rules, controls, map key and interact table for the system prompt (the
-    kitchen_rules ... plans sections of prompts/system.md)."""
+    kitchen_rules ... plans sections of prompts/system.md).
+
+    cfg.rules other than "full": the recipe and orders paragraphs of kitchen_rules (all but its
+    first paragraph, which says how time, walking and interacting work) and the interact table
+    are replaced by the section rules_<cfg.rules>; map_key, actions and plans stay."""
     o = cfg.orders
     kw = dict(cook_s=cfg.cook_s, every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
               reward=o.reward, penalty=o.penalty, max_plan_len=cfg.max_plan_len,
               wait_min=WAIT_MIN, wait_max=WAIT_MAX, blocked_limit=BLOCKED_LIMIT)
-    keys = ("kitchen_rules", "map_key", "actions", "interact_table", "plans")
-    return "\n\n".join(load("system", k, **kw) for k in keys) + "\n"
+    if cfg.rules == "full":
+        keys = ("kitchen_rules", "map_key", "actions", "interact_table", "plans")
+        return "\n\n".join(load("system", k, **kw) for k in keys) + "\n"
+    moving = load("system", "kitchen_rules", **kw).split("\n\n")[0]
+    parts = [moving, load("system", f"rules_{cfg.rules}")]
+    parts += [load("system", k, **kw) for k in ("map_key", "actions", "plans")]
+    return "\n\n".join(parts) + "\n"

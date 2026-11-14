@@ -173,7 +173,8 @@ def test_full_condition_header_and_metadata(season_full):
     h = rep.header
     assert (h.reasoning, h.comms, h.debrief) == ("on", "full", "full")
     assert log.samples[0].metadata["condition"] == {"reasoning": "on", "comms": "full",
-                                                     "debrief": "full"}
+                                                     "debrief": "full", "rules": "full"}
+    assert h.rules == "full"
     v = log.samples[0].scores["season_score"].value
     assert v["forced_agent0"] == v["forced_agent1"] == 0
 

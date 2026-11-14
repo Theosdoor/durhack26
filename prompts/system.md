@@ -109,3 +109,15 @@ You have about {reasoning_tokens} tokens to think before each decision; decide q
 
 ## practice_finish_note
 When you have practised enough you may call finish_practice() to end your practice early.
+
+## rules_recipe
+THE KITCHEN
+Your team scores by serving onion soup at the serving hatch. A soup needs onions cooked in a pot and a dish to carry it. Orders come in over time; serving a soup fills one and scores points, and an order left too long costs points. You can hold one item at a time. How the objects work is for you to find out by playing.
+
+## rules_minimal
+THE KITCHEN
+Your team scores points by delivering things at the serving hatch. How the kitchen works is for you to find out by playing.
+
+## rules_minimal_hint
+THE KITCHEN
+Your team scores points by delivering things at the serving hatch. How the kitchen works is for you to find out by playing. Practice is a good time to try interacting with everything and see what happens.

@@ -78,3 +78,6 @@ New posts on the board:
 
 ## push_none
 Board: no new posts.
+
+## order_item_minimal
+an order (open until t = {due_t} s)

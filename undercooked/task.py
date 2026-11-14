@@ -20,7 +20,7 @@ from inspect_ai.scorer import Score, Target, grouped, mean, scorer, stderr
 from inspect_ai.solver import TaskState
 
 from undercooked.config import REPO_ROOT, Config
-from undercooked.season import STORE_KEY, season_solver
+from undercooked.season import DISCOVERY, STORE_KEY, season_solver
 
 
 def load_config(path: str | Path, **overrides: Any) -> Config:
@@ -49,6 +49,14 @@ def season_values(s: dict[str, Any]) -> dict[str, float]:
                 "cutoffs_debrief", "forced_debrief", "practice_finished"):
         for i, n in enumerate(s[key]):
             value[f"{key}_agent{i}"] = n
+    # discovery: when each agent FIRST put an onion in a pot, started a pot cooking (added its
+    # 3rd onion), plated and served: round (0 = practice) and game second; NaN if never (Inspect
+    # leaves NaN out of the metrics)
+    for i, firsts in enumerate(s.get("firsts", [])):
+        for kind in DISCOVERY.values():
+            hit = firsts.get(kind)
+            for part in ("round", "t"):
+                value[f"first_{kind}_{part}_agent{i}"] = float("nan") if hit is None else hit[part]
     return value
 
 
@@ -113,13 +121,14 @@ def undercooked(config: str = "configs/split_room.yaml", rounds: int | None = No
                 round_s: int | None = None, practice: bool | None = None,
                 epochs: int | None = None, pipeline: bool | None = None,
                 reasoning: str | None = None, comms: str | None = None,
-                debrief: str | None = None, levels: str | list[str] | None = None) -> Task:
+                debrief: str | None = None, levels: str | list[str] | None = None,
+                rules: str | None = None) -> Task:
     """`levels`: a list, or names joined by commas ("cramped_room,split_room"); replaces the
     config's level / levels."""
     if isinstance(levels, str):
         levels = [x.strip() for x in levels.split(",") if x.strip()]
     cfg = load_config(config, rounds=rounds, round_s=round_s, practice=practice, epochs=epochs,
-                      comms=comms, debrief=debrief, levels=levels)
+                      comms=comms, debrief=debrief, levels=levels, rules=rules)
     if pipeline is not None:
         cfg = cfg.model_copy(update={"decision": cfg.decision.model_copy(
             update={"pipeline": pipeline})})

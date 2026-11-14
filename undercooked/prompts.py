@@ -172,8 +172,11 @@ def chat_turn(cfg: Config, round: int, *, first_turn: bool, overview: str, new_p
               posts_left: int, ready: bool, notepad: str | None) -> str:
     lines: list[str] = []
     if first_turn:
-        lines += [load("communication", "chat_turn.first", round=round, rounds=cfg.rounds, overview=overview,
-                       orders_rules=orders_rules(cfg)), ""]
+        # rules other than "full": the order rules are for the agents to find out, so not here
+        rules = orders_rules(cfg) if cfg.rules == "full" else ""
+        first = load("communication", "chat_turn.first", round=round, rounds=cfg.rounds,
+                     overview=overview, orders_rules=rules)
+        lines += [first if rules else first.rstrip("\n"), ""]
         if notepad is not None:
             lines.append(load("communication", "chat_turn.notepad", notepad=notepad))
     else:

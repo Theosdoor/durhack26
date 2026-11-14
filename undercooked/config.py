@@ -93,6 +93,10 @@ class Config(_Strict):
     # "full" = a debrief turn after each round; "score_only" = no debrief turn: the round's result
     # opens the agent's next message (note() still works in practice and rounds)
     debrief: Literal["full", "score_only"] = "full"
+    # how much of the kitchen the system prompt explains: "full" = recipe, orders and the
+    # interact table; "recipe" = what scores, not how the objects work; "minimal" = only that
+    # delivering at the hatch scores; "minimal_hint" = minimal + "try everything in practice"
+    rules: Literal["full", "recipe", "minimal", "minimal_hint"] = "full"
     compact_at_tokens: int = 32000
     providers: Providers = Field(default_factory=Providers)
     agents: list[AgentSpec]

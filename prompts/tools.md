@@ -71,3 +71,6 @@ End your practice now (practice only). It ends when this decision lands; the sea
 
 ## finish_practice.result
 Noted: your practice ends when this decision lands.
+
+## act.description_no_recipe
+Set your plan: a list of 1 to {max_len} actions done in order, e.g. ["move_to(2, 2)", "interact(hatch_1)"]. Every decision must end with act. A new plan replaces your old one.
