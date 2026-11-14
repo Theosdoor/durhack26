@@ -89,6 +89,9 @@ def make_task(cfg: Config) -> Task:
 @task
 def undercooked(config: str = "configs/split_room.yaml", rounds: int | None = None,
                 round_s: int | None = None, practice: bool | None = None,
-                epochs: int | None = None) -> Task:
-    return make_task(load_config(config, rounds=rounds, round_s=round_s, practice=practice,
-                                 epochs=epochs))
+                epochs: int | None = None, pipeline: bool | None = None) -> Task:
+    cfg = load_config(config, rounds=rounds, round_s=round_s, practice=practice, epochs=epochs)
+    if pipeline is not None:
+        cfg = cfg.model_copy(update={"decision": cfg.decision.model_copy(
+            update={"pipeline": pipeline})})
+    return make_task(cfg)

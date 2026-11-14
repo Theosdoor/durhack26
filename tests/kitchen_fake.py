@@ -5,13 +5,26 @@ split_room: the passer (left room) puts onions and then a dish on counter (2,1);
 room) takes them, cooks in pot_1 and serves. Along the way they post, read the board (pull mode),
 write notes and, once, reply without act() (a cutoff). Responses report provider "FakeCloud" in
 the ModelCall, the way OpenRouter reports its served provider.
+
+Flavours, added to the model name with "+" (e.g. `kitchenfake/cook+chaos+tagged`):
+- chaos: decisions vary with a hash of the state text: posts of 1-25 words (1-3 s), cutoffs
+  with and without a post, notes, rejected plans, waits of 1-4 s, so landing times vary;
+- tagged: the served provider is "Cloud-<agent name>" (from the system prompt), not FakeCloud.
+`DELAY` = (seed, lo, hi) makes every call sleep a pseudo-random time in [lo, hi] s, drawn from a
+hash of the seed and the call's input (so the same call sleeps the same in every run, but
+completion order differs from start order). `CALLS` records the wall-clock intervals (`Call`)
+of the practice and round decision calls when `RECORD` is on.
 """
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import itertools
+import random
 import re
-from typing import Any
+import time
+from typing import Any, NamedTuple
 
 from inspect_ai.model import (
     ChatCompletionChoice,
@@ -32,6 +45,22 @@ CHAT_POST = "I am at the pots. Put onions then a dish on (2,1) please."
 NOTE = "Onions and the dish go on (2,1)."
 BAD_ACTION = "interact(pot_9)"
 _ids = itertools.count()
+
+DELAY: tuple[int, float, float] | None = None      # (seed, lo, hi) seconds per call
+RECORD = False
+
+
+class Call(NamedTuple):
+    """One generate call of a practice or round decision, with its wall-clock interval."""
+
+    agent: str
+    phase: str                 # "Practice" or "Round r of N"
+    t: int | None              # game second the decision started
+    start: float
+    end: float
+
+
+CALLS: list[Call] = []
 
 
 def reply(content: str = "", calls: list[tuple[str, dict[str, Any]]] = ()) -> ModelOutput:
@@ -112,7 +141,58 @@ def passer_plan(state: str) -> list[str]:
     return ["wait(2)"]
 
 
-def script(role: str, messages: list[ChatMessage], tools: list[str]) -> ModelOutput:
+def _hash(text: str) -> int:
+    return int.from_bytes(hashlib.sha256(text.encode()).digest()[:8], "big")
+
+
+def agent_name(messages: list[ChatMessage]) -> str | None:
+    m = re.search(r"You are (\w+),", messages[0].text) if messages else None
+    return m.group(1) if m else None
+
+
+def game_second(text: str) -> tuple[int | None, str]:
+    m = re.search(r"^Time (\d+) / \d+ s · Score -?\d+ · (.*)$", text, re.M)
+    return (int(m.group(1)), m.group(2)) if m else (None, "")
+
+
+def chaos(role: str, messages: list[ChatMessage], tools: list[str], text: str) -> ModelOutput:
+    """A practice or round decision that varies with the state text (see the module doc)."""
+    h = _hash(role + text)
+    kind = h % 20
+    since = 0                                    # generations so far in this decision
+    for m in reversed(messages):
+        if m.role == "user":
+            break
+        since += m.role == "assistant"
+    if kind >= 18:
+        plan = [BAD_ACTION]                                          # rejected
+    elif "Practice" in text:
+        plan = [f"wait({1 + h // 20 % 4})"]
+    else:
+        plan = cook_plan(text) if role == "cook" else passer_plan(text)
+    words = " ".join(f"w{j}" for j in range(1 + h // 80 % 25))      # 1-25 words: 1-3 s
+    can_post = "post" in tools
+    if since == 0:
+        if kind < 3:
+            return reply("Let me think about this first.")           # cutoff, no post
+        if kind < 5 and can_post:
+            return reply(calls=[("post", {"message": words})])       # a cutoff with a post
+        if kind < 8 and "read_board" in tools and "unread post" in text:
+            return reply(calls=[("read_board", {})])
+        calls: list[tuple[str, dict[str, Any]]] = []
+        if can_post and kind < 12:
+            calls.append(("post", {"message": words}))
+        if kind % 3 == 0:
+            calls.append(("note", {"text": f"note {h % 1000}"}))
+        calls.append(("act", {"plan": plan}))
+        return reply(calls=calls)
+    if kind < 5:
+        return reply("That is all for now.")
+    return reply(calls=[("act", {"plan": plan})])
+
+
+def script(role: str, messages: list[ChatMessage], tools: list[str],
+           flags: tuple[str, ...] = ()) -> ModelOutput:
     if not tools:                                           # compaction summary request
         return reply("Summary: I am a cook; we pass onions and a dish over counter (2,1).")
     text = last_user(messages)
@@ -127,6 +207,8 @@ def script(role: str, messages: list[ChatMessage], tools: list[str]) -> ModelOut
     if tools == ["note"]:                                   # debrief
         return reply(calls=[("note", {"text": f"{role}: {NOTE}"})])
     first_line = text.split("\n")[0]
+    if "chaos" in flags and "act" in tools:
+        return chaos(role, messages, tools, text)
     if "Practice" in text and "act" in tools:
         if role == "cook" and "Time 0 /" in text:
             return reply("Hmm, let me think about the practice kitchen first.")   # cutoff
@@ -161,12 +243,29 @@ class KitchenFake(ModelAPI):
                        tool_choice: ToolChoice, config: GenerateConfig
                        ) -> tuple[ModelOutput, ModelCall]:
         assert tool_choice == "auto" or not tools, tool_choice
-        out = script(self.model_name, input, [t.name for t in tools])
+        role, *flags = self.model_name.split("+")
+        names = [t.name for t in tools]
+        start = time.monotonic()
+        delay = 0.0
+        if DELAY is not None:
+            seed, lo, hi = DELAY
+            key = f"{seed}|{self.model_name}|{len(input)}|{input[-1].text if input else ''}"
+            delay = random.Random(_hash(key)).uniform(lo, hi)
+            await asyncio.sleep(delay / 2)
+        out = script(role, input, names, tuple(flags))
         n_in = await self.count_tokens(input)
         out.usage = ModelUsage(input_tokens=n_in, output_tokens=20, total_tokens=n_in + 20,
                                reasoning_tokens=5)
-        response = {"provider": SERVED_BY, "content": out.completion}
+        served = f"Cloud-{agent_name(input)}" if "tagged" in flags else SERVED_BY
+        response = {"provider": served, "content": out.completion}
         self.on_response(response)          # as OpenAI-compatible APIs do with the raw response
+        if delay:
+            await asyncio.sleep(delay / 2)  # other calls get their responses in between
+        if RECORD and "act" in names:
+            text = last_user(input)
+            t, phase = game_second(text)
+            CALLS.append(Call(agent_name(input) or "?", phase, t,
+                              start, time.monotonic()))
         call = ModelCall.create({"model": self.model_name, "n_messages": len(input)}, response)
         return out, call
 
