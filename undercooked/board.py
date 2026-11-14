@@ -23,8 +23,9 @@ class Board:
         self._read[post.agent].add(len(self.posts))   # you have read your own post
         self.posts.append(post)
 
-    def _scope(self, round: int) -> list[int]:
-        return [i for i, p in enumerate(self.posts) if p.round == round]
+    def _scope(self, round: int, upto: int | None = None) -> list[int]:
+        posts = self.posts if upto is None else self.posts[:upto]
+        return [i for i, p in enumerate(posts) if p.round == round]
 
     def unread(self, agent: str, round: int) -> list[Post]:
         return [self.posts[i] for i in self._scope(round) if i not in self._read[agent]]
@@ -35,10 +36,14 @@ class Board:
         self._read[agent].update(self._scope(round))
         return new
 
-    def read_all(self, agent: str, round: int) -> list[Post]:
-        """All of this round's posts, oldest first (newest last); marks them read."""
-        self.mark_read(agent, round)
-        return [self.posts[i] for i in self._scope(round)]
+    def read_all(self, agent: str, round: int, upto: int | None = None) -> list[Post]:
+        """All of this round's posts, oldest first (newest last); marks them read.
+
+        `upto`: only the first `upto` posts on the board count (the board as it was when a
+        decision started; later posts may land while its model call is still running)."""
+        scope = self._scope(round, upto)
+        self._read[agent].update(scope)
+        return [self.posts[i] for i in scope]
 
     def count(self, agent: str) -> int:
         return sum(1 for p in self.posts if p.agent == agent)

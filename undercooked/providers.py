@@ -70,6 +70,13 @@ def pick_endpoint(endpoints: list[dict[str, Any]], min_quant: str) -> dict[str, 
 # ("provider"). Inspect keeps the raw response (ModelEvent.call) only for the first few calls per
 # model unless log_model_api is on, so we read it where the response arrives instead: the
 # OpenAI-compatible APIs pass every raw response dict to `api.on_response`, which we wrap.
+# One Model (and so one wrapped on_response) is shared by every agent and season that uses the
+# same model string (get_model memoizes), and their calls run concurrently. The box is a
+# ContextVar set around each generate (`served_providers`), and on_response runs inside that
+# generate, so each call appends only to its own box (tests/test_pipeline.py checks this with
+# concurrent calls through one Model). This relies on on_response being called from the task
+# that awaits generate (or a task it started), which holds for OpenAI-compatible providers; it
+# would not for Inspect's batch mode, which we don't use.
 _served_box: ContextVar[list[str] | None] = ContextVar("undercooked_served_box", default=None)
 
 

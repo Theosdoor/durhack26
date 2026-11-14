@@ -37,6 +37,7 @@ class Decision(_Strict):
     post_words_per_s: int = 10      # extra game seconds = ceil(words posted / this)
     reasoning_tokens: int = 1000    # GenerateConfig.reasoning_tokens
     max_tokens: int = 4000          # GenerateConfig.max_tokens: hard cap; DeepSeek on Baidu overshoots reasoning_tokens
+    pipeline: bool = True           # overlap model calls across game seconds (same outcomes; season.py)
 
 
 class Providers(_Strict):

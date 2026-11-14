@@ -1,9 +1,9 @@
 """One season = one Inspect sample: briefing, practice, then chat -> round -> debrief per round.
 
 Every replay record is logged with `transcript().info(rec.model_dump(mode="json"),
-source="kitchen")`, always from the season's main loop (never from inside a concurrent decision),
+source="kitchen")`, always from the season's game loop (never from inside a concurrent decision),
 so the log order is deterministic: Header first, then Events, Frames, Posts and DecisionRecords as
-they happen.
+they happen (in pipelined play, in the order the sequential loop would log them).
 
 Simulated time (cfg.decision.mode == "simulated"): the game clock stops while the models think.
 Each game second t:
@@ -17,18 +17,24 @@ Each game second t:
   4. game.tick(); its events and the frame after it are logged.
 So a decision that starts at t and lands at L keeps the agent standing still for exactly L - t
 seconds. A plan that set_plan rejects is rejected in the act() tool result at once (checked on
-a copy of the game, which is exact: the deciding agent cannot move), the decision still lands
-at its normal time, and the agent decides again in that same second.
+a copy of the game as it was when the decision started), the decision still lands at its normal
+time, and the agent decides again in that same second.
+
+Pipelining (cfg.decision.pipeline, the default) gives exactly the same games, records and record
+order as the loop above (`_play_sequential`, kept as the reference), but does not hold the clock
+while a model call is in flight unless the game needs that call's outcome. See `_run_game`.
 """
 
 from __future__ import annotations
 
+import asyncio
 import copy
 import math
 import random
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 
 from inspect_ai.log import transcript
 from inspect_ai.model import (
@@ -135,6 +141,86 @@ class Pending:
     record: DecisionRecord
     lands_t: int
     gen: Gen
+    messages: int = 0               # len(agent.messages) when the decision finished
+
+
+@dataclass
+class _Flight:
+    """A pipelined decision: its model call runs as a task; `result` is set once resolved."""
+
+    agent: Agent
+    g: int                          # index of its game in play()'s `games`
+    i: int                          # index of the agent in its game (needs_decision order)
+    t0: int                         # game second it started
+    task: asyncio.Task[Pending]
+    result: Pending | None = None
+
+    @property
+    def key(self) -> tuple[int, int, int]:
+        """Order of the sequential loop's `pending` dict: start second, then starter order."""
+        return (self.t0, self.g, self.i)
+
+    @property
+    def side_key(self) -> tuple[int, ...]:
+        return (self.t0, _SIDE, self.g, self.i, 0)
+
+
+# Sections of one game second, in the order the sequential loop logs them (see _LogBuffer).
+_LAND, _START, _SIDE, _LAND_SAME, _TICK, _UNLANDED = 1, 2, 3, 4, 5, 6
+_END = 10 ** 9                      # "second" of the never-landed records, after the last tick
+
+
+class _LogBuffer:
+    """Kitchen records of a pipelined play(), written in exactly the sequential loop's order.
+
+    Each record is logged under a sort key that says where the sequential loop logs it:
+      (-1, 0, g)                    the t = 0 frame of game g
+      (t, _LAND, t0, g, i)          a decision started at t0 < t lands at t (pending-dict order)
+      (t, _START, g, i)             decision_start at t (starter order)
+      (t, _SIDE, g, i)              compaction / read_board / cutoff events of that decision
+      (t, _LAND_SAME, t, g, i)      a decision started at t lands at t (only when flat_s <= 0)
+      (t, _TICK, g)                 the events of game g's tick at t, then its frame
+      (_END, _UNLANDED, t0, g, i)   records of decisions that never landed
+    plus a sequence number within the key. A record goes to the transcript once nothing with a
+    smaller key can still appear: every game has moved past it (`frontier`) and every decision
+    that started before it has resolved (`open` side blocks)."""
+
+    DONE: tuple[float] = (math.inf,)
+
+    def __init__(self, emit: Callable[[dict[str, Any]], None], games: int):
+        self._emit = emit
+        self._items: list[tuple[tuple[int, ...], dict[str, Any]]] = []
+        self.frontier: list[tuple[float, ...]] = [(0,)] * games
+        self.open: set[tuple[int, ...]] = set()
+        self._key: tuple[int, ...] | None = None
+        self._seq = 0
+
+    @contextmanager
+    def at(self, key: tuple[int, ...]) -> Iterator[None]:
+        self._key, self._seq = key, 0
+        try:
+            yield
+        finally:
+            self._key = None
+
+    def add(self, data: dict[str, Any]) -> None:
+        if self._key is None:
+            raise RuntimeError("kitchen record logged outside a keyed section of the pipeline")
+        self._items.append((self._key + (self._seq,), data))
+        self._seq += 1
+
+    def flush(self) -> None:
+        mark = min([*self.frontier, *self.open], default=self.DONE)
+        self._items.sort(key=lambda kv: kv[0])
+        n = 0
+        while n < len(self._items) and self._items[n][0] < mark:
+            self._emit(self._items[n][1])
+            n += 1
+        del self._items[:n]
+
+    @property
+    def empty(self) -> bool:
+        return not self._items and not self.open
 
 
 class Season:
@@ -156,11 +242,19 @@ class Season:
         self.by_name = {a.name: a for a in self.agents}
         self.board = Board(names)
         self.rounds: list[dict[str, int]] = []
+        self._buf: _LogBuffer | None = None          # set while a pipelined play() runs
 
     # ------------------------------------------------------------------ logging
     @staticmethod
-    def log(rec: Any) -> None:
-        transcript().info(rec.model_dump(mode="json"), source="kitchen")
+    def _emit(data: dict[str, Any]) -> None:
+        transcript().info(data, source="kitchen")
+
+    def log(self, rec: Any) -> None:
+        data = rec.model_dump(mode="json")
+        if self._buf is not None:
+            self._buf.add(data)
+        else:
+            self._emit(data)
 
     def event(self, phase: Phase, round: int, t: int, type_: str, agent: str | None = None,
               **data: Any) -> None:
@@ -235,10 +329,11 @@ class Season:
         return gen
 
     def _log_side_events(self, phase: Phase, round: int, t: int, a: Agent, gen: Gen,
-                         turn: Turn) -> None:
+                         turn: Turn, messages: int | None = None) -> None:
         for _ in range(gen.compactions):
             a.compactions += 1
-            self.event(phase, round, t, "compaction", a.name, messages=len(a.messages))
+            self.event(phase, round, t, "compaction", a.name,
+                       messages=len(a.messages) if messages is None else messages)
         for _ in range(turn.read_board):
             self.event(phase, round, t, "read_board", a.name)
 
@@ -257,25 +352,40 @@ class Season:
         return text + ("\nNew posts on the board:\n" + format_posts(new) if new
                        else "\nBoard: no new posts.")
 
-    async def decide(self, game: Game, a: Agent, board: Board | None, intro: str | None
-                     ) -> Pending:
-        t0 = game.t
+    def prepare(self, game: Game, a: Agent, board: Board | None, intro: str | None
+                ) -> tuple[Turn, list[ToolDef], str]:
+        """Everything a decision reads from the season, taken now (at its start second): the
+        state text (with notepad and unread count), and snapshots of the game and the board for
+        its tools, whose model call may still be running when the game and board have moved on."""
         turn = Turn()
+        seen = copy.deepcopy(game)                  # the game as this decision sees it
 
         def check(plan: list[str]) -> str | None:   # dry run on a copy: same result as later
-            return copy.deepcopy(game).set_plan(a.name, plan)
+            return copy.deepcopy(seen).set_plan(a.name, plan)
 
         tools = [act_tool(turn, check, self.cfg.max_plan_len)]
         if board is not None:
+            upto, rnd = len(board.posts), game.round
             tools += [post_tool(turn),
                       read_board_tool(turn, lambda: format_posts(
-                          board.read_all(a.name, game.round), "The board is empty."))]
+                          board.read_all(a.name, rnd, upto=upto), "The board is empty."))]
         tools.append(note_tool(turn))
         text = self.state_text(game, a, board)
         if a.last_cutoff:
             text = f"{prompts.CUTOFF_NOTICE}\n\n{text}"
         if intro:
             text = f"{intro}\n\n{text}"
+        return turn, tools, text
+
+    async def decide(self, game: Game, a: Agent, board: Board | None, intro: str | None
+                     ) -> Pending:
+        t0 = game.t
+        turn, tools, text = self.prepare(game, a, board, intro)
+        return await self.think(game, a, t0, turn, tools, text)
+
+    async def think(self, game: Game, a: Agent, t0: int, turn: Turn, tools: list[ToolDef],
+                    text: str) -> Pending:
+        """The model call(s) of a decision prepared at second t0, and when it lands."""
         async with span(f"agent-{a.name}"):
             gen = await self.model_turn(a, text, tools, 1 + ROUND_EXTRA_GENERATIONS,
                                         lambda: turn.plan is not None)
@@ -286,7 +396,7 @@ class Season:
         record = gen.record(phase=game.phase, round=game.round, t=t0, agent=a.name,
                             plan=turn.plan or [], post=turn.post, note=turn.note,
                             read_board=turn.read_board > 0, cutoff=cutoff)
-        return Pending(a, game, turn, record, t0 + cost, gen)
+        return Pending(a, game, turn, record, t0 + cost, gen, len(a.messages))
 
     def land(self, p: Pending, board: Board | None) -> None:
         game, a, turn = p.game, p.agent, p.turn
@@ -313,7 +423,17 @@ class Season:
 
     async def play(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
                    intro: str) -> None:
-        """Run games in lockstep (one per practising agent, or the one round game)."""
+        """Run the games (one per practising agent, or the one round game) to the end."""
+        d = self.cfg.decision
+        if (d.pipeline and d.post_words_per_s >= 1 and (len(games) == 1 or board is None)
+                and len({g.duration for g, _ in games}) == 1):
+            await self._play_pipelined(games, board, intro)
+        else:
+            await self._play_sequential(games, board, intro)
+
+    async def _play_sequential(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
+                               intro: str) -> None:
+        """The reference loop: games in lockstep; the clock waits for every model call."""
         pending: dict[str, Pending] = {}
         started: set[str] = set()
         for game, agents in games:
@@ -349,7 +469,8 @@ class Season:
                 if game.phase == "round":
                     a.decisions += 1
                 a.read_board += p.turn.read_board
-                self._log_side_events(game.phase, game.round, p.record.t, a, p.gen, p.turn)
+                self._log_side_events(game.phase, game.round, p.record.t, a, p.gen, p.turn,
+                                      p.messages)
                 a.last_cutoff = p.record.cutoff
                 if p.record.cutoff:
                     a.cutoffs += 1
@@ -364,6 +485,146 @@ class Season:
                 self.log(game.frame())
         for p in pending.values():                     # never landed: the phase ended first
             self.log(p.record)
+
+    # ------------------------------------------------------------------ pipelining
+    async def _play_pipelined(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
+                              intro: str) -> None:
+        """Same games, records and record order as `_play_sequential`, with model calls that
+        overlap across game seconds. Each game runs in its own runner (`_run_game`; practice
+        games share nothing, so one never waits for the other's model calls) and every kitchen
+        record goes through a `_LogBuffer` that writes them in the sequential loop's order."""
+        buf = _LogBuffer(self._emit, len(games))
+        started: set[str] = set()
+        flights: list[_Flight] = []
+        runners: list[asyncio.Task[None]] = []
+        self._buf = buf
+        try:
+            for g, (game, agents) in enumerate(games):
+                with buf.at((-1, 0, g, 0, 0)):
+                    self.log(game.frame())                # t = 0
+                for a in agents:
+                    a.last_cutoff = False
+            runners = [asyncio.create_task(self._run_game(g, game, board, intro, started,
+                                                          buf, flights))
+                       for g, (game, _) in enumerate(games)]
+            done, _ = await asyncio.wait(runners, return_when=asyncio.FIRST_EXCEPTION)
+            for r in done:
+                r.result()                                # re-raise the first failure
+            buf.flush()
+            if not buf.empty:
+                raise RuntimeError("pipelined play ended with kitchen records still buffered")
+        finally:
+            self._buf = None
+            stray = [x for x in [*runners, *(f.task for f in flights)] if not x.done()]
+            for x in stray:                               # only after a failure: no orphan calls
+                x.cancel()
+            if stray:
+                await asyncio.gather(*stray, return_exceptions=True)
+
+    async def _run_game(self, g: int, game: Game, board: Board | None, intro: str,
+                        started: set[str], buf: _LogBuffer, flights: list[_Flight]) -> None:
+        """One game, second by second, as in `_play_sequential`, except that each decision's
+        model call runs as a task that is awaited only when the game needs its outcome:
+
+        - A decision started at t0 lands no earlier than t0 + min(1, flat_s) (a cutoff costs 1 s,
+          anything else flat_s + its post cost). The tick at t waits for every decision with
+          t0 + min(1, flat_s) <= t and lands those that land at t, so the game never runs past a
+          landing it doesn't know about.
+        - A landing with a post costs at least one second more (a post has at least one word,
+          and post_words_per_s >= 1), so every decision that could post by t was resolved
+          before the tick at t - 1, and the board is complete when decisions start at t.
+        - A post is the only way a landing at t changes what a decision starting at t reads: a
+          landing sets the lander's plan, status and notepad, and the state text shows the
+          teammate's position and holding, which only the tick changes (tests/test_pipeline.py
+          guards this). So a decision that is still running at t can land at t (a cutoff, or a
+          plan that set_plan accepts or rejects) after the decisions starting at t have started:
+          it lands then, before the tick, and if its agent has no plan it starts deciding again
+          at t, as in the sequential loop.
+        Landings of different agents in one second touch different agents, and the board only
+        through posts, which have all landed, in order, before anyone starts; so a landing
+        applied later in its second leaves the same state, and _LogBuffer restores the order
+        of the records."""
+        d = self.cfg.decision
+        min_cost = min(1, d.flat_s)
+        post_min = min_cost + 1
+        index = {x.name: i for i, x in enumerate(game.agents)}
+        pending: dict[str, _Flight] = {}
+
+        def launch(names: list[str]) -> None:
+            t = game.t
+            for name in names:
+                game.set_status(name, "deciding")
+                with buf.at((t, _START, g, index[name], 0)):
+                    self.event(game.phase, game.round, t, "decision_start", name)
+            for name in names:
+                a = self.by_name[name]
+                turn, tools, text = self.prepare(game, a, board, None if name in started else intro)
+                started.add(name)
+                task = asyncio.create_task(self.think(game, a, t, turn, tools, text))
+                f = _Flight(a, g, index[name], t, task)
+                buf.open.add(f.side_key)
+                pending[name] = f
+                flights.append(f)
+
+        async def resolve(fs: list[_Flight]) -> None:
+            fs = [f for f in fs if f.result is None]
+            if not fs:
+                return
+            done, _ = await asyncio.wait([f.task for f in fs],
+                                         return_when=asyncio.FIRST_EXCEPTION)
+            for x in done:
+                x.result()                          # re-raise a failed call
+            for f in sorted(fs, key=lambda f: f.key):
+                p = f.result = f.task.result()
+                a = f.agent
+                if game.phase == "round":
+                    a.decisions += 1
+                a.read_board += p.turn.read_board
+                with buf.at(f.side_key):
+                    self._log_side_events(game.phase, game.round, f.t0, a, p.gen, p.turn,
+                                          p.messages)
+                    a.last_cutoff = p.record.cutoff
+                    if p.record.cutoff:
+                        a.cutoffs += 1
+                        self.event(game.phase, game.round, f.t0, "cutoff", a.name)
+                buf.open.discard(f.side_key)
+
+        def land_resolved(restart: bool) -> None:
+            t = game.t
+            for f in sorted(pending.values(), key=lambda f: f.key):
+                if f.result is None or f.result.lands_t > t:
+                    continue
+                del pending[f.agent.name]
+                late = f.t0 < t
+                with buf.at((t, _LAND if late else _LAND_SAME, f.t0, g, f.i)):
+                    self.land(f.result, board)
+                if restart and late and f.agent.name in game.needs_decision():
+                    launch([f.agent.name])
+
+        while not game.over:
+            t = game.t
+            buf.frontier[g] = (t,)
+            if any(f.result is None and t >= f.t0 + post_min for f in pending.values()):
+                raise RuntimeError("pipeline: a decision that could post by now is unresolved")
+            land_resolved(restart=False)            # starters below pick these agents up
+            launch([n for n in game.needs_decision() if n not in pending])
+            while due := [f for f in pending.values()
+                          if f.result is None and t >= f.t0 + min_cost]:
+                await resolve(due)
+                land_resolved(restart=True)
+            with buf.at((t, _TICK, g, 0, 0)):
+                for ev in game.tick():
+                    self.log(ev)
+                self.log(game.frame())
+            buf.frontier[g] = (t + 1,)
+            buf.flush()
+        buf.frontier[g] = (_END,)
+        await resolve(list(pending.values()))
+        for f in sorted(pending.values(), key=lambda f: f.key):   # never landed
+            with buf.at((_END, _UNLANDED, f.t0, g, f.i)):
+                self.log(f.task.result().record)
+        buf.frontier[g] = _LogBuffer.DONE
+        buf.flush()
 
     # ------------------------------------------------------------------ phases
     async def practice(self) -> None:

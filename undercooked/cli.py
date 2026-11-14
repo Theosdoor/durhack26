@@ -22,17 +22,25 @@ def main() -> None:
 @click.option("--rounds", type=int, default=None, help="Rounds per season (default: config).")
 @click.option("--round-s", type=int, default=None, help="Seconds per round (default: config).")
 @click.option("--no-practice", is_flag=True, help="Skip the practice phase.")
+@click.option("--max-samples", type=int, default=None,
+              help="Seasons run at once (default: all epochs).")
+@click.option("--no-pipeline", is_flag=True,
+              help="Wait for every model call before the clock moves on (same results, slower).")
 @click.option("--log-dir", default="logs", show_default=True)
 def run(config: str, epochs: int | None, rounds: int | None, round_s: int | None,
-        no_practice: bool, log_dir: str) -> None:
+        no_practice: bool, max_samples: int | None, no_pipeline: bool, log_dir: str) -> None:
     """Run seasons of CONFIG (a YAML file in configs/) and print the log path."""
     from inspect_ai import eval as inspect_eval
 
     from undercooked.task import undercooked
 
     task = undercooked(config=config, rounds=rounds, round_s=round_s,
-                       practice=False if no_practice else None, epochs=epochs)
-    logs = inspect_eval(task, model="none/none", log_dir=log_dir)
+                       practice=False if no_practice else None, epochs=epochs,
+                       pipeline=False if no_pipeline else None)
+    # one sample, `epochs` seasons: by default run them all at once (Inspect would otherwise
+    # cap it at its own default, which follows the task model, none/none)
+    logs = inspect_eval(task, model="none/none", log_dir=log_dir,
+                        max_samples=max_samples or task.epochs or 1)
     for log in logs:
         click.echo(f"status: {log.status}")
         if log.results is not None:
