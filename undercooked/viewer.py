@@ -11,6 +11,7 @@ from __future__ import annotations
 import html
 import os
 import sys
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -196,6 +197,121 @@ def show_conversation(rep: Replay, phase: str, rnd: int, agents: list[str]) -> N
                 decision_details(r)
 
 
+# ---------------------------------------------------------------- play / full screen
+
+SPEEDS = ["0.5x", "1x", "2x", "4x", "8x"]
+
+# Collapse the sidebar, hide the title and widen the main block; the map scales to the window
+# width (its aspect ratio is kept by the viewBox) but never taller than the viewport.
+FULLSCREEN_CSS = """<style>
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stSidebarCollapseButton"],
+[data-testid="stHeader"], h1 {display:none !important}
+[data-testid="stMainBlockContainer"], .block-container {max-width:100% !important; padding:0.6rem 1.5rem 0.5rem !important}
+[data-testid="stMetricValue"] {font-size:1.5rem !important} [data-testid="stMetric"] {gap:0 !important}
+[data-testid="stVerticalBlock"] {gap:0.35rem !important}
+[data-testid="stSlider"] label {display:none !important}
+svg[aria-label="Kitchen map"] {max-width:none !important; width:100% !important; max-height:calc(100vh - 290px)}
+</style>"""
+
+# Browser-native full screen of the map. Runs in the components iframe (same-origin srcdoc), so it
+# reaches the parent document to fullscreen the markdown container that holds the map's SVG.
+NATIVE_FS_HTML = """<button id=b style="font:14px sans-serif;padding:4px 10px;cursor:pointer">Browser full screen (map)</button>
+<span id=m style="font:12px sans-serif;margin-left:8px;color:gray"></span>
+<script>
+document.getElementById('b').onclick = () => {
+  try {
+    const svg = window.parent.document.querySelector('svg[aria-label="Kitchen map"]');
+    const box = svg.closest('[data-testid="stMarkdownContainer"]') || svg.parentElement;
+    box.style.background = getComputedStyle(window.parent.document.body).backgroundColor;
+    box.style.padding = '1rem';
+    box.requestFullscreen().catch(e => document.getElementById('m').textContent = 'blocked: ' + e);
+  } catch (e) { document.getElementById('m').textContent = 'unavailable: ' + e; }
+};
+</script>"""
+
+
+def current_speed() -> float:
+    return float(str(st.session_state.get("speed", "1x")).rstrip("x"))
+
+
+def native_fullscreen_button() -> None:
+    import streamlit.components.v1 as components
+    components.html(NATIVE_FS_HTML, height=40)
+
+
+def toggle_play(key: str, hi: int) -> None:
+    """Button callback: flip play/pause; pressing Play at the end restarts from 0."""
+    playing = not st.session_state.get("playing", False)
+    if playing and st.session_state[key] >= hi:
+        st.session_state[key] = 0
+    st.session_state["playing"] = playing
+    st.session_state["last_tick"] = 0.0
+
+
+def advance(key: str, hi: int, speed: float) -> None:
+    """One play tick: +1 game second, stopping at the phase end."""
+    if not st.session_state.get("playing"):
+        return
+    now = time.monotonic()
+    # Ignore reruns caused by the user touching a widget between timer ticks.
+    if now - st.session_state.get("last_tick", 0.0) >= 0.8 / speed:
+        st.session_state["last_tick"] = now
+        st.session_state[key] = min(hi, st.session_state[key] + 1)
+    if st.session_state[key] >= hi:
+        st.session_state["playing"] = False
+
+
+def show_ticker(posts: list[Post], decisions: list[DecisionRecord], agents: list[str], t: int) -> None:
+    """One compact line under the map: the latest post and each agent's current plan."""
+    visible = [p for p in posts if p.t <= t and p.agent in agents]
+    bits = [f"<b>Latest post</b> t={p.t} {html.escape(p.agent)}: {html.escape(p.text)}" for p in visible[-1:]]
+    bits = bits or ["<b>Latest post</b> none yet"]
+    for name in agents:
+        d = latest_decision(decisions, name, t)
+        plan = " > ".join(d.plan) if d and d.plan else "no plan yet"
+        bits.append(f"<b>{html.escape(name)}</b>: {html.escape(plan)}")
+    st.markdown("<div style='font-size:0.9rem;padding:4px 8px;border-radius:6px;background:rgba(128,128,128,0.12);"
+                "white-space:nowrap;overflow:hidden;text-overflow:ellipsis'>" + " &nbsp;|&nbsp; ".join(bits) + "</div>",
+                unsafe_allow_html=True)
+
+
+def run_replay(rep: Replay, frames: list[Frame], decisions: list[DecisionRecord], posts: list[Post],
+               agents: list[str], graphics: bool, hi: int, key: str, fs: bool, speed: float) -> None:
+    """The replay body: controls, map and (normal layout) side panels. Runs as a fragment, so the
+    play timer re-runs only this, not the whole page. `speed` is what the timer was armed with."""
+    st.session_state.setdefault(key, 0)
+    advance(key, hi, speed)
+    scores_slot = st.container()   # filled once the frame is known, shown above the slider
+    playing = bool(st.session_state.get("playing"))
+    c_play, c_speed, c_prev, c_next, _ = st.columns([1.4, 1, 1, 1, 5])
+    c_play.button("⏸ Pause" if playing else "▶ Play", key="play_btn", on_click=toggle_play, args=(key, hi))
+    c_speed.selectbox("Speed", SPEEDS, index=1, key="speed", label_visibility="collapsed")
+    c_prev.button("< -1 s", on_click=step_time, args=(key, -1, 0, hi))
+    c_next.button("+1 s >", on_click=step_time, args=(key, +1, 0, hi))
+    t = st.slider("Time (s)", 0, hi, key=key)
+    frame = frame_at(frames, t)
+    with scores_slot:
+        show_scores(frame)
+    # Play state or speed changed inside the fragment (or playback hit the end): run_every was fixed
+    # when the fragment was defined, so a full rerun is needed to re-arm (or disarm) the timer.
+    if bool(st.session_state.get("playing")) != st.session_state.get("_armed") or current_speed() != speed:
+        st.rerun(scope="app")
+    map_html = render_svg(rep.header, frame) if graphics else render_map(rep, frame)
+    if fs:
+        st.markdown(map_html, unsafe_allow_html=True)
+        show_status(frame, t)
+        show_ticker(posts, decisions, agents, t)
+    else:
+        left, right = st.columns([3, 2])
+        with left:
+            st.markdown(map_html, unsafe_allow_html=True)
+            show_status(frame, t)
+        with right:
+            show_board(posts, t, agents)
+            st.divider()
+            show_agent_decisions(decisions, t, agents)
+
+
 # ---------------------------------------------------------------- app
 
 def initial_path() -> str:
@@ -249,32 +365,35 @@ def main() -> None:
         practice_map = Kitchen.load("practice").map_rows()
         rep = rep.model_copy(update={"header": rep.header.model_copy(update={"map": practice_map})})
 
-    tab_replay, tab_dec, tab_ev = st.tabs(["Replay", "Decisions", "Events"])
+    fs = bool(st.session_state.get("fs_on")) and bool(frames)   # full screen only makes sense with a map
+    ctx = dict(rep=rep, frames=frames, decisions=decisions, posts=posts, agents=agents, graphics=graphics,
+               hi=rep.header.round_s if phase == "round" else max((f.t for f in frames), default=0),
+               key=f"t_{epoch}_{phase}_{rnd}", fs=fs)   # per-phase key so each phase keeps its own position
+    if st.session_state.get("_phase_key") != ctx["key"]:
+        st.session_state["_phase_key"] = ctx["key"]
+        st.session_state["playing"] = False   # never carry playback into another phase
+    spd = current_speed()
+    # run_every is fixed when the fragment is defined: only tick while playing (None = no timer).
+    every = 1.0 / spd if st.session_state.get("playing") else None
+    st.session_state["_armed"] = every is not None
+    replay_fragment = st.fragment(run_every=every)(run_replay)
 
+    if fs:
+        st.markdown(FULLSCREEN_CSS, unsafe_allow_html=True)
+        st.button("Exit full screen", key="fs_exit", on_click=st.session_state.update, kwargs={"fs_on": False})
+        replay_fragment(**ctx, speed=spd)
+        return
+
+    tab_replay, tab_dec, tab_ev = st.tabs(["Replay", "Decisions", "Events"])
     with tab_replay:
         if not frames:
             show_conversation(rep, phase, rnd, agents)
         else:
-            hi = rep.header.round_s if phase == "round" else max(f.t for f in frames)
-            key = f"t_{epoch}_{phase}_{rnd}"   # per-phase key so each phase keeps its own position
-            st.session_state.setdefault(key, 0)
-            left, right = st.columns([3, 2])
-            with left:
-                scores_slot = st.container()   # filled once the frame is known, shown above the slider
-                t = st.slider("Time (s)", 0, hi, key=key)
-                b1, b2, _ = st.columns([1, 1, 6])
-                b1.button("< -1 s", on_click=step_time, args=(key, -1, 0, hi))
-                b2.button("+1 s >", on_click=step_time, args=(key, +1, 0, hi))
-                frame = frame_at(frames, t)
-                with scores_slot:
-                    show_scores(frame)
-                st.markdown(render_svg(rep.header, frame) if graphics else render_map(rep, frame),
-                            unsafe_allow_html=True)
-                show_status(frame, t)
-            with right:
-                show_board(posts, t, agents)
-                st.divider()
-                show_agent_decisions(decisions, t, agents)
+            c1, c2 = st.columns([1, 3])
+            c1.button("⛶ Full screen", key="fs_enter", on_click=st.session_state.update, kwargs={"fs_on": True}, help="Map, controls and a one-line ticker only")
+            with c2:
+                native_fullscreen_button()
+            replay_fragment(**ctx, speed=spd)
 
     with tab_dec:
         shown = [d for d in decisions if d.agent in agents]

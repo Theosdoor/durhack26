@@ -64,3 +64,58 @@ def test_two_rounds_keep_chats_separate(tmp_path, monkeypatch):
     at.sidebar.selectbox[1].select("chat before round 2").run()
     assert not at.exception
     assert len(at.chat_message) == 4
+
+
+def round_app(monkeypatch) -> AppTest:
+    at = make_app(monkeypatch).run()
+    at.sidebar.selectbox[1].select("round 1").run()
+    return at
+
+
+def button(at: AppTest, key: str):
+    return next(b for b in at.button if b.key == key)
+
+
+def test_play_button_toggles_and_ticks(monkeypatch):
+    at = round_app(monkeypatch)
+    assert not at.exception
+    assert button(at, "play_btn").label == "▶ Play"
+    assert at.selectbox(key="speed").options == ["0.5x", "1x", "2x", "4x", "8x"]
+    assert at.selectbox(key="speed").value == "1x"
+    button(at, "play_btn").click().run()
+    assert not at.exception
+    assert at.session_state["playing"] is True
+    assert button(at, "play_btn").label == "⏸ Pause"
+    t0 = at.slider[0].value
+    at.run()                                   # a timer rerun: one more game second
+    assert at.slider[0].value >= t0
+    button(at, "play_btn").click().run()
+    assert at.session_state["playing"] is False
+    assert not at.exception
+
+
+def test_play_stops_at_end_and_pause_controls_work(monkeypatch):
+    at = round_app(monkeypatch)
+    at.slider[0].set_value(39).run()
+    button(at, "play_btn").click().run()
+    at.session_state["last_tick"] = 0.0
+    at.run()
+    assert at.slider[0].value == 40 and at.session_state["playing"] is False
+    assert not at.exception
+    at.selectbox(key="speed").select("4x").run()
+    assert not at.exception
+    at.slider[0].set_value(5).run()
+    assert at.slider[0].value == 5
+
+
+def test_full_screen_hides_board_and_exits(monkeypatch):
+    at = round_app(monkeypatch)
+    assert any("Board" in m.value for m in at.markdown)
+    button(at, "fs_enter").click().run()
+    assert not at.exception
+    assert not any(m.value == "**Board**" for m in at.markdown)
+    assert any("Latest post" in m.value for m in at.markdown)   # the one-line ticker
+    assert len(at.tabs) == 0 and len(at.slider) == 1
+    button(at, "fs_exit").click().run()
+    assert not at.exception
+    assert any(m.value == "**Board**" for m in at.markdown)
