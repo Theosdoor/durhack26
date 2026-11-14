@@ -260,7 +260,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -270,7 +270,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     }
    ],
    "pots": [
@@ -334,7 +334,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -344,7 +344,7 @@
      ],
      "holding": "onion",
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     }
    ],
    "pots": [
@@ -599,7 +599,7 @@
      ],
      "holding": "onion",
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -686,7 +686,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -1120,7 +1120,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     }
    ],
    "pots": [
@@ -1196,7 +1196,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     }
    ],
    "pots": [
@@ -1292,7 +1292,7 @@
      ],
      "holding": "onion",
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -1391,7 +1391,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -1715,7 +1715,7 @@
      ],
      "holding": "dish",
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -1777,7 +1777,7 @@
      ],
      "holding": "dish",
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -2503,7 +2503,7 @@
      ],
      "holding": "dish",
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -2571,7 +2571,7 @@
      ],
      "holding": "dish",
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -2826,7 +2826,7 @@
      ],
      "holding": "dish",
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -2906,7 +2906,7 @@
      ],
      "holding": "soup",
      "plan": [],
-     "status": "acting"
+     "status": "deciding"
     },
     {
      "name": "Tango",
@@ -3173,7 +3173,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     }
    ],
    "pots": [
@@ -3235,7 +3235,7 @@
      ],
      "holding": null,
      "plan": [],
-     "status": "idle"
+     "status": "deciding"
     }
    ],
    "pots": [

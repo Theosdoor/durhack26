@@ -40,6 +40,19 @@ def test_pot_states_render():
     ET.fromstring(render_svg(REP.header, by_state["empty"][0]))
 
 
+def test_split_room_middle_counters_get_pass_through_style():
+    from undercooked.sprites import STRIP, T, is_pass_through
+
+    rows = REP.header.map   # split_room: column 2 is the wall with three hand-over counters
+    svg = render_svg(REP.header, FRAMES[0])
+    assert svg.count("data-tile='pass'") == 3
+    for y in (1, 2, 3):
+        assert rows[y][2] == "X" and is_pass_through(rows, 2, y)
+    for x, y in [(0, 0), (2, 0), (4, 0), (2, 4), (4, 4), (4, 2)]:
+        assert not is_pass_through(rows, x, y)
+    assert f"<rect x='{2 * T}' y='{STRIP + T}' width='{T}' height='{T}' fill='#8997a4'/>" in svg
+
+
 def test_orders_and_urgency():
     f = next(f for f in FRAMES if f.orders)
     o = f.orders[0]

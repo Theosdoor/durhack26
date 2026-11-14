@@ -44,6 +44,8 @@ class Header(BaseModel):
     epoch: int = 1
     round_s: int
     rounds: int
+    cook_s: int = 20               # seconds a full pot cooks (config.cook_s); viewers draw progress from it
+    practice_s: int | None = None  # practice phase length, if practice ran
 
 
 class AgentState(BaseModel):

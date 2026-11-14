@@ -17,7 +17,6 @@ from undercooked.replay import AgentState, Frame, Header, OrderState, PotState
 
 T = 88            # tile size in SVG pixels (the SVG scales to its container via the viewBox)
 STRIP = 56        # height of the order strip above the map
-COOK_S = 20       # assumed full cook time, only used to size the progress ring
 AGENT_COLOURS = ["#0072B2", "#E69F00", "#CC79A7", "#009E73"]   # Okabe-Ito: blue, orange, pink, green
 INK = "#3a2616"   # dark brown used for outlines
 ONION = "#d98c3f"
@@ -41,12 +40,41 @@ def pill(cx: float, cy: float, text: str, size: int = 12, fg: str = "#ffffff", b
             f"text-anchor='middle' font-family='{FONT}'>{esc(text)}</text>")
 
 
-def onion(cx: float, cy: float, r: float) -> str:
-    """One onion seen from above: round body, a lighter highlight and a little green tip."""
-    return (f"<circle cx='{cx}' cy='{cy}' r='{r}' fill='{ONION}' stroke='{INK}' stroke-width='1.5'/>"
-            f"<circle cx='{cx - r * 0.35:.1f}' cy='{cy - r * 0.35:.1f}' r='{r * 0.3:.1f}' fill='#f6c98a'/>"
-            f"<path d='M{cx} {cy - r} l{r * 0.2:.1f} {-r * 0.4:.1f}' stroke='#5c8a3a' stroke-width='2' "
-            f"stroke-linecap='round'/>")
+DEFS = ("<defs>"
+        "<radialGradient id='uc-onion' cx='0.35' cy='0.35' r='0.85'>"
+        "<stop offset='0' stop-color='#f3c26b'/><stop offset='0.55' stop-color='#d9913f'/>"
+        "<stop offset='1' stop-color='#a85f24'/></radialGradient>"
+        "<linearGradient id='uc-steel' x1='0' y1='0' x2='0' y2='1'>"
+        "<stop offset='0' stop-color='#f1f5f8'/><stop offset='1' stop-color='#c3ced8'/></linearGradient>"
+        "</defs>")
+
+
+def onion(cx: float, cy: float, r: float, angle: float = 0) -> str:
+    """One onion: golden teardrop bulb with a pointed top, 3 green sprouts, root tuft, skin lines, highlight."""
+    sw = max(1.2, r * 0.14)
+    body = (f"M{cx:.1f} {cy - 1.25 * r:.1f} C{cx + 0.2 * r:.1f} {cy - 0.85 * r:.1f} {cx + 1.05 * r:.1f} {cy - 0.55 * r:.1f} "
+            f"{cx + 1.05 * r:.1f} {cy + 0.15 * r:.1f} C{cx + 1.05 * r:.1f} {cy + 0.8 * r:.1f} {cx + 0.5 * r:.1f} {cy + r:.1f} "
+            f"{cx:.1f} {cy + r:.1f} C{cx - 0.5 * r:.1f} {cy + r:.1f} {cx - 1.05 * r:.1f} {cy + 0.8 * r:.1f} "
+            f"{cx - 1.05 * r:.1f} {cy + 0.15 * r:.1f} C{cx - 1.05 * r:.1f} {cy - 0.55 * r:.1f} {cx - 0.2 * r:.1f} "
+            f"{cy - 0.85 * r:.1f} {cx:.1f} {cy - 1.25 * r:.1f} Z")
+    ty = cy - 1.25 * r
+    g = f"<g transform='rotate({angle} {cx:.1f} {cy:.1f})'>"
+    g += (f"<path d='M{cx - 0.25 * r:.1f} {cy + 0.95 * r:.1f} l{-0.2 * r:.1f} {0.3 * r:.1f} "
+          f"M{cx:.1f} {cy + r:.1f} l0 {0.35 * r:.1f} M{cx + 0.25 * r:.1f} {cy + 0.95 * r:.1f} l{0.2 * r:.1f} {0.3 * r:.1f}' "
+          f"stroke='{INK}' stroke-width='{sw * 0.8:.1f}' stroke-linecap='round' fill='none'/>")
+    for dx, dy in [(-0.45, -0.55), (0.0, -0.75), (0.45, -0.55)]:
+        leaf = f"M{cx:.1f} {ty + 0.1 * r:.1f} q{dx * r * 0.2:.1f} {dy * r * 0.8:.1f} {dx * r:.1f} {dy * r:.1f}"
+        g += (f"<path d='{leaf}' stroke='{INK}' stroke-width='{sw * 2.2:.1f}' stroke-linecap='round' fill='none'/>"
+              f"<path d='{leaf}' stroke='#5fa33a' stroke-width='{sw * 1.2:.1f}' stroke-linecap='round' fill='none'/>")
+    g += f"<path d='{body}' fill='url(#uc-onion)' stroke='{INK}' stroke-width='{sw:.1f}' stroke-linejoin='round'/>"
+    g += (f"<path d='M{cx:.1f} {ty + 0.15 * r:.1f} C{cx - 0.5 * r:.1f} {cy - 0.4 * r:.1f} {cx - 0.55 * r:.1f} {cy + 0.5 * r:.1f} "
+          f"{cx - 0.2 * r:.1f} {cy + 0.95 * r:.1f} M{cx:.1f} {ty + 0.15 * r:.1f} C{cx + 0.45 * r:.1f} {cy - 0.4 * r:.1f} "
+          f"{cx + 0.55 * r:.1f} {cy + 0.5 * r:.1f} {cx + 0.2 * r:.1f} {cy + 0.95 * r:.1f} M{cx:.1f} {ty + 0.2 * r:.1f} "
+          f"C{cx:.1f} {cy - 0.2 * r:.1f} {cx:.1f} {cy + 0.4 * r:.1f} {cx:.1f} {cy + 0.9 * r:.1f}' "
+          f"stroke='#8a4e1c' stroke-opacity='0.6' stroke-width='{max(0.8, sw * 0.6):.1f}' fill='none' stroke-linecap='round'/>")
+    g += (f"<ellipse cx='{cx - 0.5 * r:.1f}' cy='{cy - 0.15 * r:.1f}' rx='{0.2 * r:.1f}' ry='{0.38 * r:.1f}' "
+          f"fill='#fff3cf' fill-opacity='0.75' transform='rotate(18 {cx - 0.5 * r:.1f} {cy - 0.15 * r:.1f})'/>")
+    return g + "</g>"
 
 
 def plate(cx: float, cy: float, r: float, soup: bool = False) -> str:
@@ -90,14 +118,36 @@ def counter_tile(x0: int, y0: int) -> str:
             f"stroke='#c28f58' stroke-width='1.5' stroke-linecap='round'/>")
 
 
+def pass_counter_tile(x0: int, y0: int) -> str:
+    """Pass-through counter between rooms: cool steel top, darker lip and a two-way arrow mark."""
+    cx, cy = x0 + T / 2, y0 + 61   # mark sits low on the top face so an item on the counter doesn't hide it
+    return ("<g data-tile='pass'>"
+            f"<rect x='{x0}' y='{y0}' width='{T}' height='{T}' fill='#8997a4'/>"
+            f"<rect x='{x0 + 2}' y='{y0 + 2}' width='{T - 4}' height='{T - 14}' rx='5' fill='url(#uc-steel)' "
+            f"stroke='{INK}' stroke-width='2'/>"
+            f"<rect x='{x0 + 6}' y='{y0 + 5}' width='{T - 12}' height='4' rx='2' fill='#ffffff' fill-opacity='0.8'/>"
+            f"<rect x='{x0 + 2}' y='{y0 + T - 14}' width='{T - 4}' height='12' rx='4' fill='#6f7f8d' "
+            f"stroke='{INK}' stroke-width='2'/>"
+            f"<path d='M{cx - 16} {cy - 4} h30 m-6 -4 l6 4 l-6 4 M{cx + 16} {cy + 4} h-30 m6 -4 l-6 4 l6 4' "
+            f"fill='none' stroke='#4f6272' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/>"
+            "</g>")
+
+
+def is_pass_through(rows: list[str], x: int, y: int) -> bool:
+    """A counter with walkable floor on both sides (left+right, or above+below) hands items between rooms."""
+    def floor(fx: int, fy: int) -> bool:
+        return 0 <= fy < len(rows) and 0 <= fx < len(rows[fy]) and rows[fy][fx] == " "
+    return (floor(x - 1, y) and floor(x + 1, y)) or (floor(x, y - 1) and floor(x, y + 1))
+
+
 def crate_tile(x0: int, y0: int) -> str:
     """Onion crate: a wooden box with slats, full of onions."""
     s = counter_tile(x0, y0)
     s += (f"<rect x='{x0 + 9}' y='{y0 + 9}' width='{T - 18}' height='{T - 24}' rx='7' fill='#a8703a' "
           f"stroke='{INK}' stroke-width='2.5'/>"
           f"<rect x='{x0 + 15}' y='{y0 + 15}' width='{T - 30}' height='{T - 36}' rx='5' fill='#6b4423'/>")
-    for dx, dy, r in [(26, 28, 11), (46, 26, 11), (62, 32, 10), (34, 44, 11), (54, 46, 11)]:
-        s += onion(x0 + dx, y0 + dy, r)
+    for dx, dy, r, ang in [(27, 34, 11, -20), (60, 33, 11, 18), (44, 30, 11.5, 4), (34, 49, 10.5, 24), (55, 49, 10.5, -16)]:
+        s += onion(x0 + dx, y0 + dy, r, ang)
     return s
 
 
@@ -129,7 +179,7 @@ def hatch_tile(x0: int, y0: int) -> str:
     return s
 
 
-def pot_tile(x0: int, y0: int, pot: PotState | None) -> str:
+def pot_tile(x0: int, y0: int, pot: PotState | None, cook_s: int = 20) -> str:
     """Pot from above: counter base, dark pot with handles, onions inside, and a state overlay."""
     s = counter_tile(x0, y0)
     cx, cy, r = x0 + T / 2, y0 + 40, 27
@@ -145,11 +195,11 @@ def pot_tile(x0: int, y0: int, pot: PotState | None) -> str:
               f"<path d='M{cx - 10} {cy + 1} l7 8 l13 -16' fill='none' stroke='#14804a' stroke-width='5' "
               f"stroke-linecap='round' stroke-linejoin='round'/>")
     elif pot and pot.onions:
-        spots = [(-9, -6), (9, -6), (0, 9)]
-        for dx, dy in spots[:min(pot.onions, 3)]:
-            s += onion(cx + dx, cy + dy, 9)
+        spots = [(-9, -1, -18), (9, -1, 16), (0, 9, 4)]
+        for dx, dy, ang in spots[:min(pot.onions, 3)]:
+            s += onion(cx + dx, cy + dy, 11.5, ang)
     if state == "cooking" and pot:
-        frac = max(0.0, min(1.0, 1 - (pot.ready_in or 0) / COOK_S))
+        frac = max(0.0, min(1.0, 1 - (pot.ready_in or 0) / max(1, cook_s)))
         circ = 2 * 3.14159 * (r + 4)
         s += (f"<circle cx='{cx}' cy='{cy}' r='{r + 4}' fill='none' stroke='#2b2118' stroke-opacity='0.55' "
               f"stroke-width='5'/>"
@@ -174,22 +224,32 @@ def counter_item(item: str, x0: int, y0: int) -> str:
 # ---------------------------------------------------------------- chefs
 
 def chef(agent: AgentState, letter: str, colour: str, x0: int, y0: int) -> str:
-    """Top-down chef: coloured shoulders, head, white hat with the agent's letter, name pill on top."""
-    cx, cy = x0 + T / 2, y0 + 46
-    s = (f"<ellipse cx='{cx}' cy='{cy + 14}' rx='30' ry='17' fill='{colour}' stroke='{INK}' stroke-width='2.5'/>"
-         f"<circle cx='{cx}' cy='{cy}' r='19' fill='#f7d3b0' stroke='{INK}' stroke-width='2.5'/>"
-         # hat: three puffs and a rim, drawn over the head
-         f"<circle cx='{cx - 9}' cy='{cy - 4}' r='9' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
-         f"<circle cx='{cx + 9}' cy='{cy - 4}' r='9' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
-         f"<circle cx='{cx}' cy='{cy - 9}' r='11' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
-         f"<circle cx='{cx}' cy='{cy - 4}' r='9.5' fill='#ffffff'/>"
-         f"<text x='{cx}' y='{cy + 1}' font-size='15' font-weight='800' fill='{colour}' text-anchor='middle' "
-         f"font-family='{FONT}'>{esc(letter)}</text>")
+    """Top-down chef: shadow, coloured shoulders, face under a puffy 3-bump hat with a lettered band, two hands."""
+    cx, cy = x0 + T / 2, y0 + 48
+    skin = "#f7d3b0"
+    s = (f"<ellipse cx='{cx}' cy='{cy + 24}' rx='34' ry='11' fill='#000000' fill-opacity='0.22'/>"   # drop shadow
+         f"<ellipse cx='{cx}' cy='{cy + 17}' rx='32' ry='16' fill='{colour}' stroke='{INK}' stroke-width='2.5'/>"
+         f"<path d='M{cx - 22} {cy + 12} q22 -8 44 0' stroke='#ffffff' stroke-opacity='0.35' stroke-width='3' "
+         f"fill='none' stroke-linecap='round'/>"
+         f"<circle cx='{cx}' cy='{cy + 3}' r='16' fill='{skin}' stroke='{INK}' stroke-width='2.5'/>"
+         # hat: three bumps, then a coloured band carrying the letter
+         f"<circle cx='{cx - 11}' cy='{cy - 11}' r='9' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
+         f"<circle cx='{cx + 11}' cy='{cy - 11}' r='9' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
+         f"<circle cx='{cx}' cy='{cy - 16}' r='10' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
+         f"<rect x='{cx - 18}' y='{cy - 12}' width='36' height='10' fill='#ffffff'/>"
+         f"<rect x='{cx - 18}' y='{cy - 9}' width='36' height='11' rx='4' fill='{colour}' stroke='{INK}' stroke-width='2'/>"
+         f"<text x='{cx}' y='{cy - 0.5}' font-size='11' font-weight='800' fill='#ffffff' text-anchor='middle' "
+         f"font-family='{FONT}'>{esc(letter)}</text>"
+         # face under the brim: eyes, rosy cheeks, small smile
+         f"<circle cx='{cx - 6}' cy='{cy + 7}' r='2' fill='{INK}'/><circle cx='{cx + 6}' cy='{cy + 7}' r='2' fill='{INK}'/>"
+         f"<circle cx='{cx - 11}' cy='{cy + 11}' r='3.2' fill='#f08a8a' fill-opacity='0.65'/>"
+         f"<circle cx='{cx + 11}' cy='{cy + 11}' r='3.2' fill='#f08a8a' fill-opacity='0.65'/>"
+         f"<path d='M{cx - 4} {cy + 11} q4 4 8 0' stroke='{INK}' stroke-width='1.8' fill='none' stroke-linecap='round'/>")
+    if agent.holding:   # carried item sits between the two hands, at the front
+        s += item_icon(agent.holding, cx, cy + 25, 10)
+    for hx in (cx - 20, cx + 20):   # two small hands at the front
+        s += f"<circle cx='{hx}' cy='{cy + 25}' r='6' fill='{skin}' stroke='{INK}' stroke-width='2'/>"
     s += pill(cx, y0 + 11, agent.name, 11, "#ffffff", colour)
-    if agent.holding:   # carried item sits in front (bottom right), on a white disc
-        hx, hy = cx + 26, y0 + T - 18
-        s += (f"<circle cx='{hx}' cy='{hy}' r='16' fill='#ffffff' stroke='{INK}' stroke-width='2'/>"
-              + item_icon(agent.holding, hx, hy, 12))
     if agent.status == "deciding":   # thought bubble: big bubble with dots and two small trail circles
         bx, by = cx + 26, y0 + 28
         s += (f"<circle cx='{bx - 12}' cy='{by + 14}' r='2.5' fill='#ffffff' stroke='{INK}' stroke-width='1.2'/>"
@@ -234,12 +294,12 @@ def render_svg(header: Header, frame: Frame) -> str:
     cols = max(len(r) for r in rows)
     width, height = cols * T, STRIP + len(rows) * T
     pots = {tuple(p.pos): p for p in frame.pots}
-    parts = [order_strip(frame.orders, frame.t, width)]
+    parts = [DEFS, order_strip(frame.orders, frame.t, width)]
     for y, line in enumerate(rows):
         for x, ch in enumerate(line.ljust(cols)):
             x0, y0 = x * T, STRIP + y * T
             if ch == "X":
-                parts.append(counter_tile(x0, y0))
+                parts.append(pass_counter_tile(x0, y0) if is_pass_through(rows, x, y) else counter_tile(x0, y0))
             elif ch == "O":
                 parts.append(crate_tile(x0, y0))
             elif ch == "D":
@@ -247,7 +307,7 @@ def render_svg(header: Header, frame: Frame) -> str:
             elif ch == "S":
                 parts.append(hatch_tile(x0, y0))
             elif ch == "P":
-                parts.append(pot_tile(x0, y0, pots.get((x, y))))
+                parts.append(pot_tile(x0, y0, pots.get((x, y)), header.cook_s))
             else:
                 parts.append(floor_tile(x, y, x0, y0))
             item = frame.counters.get(f"{x},{y}")
