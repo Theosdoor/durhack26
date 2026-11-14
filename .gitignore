@@ -12,3 +12,4 @@ wheels/
 # Secrets and run outputs
 .env
 logs/
+share/
