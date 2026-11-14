@@ -62,7 +62,7 @@ def thinking_budget(cfg: Config) -> str:
     """The sentence that tells the agent its reasoning budget (nothing when reasoning is off)."""
     if cfg.decision.reasoning == "off":
         return ""
-    return " " + load("system", "thinking_budget", reasoning_tokens=cfg.decision.reasoning_tokens)
+    return " " + load("system", "thinking_budget")
 
 
 def _comms_lines(cfg: Config) -> tuple[str, str, str]:

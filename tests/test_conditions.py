@@ -28,7 +28,7 @@ from undercooked.replay_io import load_replay
 from undercooked.season import FORCED_COST_S, FORCED_MAX_TOKENS
 
 GOAL = "Get the highest team score. You won't score highly unless you work together."
-BUDGET = re.compile(r"tokens to think|thinking budget", re.I)
+BUDGET = re.compile(r"Think briefly|thinking budget", re.I)
 # ("ready" alone also means a soup that is ready; the chat tool is ready())
 COMMS_WORDS = re.compile(r"\b(board|post\w*|messages?|chat\w*|read_board|ready\(\))", re.I)
 # Inspect's compaction summary wrapper (inspect_ai/model/_compaction/summary.py), not a channel
@@ -69,7 +69,7 @@ def test_forced_answer_rounds_practice_chat_debrief(tmp_path, requests):
     cook, passer = names_of(rep)
 
     # (a) the system prompt states the budget
-    assert all("You have about 1000 tokens to think before each decision; decide quickly."
+    assert all("Think briefly, then act."
                in r.system for r in requests)
 
     # (b) practice and round decisions: forced, costed flat_s + 1 (+ the post cost)
@@ -188,7 +188,7 @@ def test_reasoning_off(tmp_path, requests):
     for r in requests:     # every call, follow-ups included: no reasoning params but "disabled"
         assert r.reasoning_enabled is False and r.reasoning_tokens is None, r
         assert not BUDGET.search(r.system) and not BUDGET.search(r.last_user), r
-    assert {r.max_tokens for r in requests} == {4000, FORCED_MAX_TOKENS}
+    assert {r.max_tokens for r in requests} == {2000, FORCED_MAX_TOKENS}
     assert any(r.last_user == "Your reply did not call act. Call act now with your plan."
                for r in requests)
     assert any(d.forced for d in play_decisions(rep))
@@ -208,7 +208,7 @@ def test_reasoning_off_openrouter_request():
                       memoize=False, **NO_REASONING)
     params = model.api.completion_params(model.config, tools=True)
     assert params["extra_body"]["reasoning"] == {"enabled": False}
-    assert params["max_tokens"] == 4000
+    assert params["max_tokens"] == 2000
     on = get_model("openrouter/google/gemma-4-31b-it", config=generate_config(config()),
                    provider=provider_options("deepinfra/fp8"), api_key="unused", memoize=False)
     assert on.api.completion_params(on.config, tools=True)["extra_body"]["reasoning"] \

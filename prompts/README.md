@@ -111,3 +111,20 @@ starting with `Board:` when there is no board, so keep that prefix on `board_unr
 The engine's plan-result words (`Last plan: done`, `failed: <reason>`) and parse errors come from
 `engine/game.py` and `engine/actions.py`; the map is drawn by `engine/text.py`; a board post is
 formatted `[chat] Name: text` or `[t=12s] Name: text` by `board.py`. These stay in code.
+
+## Sections added on the `levels` branch
+
+Appended at the end of their files (the tables above are unchanged; this list completes them).
+
+| File | Section | Used when | Placeholders |
+|---|---|---|---|
+| `system.md` | `practice_finish_note` | practice on (after the practice sentence in `season`) | none |
+| `system.md` | `rules_recipe`, `rules_minimal`, `rules_minimal_hint` | config `rules` other than full: replace the recipe and orders paragraphs of `kitchen_rules` and the `interact_table` | none |
+| `system.md` | `thinking_budget` (changed) | reasoning: on; now "Think briefly, then act." | none (no more `{reasoning_tokens}`) |
+| `messages.md` | `forced_notice` | the next decision after a forced answer | `{seconds}` 1 |
+| `messages.md` | `round_start.unseen_chat` | comms planning_only: first round message, if the teammate posted after your last chat turn | `{posts}` |
+| `tools.md` | `finish_practice.description`, `finish_practice.result` | practice decisions only | none |
+| `tools.md` | `act.description_no_recipe` | config `rules` other than full (example plan without the recipe) | `{max_len}` |
+| `state.md` | `order_item_minimal` | rules minimal / minimal_hint: the order line names no dish | `{due_t}` |
+
+With `rules` other than full, the chat's first turn leaves out `orders_rules`.
