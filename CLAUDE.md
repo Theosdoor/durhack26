@@ -6,7 +6,9 @@ The design lives in the "Implementation plan" tab of the team's Claude Doc (summ
 
 ## Commands
 - Tests (the gate; fast, no network): `uv run pytest -q`
-- Run a season: `uv run undercooked run configs/split_room.yaml`
+- Run a season: `uv run undercooked run configs/split_room.yaml` (every option, with its default:
+  configs/template.yaml; several levels: `levels:` in the config or `--levels a,b`)
+- Bot tuning per level: `uv run python analysis/bot_tuning.py`
 - Viewer: `uv run undercooked view logs/<file>.eval`
 - Always `uv run`, never bare `python`.
 
