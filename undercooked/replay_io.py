@@ -16,14 +16,22 @@ from undercooked.replay import Header, Replay
 KITCHEN = "kitchen"
 
 
-def replays_from_eval(path: str | Path) -> list[Replay]:
-    """Every season in the log, ordered by level (the config's `levels` order, else by name),
-    then epoch."""
+def eval_status(path: str | Path) -> str:
+    """The log's status ("success", "started", "error", "cancelled"), from the header only."""
+    from inspect_ai.log import read_eval_log
+
+    return read_eval_log(str(path), header_only=True).status
+
+
+def eval_seasons(path: str | Path) -> list[tuple[Replay, dict[str, float] | None]]:
+    """Every season in the log as (Replay, scorer values or None), ordered by level (the config's
+    `levels` order, else by name), then epoch. The scorer values are the first dict-valued score
+    in sample.scores (see task.season_values)."""
     from inspect_ai.event import InfoEvent
     from inspect_ai.log import read_eval_log
 
     log = read_eval_log(str(path), resolve_attachments=True)
-    out: list[Replay] = []
+    out: list[tuple[Replay, dict[str, float] | None]] = []
     for sample in log.samples or []:
         data = [ev.data for ev in sample.events
                 if isinstance(ev, InfoEvent) and ev.source == KITCHEN]
@@ -31,16 +39,26 @@ def replays_from_eval(path: str | Path) -> list[Replay]:
             continue
         header = Header.model_validate(data[0])
         header.epoch = sample.epoch
-        out.append(Replay.model_validate({"header": header.model_dump(), "records": data[1:]}))
+        rep = Replay.model_validate({"header": header.model_dump(), "records": data[1:]})
+        values = next((dict(sc.value) for sc in (sample.scores or {}).values()
+                       if isinstance(sc.value, dict)), None)
+        out.append((rep, values))
     if not out:
         raise ValueError(f"no kitchen records in {path}")
     order = ((log.eval.metadata or {}).get("config") or {}).get("levels") or []
 
-    def key(r: Replay) -> tuple:
+    def key(item: tuple[Replay, dict | None]) -> tuple:
+        r = item[0]
         lv = r.header.level
         return (order.index(lv) if lv in order else len(order), lv, r.header.epoch)
 
     return sorted(out, key=key)
+
+
+def replays_from_eval(path: str | Path) -> list[Replay]:
+    """Every season in the log, ordered by level (the config's `levels` order, else by name),
+    then epoch."""
+    return [rep for rep, _ in eval_seasons(path)]
 
 
 def load_replay(path: str | Path) -> list[Replay]:

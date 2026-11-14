@@ -1,6 +1,8 @@
 """Replay viewer for Undercooked (Streamlit).
 
-Run:  uv run streamlit run undercooked/viewer.py -- <replay.json | log.eval>
+Run:  uv run streamlit run undercooked/viewer.py -- <replay.json | log.eval | directory of .eval logs>
+A directory (searched recursively) opens the many-runs mode: finished logs only, one tab per
+condition (rules + comms + agent models) after an "All conditions" overview.
 The path may also come from the UNDERCOOKED_REPLAY env var or the sidebar text box.
 
 Reads `Replay` objects only (see undercooked/replay.py).
@@ -20,9 +22,11 @@ import streamlit as st
 # `streamlit run undercooked/viewer.py` puts undercooked/ on sys.path, not the repo root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from undercooked.dashboard import (  # noqa: E402
+    OVERVIEW, Season, group_conditions, overview_table, season_labels, summary_table)
 from undercooked.engine import Kitchen  # noqa: E402
 from undercooked.replay import DecisionRecord, Event, Frame, Post, Replay  # noqa: E402
-from undercooked.replay_io import load_replay  # noqa: E402
+from undercooked.replay_io import eval_seasons, eval_status, load_replay  # noqa: E402
 from undercooked.sprites import render_svg  # noqa: E402
 
 # Colours are semi-transparent and text is never set explicitly, so the page's own text
@@ -210,6 +214,7 @@ FULLSCREEN_CSS = """<style>
 [data-testid="stMetricValue"] {font-size:1.5rem !important} [data-testid="stMetric"] {gap:0 !important}
 [data-testid="stVerticalBlock"] {gap:0.35rem !important}
 [data-testid="stSlider"] label {display:none !important}
+.st-key-cond, .st-key-summary {display:none !important}
 svg[aria-label="Kitchen map"] {max-width:none !important; width:100% !important; max-height:calc(100vh - 290px)}
 </style>"""
 
@@ -324,26 +329,95 @@ def cached_load(path: str) -> list[Replay]:
     return load_replay(path)
 
 
+@st.cache_data(show_spinner=False)
+def cached_status(path: str, mtime: float) -> str:
+    """Log status from the header only; keyed on mtime so a finished log is picked up on refresh."""
+    return eval_status(path)
+
+
+@st.cache_data(show_spinner=False)
+def cached_seasons(path: str, mtime: float) -> list[tuple[Replay, dict[str, float] | None]]:
+    return eval_seasons(path)
+
+
+def load_directory(directory: str) -> tuple[list[Season], list[str]]:
+    """Every finished .eval under `directory` as seasons; running, failed or unreadable logs are
+    skipped (and named in the second result)."""
+    seasons: list[Season] = []
+    skipped: list[str] = []
+    for f in sorted(Path(directory).rglob("*.eval")):
+        try:
+            mtime = f.stat().st_mtime
+            status = cached_status(str(f), mtime)
+            if status != "success":
+                skipped.append(f"{f.name} ({status})")
+                continue
+            seasons += [Season(f, r.header.level, r.header.epoch, r, sc)
+                        for r, sc in cached_seasons(str(f), mtime)]
+        except Exception as exc:   # a log still being written can be half a zip file
+            skipped.append(f"{f.name} ({type(exc).__name__})")
+    return seasons, skipped
+
+
+def pick_condition(seasons: list[Season]) -> tuple[str, dict[str, list[Season]]]:
+    """Segmented control across the top; only the selected condition renders."""
+    groups = group_conditions(seasons)
+    options = [OVERVIEW, *groups]
+    if st.session_state.get("cond") not in options:
+        st.session_state.pop("cond", None)
+    choice = st.segmented_control("Condition", options, default=OVERVIEW, key="cond",
+                                  label_visibility="collapsed", width="stretch")
+    return choice or OVERVIEW, groups
+
+
 def main() -> None:
     st.set_page_config(page_title="Undercooked replay", layout="wide")
     st.title("Undercooked replay")
 
     # ---- sidebar: file, season, phase, agent filter
-    path = st.sidebar.text_input("Replay file (.json / .eval)", value=initial_path(), key="replay_path")
+    path = st.sidebar.text_input("Replay file or directory (.json / .eval)", value=initial_path(), key="replay_path")
     if not path:
-        st.info("Give a replay file in the sidebar, or run: streamlit run undercooked/viewer.py -- <path>")
+        st.info("Give a replay file or a directory of logs in the sidebar, or run: "
+                "streamlit run undercooked/viewer.py -- <path>")
         return
+    many = Path(path).is_dir()
     try:
-        replays = cached_load(path)
+        if many:
+            seasons, skipped = load_directory(path)
+        else:
+            replays = cached_load(path)
+            seasons = [Season(Path(path), r.header.level, r.header.epoch, r) for r in replays]
+            skipped = []
     except (OSError, ValueError, NotImplementedError) as exc:
         st.error(f"Could not load {path}: {exc}")
         return
+    cond_label = ""
+    if many:
+        if not seasons:
+            st.warning(f"No finished .eval logs in {path}" + (f" (skipped: {', '.join(skipped)})" if skipped else ""))
+            return
+        cond_label, groups = pick_condition(seasons)
+        st.sidebar.caption(f"{len(seasons)} seasons from {len({s.file for s in seasons})} finished logs"
+                           + (f"; skipped {len(skipped)} running or failed" if skipped else ""))
+        if skipped:
+            with st.sidebar.expander("Skipped logs"):
+                st.write("\n".join(f"- {x}" for x in skipped))
+        if cond_label == OVERVIEW:
+            st.caption("Mean total score per condition and level, as mean (number of seasons).")
+            st.dataframe(overview_table(groups), use_container_width=True, hide_index=True)
+            return
+        seasons = groups[cond_label]
+        if not st.session_state.get("fs_on"):
+            with st.container(key="summary"):
+                st.dataframe(summary_table(seasons), use_container_width=True, hide_index=True)
     # a multi-level run has one season per level and epoch: pick the level, then the season
-    levels = list(dict.fromkeys(r.header.level for r in replays))
+    levels = list(dict.fromkeys(s.level for s in seasons))
     level = st.sidebar.selectbox("Level", levels) if len(levels) > 1 else levels[0]
-    replays = [r for r in replays if r.header.level == level]
-    epoch = st.sidebar.selectbox("Season (epoch)", [r.header.epoch for r in replays])
-    rep = next(r for r in replays if r.header.epoch == epoch)
+    seasons = [s for s in seasons if s.level == level]
+    labels = season_labels(seasons)
+    epoch = st.sidebar.selectbox("Season (epoch)", labels)
+    season = seasons[labels.index(epoch)]
+    rep = season.rep
     phases = rep.phases()
     # Open on the first round (briefing has nothing to draw); fall back to the first phase.
     first_round = next((i for i, (ph, _) in enumerate(phases) if ph == "round"), 0)
@@ -372,7 +446,7 @@ def main() -> None:
     fs = bool(st.session_state.get("fs_on")) and bool(frames)   # full screen only makes sense with a map
     ctx = dict(rep=rep, frames=frames, decisions=decisions, posts=posts, agents=agents, graphics=graphics,
                hi=rep.header.round_s if phase == "round" else max((f.t for f in frames), default=0),
-               key=f"t_{level}_{epoch}_{phase}_{rnd}", fs=fs)   # per-phase key so each phase keeps its own position
+               key=f"t_{cond_label}_{season.file.name}_{level}_{epoch}_{phase}_{rnd}", fs=fs)   # per-phase key so each phase keeps its own position
     if st.session_state.get("_phase_key") != ctx["key"]:
         st.session_state["_phase_key"] = ctx["key"]
         st.session_state["playing"] = False   # never carry playback into another phase
