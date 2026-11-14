@@ -32,6 +32,7 @@ class AgentInfo(BaseModel):
     letter: str                    # map letter = first letter of name
     model: str                     # e.g. openrouter/deepseek/deepseek-v4.1-flash
     provider: str | None = None    # pinned OpenRouter endpoint tag, e.g. "baidu/fp8"
+    seat: int = 1                  # start position (level digit) this season; seeded per season
 
 
 class Header(BaseModel):
@@ -96,7 +97,11 @@ class Event(BaseModel):
     Keys used in `data` (include those that apply): item ("onion"|"dish"|"soup"),
     at ("x,y" of the tile acted on), pot (pot id), onions (count after the action),
     order (order id), points (score change, +reward or -penalty), reason (why it failed),
-    action (the plan step as a string), duration_s (phase_end only)."""
+    action (the plan step as a string), duration_s (phase_end only), plan (decision_land: the
+    plan that runs, as in DecisionRecord.plan), started_t (decision_land), first (chat
+    phase_start: name of the agent who speaks first), turn_limit (chat phase_end: True if the
+    turn cap ended the chat), ready and posts (chat phase_end), score, served and missed (round
+    phase_end)."""
 
     kind: Literal["event"] = "event"
     phase: Phase
@@ -119,7 +124,11 @@ class Post(BaseModel):
 
 
 class DecisionRecord(BaseModel):
-    """One model decision by one agent (a decision may include reading the board)."""
+    """One model decision by one agent (a decision may include reading the board).
+
+    `post` is what the agent posted in this decision, whether or not it reached the board: a
+    decision still in flight when its phase ends never lands (`landed` False), so its post,
+    plan and note never take effect. The board is the Post records, not DecisionRecord.post."""
 
     kind: Literal["decision"] = "decision"
     phase: Phase
@@ -129,12 +138,16 @@ class DecisionRecord(BaseModel):
     agent: str
     reasoning: str | None = None   # model's reasoning text, if the provider returns it
     text: str | None = None        # model's visible text, if any
-    plan: list[str] = []
+    plan: list[str] = []           # the plan that runs: act(plan) split into actions (";", ",",
+                                   # newlines), cut to max_plan_len, up to the first invalid
+                                   # action; [] if rejected or no act()
+    plan_sent: list[str] = []      # act(plan) exactly as the model sent it
     post: str | None = None
     note: str | None = None
     read_board: bool = False
     ready: bool = False            # chat phase: agent called ready()
     cutoff: bool = False           # reply had no act() in a round
+    landed: bool = True            # False: still in flight when the phase ended (no effect)
     input_tokens: int | None = None
     output_tokens: int | None = None
     reasoning_tokens: int | None = None

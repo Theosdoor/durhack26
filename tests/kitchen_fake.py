@@ -6,6 +6,11 @@ room) takes them, cooks in pot_1 and serves. Along the way they post, read the b
 write notes and, once, reply without act() (a cutoff). Responses report provider "FakeCloud" in
 the ModelCall, the way OpenRouter reports its served provider.
 
+Seats are shuffled per season (season.assign_seats), so in the chat and the rounds a script plays
+the job of the room it starts in (`job`: cook in the right room, passer in the left), whatever
+its model name says; the model name ("cook" / "passer") still picks its practice and debrief
+behaviour (the cook's practice cutoff, the passer's rejected first practice plan).
+
 Flavours, added to the model name with "+" (e.g. `kitchenfake/cook+chaos+tagged`):
 - chaos: decisions vary with a hash of the state text: posts of 1-25 words (1-3 s), cutoffs
   with and without a post, notes, rejected plans, waits of 1-4 s, so landing times vary;
@@ -141,6 +146,18 @@ def passer_plan(state: str) -> list[str]:
     return ["wait(2)"]
 
 
+_SEAT = re.compile(r"^You \(\w+, \w\):? (?:at|start at) \((\d+),\d+\)", re.M)
+
+
+def job(role: str, messages: list[ChatMessage]) -> str:
+    """"cook" if the latest position shown (state or chat overview) is in split_room's right
+    room (x >= 3), else "passer"; the model's role if no position was shown yet."""
+    for m in reversed(messages):
+        if m.role == "user" and (hit := _SEAT.search(m.text)):
+            return "cook" if int(hit.group(1)) >= 3 else "passer"
+    return role
+
+
 def _hash(text: str) -> int:
     return int.from_bytes(hashlib.sha256(text.encode()).digest()[:8], "big")
 
@@ -158,6 +175,7 @@ def game_second(text: str) -> tuple[int | None, str]:
 def chaos(role: str, messages: list[ChatMessage], tools: list[str], text: str) -> ModelOutput:
     """A practice or round decision that varies with the state text (see the module doc)."""
     h = _hash(role + text)
+    work = job(role, messages)
     kind = h % 20
     since = 0                                    # generations so far in this decision
     for m in reversed(messages):
@@ -169,7 +187,7 @@ def chaos(role: str, messages: list[ChatMessage], tools: list[str], text: str) -
     elif "Practice" in text:
         plan = [f"wait({1 + h // 20 % 4})"]
     else:
-        plan = cook_plan(text) if role == "cook" else passer_plan(text)
+        plan = cook_plan(text) if work == "cook" else passer_plan(text)
     words = " ".join(f"w{j}" for j in range(1 + h // 80 % 25))      # 1-25 words: 1-3 s
     can_post = "post" in tools
     if since == 0:
@@ -197,7 +215,7 @@ def script(role: str, messages: list[ChatMessage], tools: list[str],
         return reply("Summary: I am a cook; we pass onions and a dish over counter (2,1).")
     text = last_user(messages)
     if "ready" in tools:                                    # chat turn
-        if role == "cook":
+        if job(role, messages) == "cook":
             if "Posts left: 2" in text:
                 return reply(calls=[("post", {"message": CHAT_POST})])
             return reply(calls=[("ready", {})])
@@ -216,6 +234,7 @@ def script(role: str, messages: list[ChatMessage], tools: list[str],
             return reply(calls=[("act", {"plan": [BAD_ACTION]})])                # rejected
         return reply(calls=[("act", {"plan": ["wait(5)"]})])
     # a round decision
+    role = job(role, messages)
     after_tool = messages[-1].role == "tool"
     if role == "passer" and re.search(r"^Board: \d+ unread post", text, re.M) and not after_tool:
         return reply(calls=[("read_board", {})])

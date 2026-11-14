@@ -1,14 +1,23 @@
 """Game state and rules: one `tick()` = one game second.
 
 Per tick: (0) every agent picks its step for this second from its plan (walk one tile, interact,
-or stand still); (1) interactions resolve in agent order; (2) movement resolves together (same
-target tile, swaps, or walking into a standing agent: the movers don't move, `bump`); (3) pots
-cook; (4) orders expire and arrive. `t` counts seconds since the phase started: events returned
-by `tick()` carry the new `t`, the same `t` as the frame taken right after it.
+or stand still); (1) interactions resolve: first every "give" (put an item on a counter, an onion
+in a pot, a soup in the hatch), then every "take" (pick up from a counter, take from a crate or
+rack, plate a soup), so a same-second handover over a counter works whoever is who;
+(2) movement resolves together (same target tile, swaps, or walking into a standing agent: the
+movers don't move, `bump`); (3) pots cook; (4) orders expire and arrive (none at or after the
+phase's end). `t` counts seconds since the phase started: events returned by `tick()` carry the
+new `t`, the same `t` as the frame taken right after it.
+
+No agent has fixed priority. Whatever still depends on order (step planning, two agents in the
+same interaction pass contending for one item, tile or order, and who gives way after a clash)
+uses a fresh order each second, drawn from the game's own RNG (`seed`), so a game is
+deterministic for a given seed but no list index wins ties systematically.
 """
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass, field
 from typing import Literal
 
@@ -64,7 +73,9 @@ class Game:
     """One phase (a practice or a round) of play in one kitchen."""
 
     def __init__(self, kitchen: Kitchen, agent_names: list[str], cfg: Config, *,
-                 phase: Phase = "round", round: int = 1):
+                 phase: Phase = "round", round: int = 1, seed: int | str | None = None):
+        """`agent_names[i]` starts at start position i + 1. `seed` seeds the per-second tie
+        order (default: from cfg.seed, phase and round)."""
         if not agent_names:
             raise ValueError("need at least one agent")
         if len(set(agent_names)) != len(agent_names):
@@ -74,6 +85,8 @@ class Game:
         self.phase: Phase = phase
         self.round = round
         self.t = 0
+        self.seed = seed if seed is not None else f"{cfg.seed}|{phase}|{round}"
+        self.rng = random.Random(self.seed)
         self.duration = cfg.practice_s if phase == "practice" else cfg.round_s
         self.agents: list[Agent] = []
         for i, name in enumerate(agent_names):
@@ -91,6 +104,7 @@ class Game:
         self._pending: list[Event] = []
         self._events: list[Event] = []
         self._just_started: set[str] = set()
+        self._rank: dict[str, int] = {}   # this second's tie order (set by tick)
         self._new_order()                           # first order at t=0
         self._pending, self._events = self._events, []
 
@@ -162,29 +176,34 @@ class Game:
         self._just_started: set[str] = set()
         self.t += 1
         start_pos = {a.name: a.pos for a in self.agents}
-        # (0) choose steps, in agent order. Path planning is asymmetric so that two agents never
-        # mirror each other's dodges forever: an agent avoids the tiles that earlier agents will
-        # occupy this second (and the tile of an earlier agent walking into its own tile, so no
-        # swaps), but only those later agents that will certainly stand still.
+        order = list(self.agents)            # this second's tie order (see the module doc)
+        self.rng.shuffle(order)
+        self._rank = {a.name: i for i, a in enumerate(order)}
+        # (0) choose steps, in this second's order. Path planning is asymmetric so that two
+        # agents never mirror each other's dodges forever: an agent avoids the tiles that earlier
+        # agents will occupy this second (and the tile of an earlier agent walking into its own
+        # tile, so no swaps), but only those later agents that will certainly stand still.
         steps: dict[str, tuple] = {}
         claims: dict[str, Pos] = {}
-        for i, a in enumerate(self.agents):
+        for i, a in enumerate(order):
             avoid: dict[Pos, str] = {}
-            for b in self.agents[:i]:
+            for b in order[:i]:
                 avoid[claims[b.name]] = b.name
                 if claims[b.name] == a.pos:
                     avoid[start_pos[b.name]] = b.name
-            for b in self.agents[i + 1:]:
+            for b in order[i + 1:]:
                 if self._will_stay(b):
                     avoid[b.pos] = b.name
             step = self._choose_step(a, avoid, start_pos)
             steps[a.name] = step
             claims[a.name] = step[1] if step[0] == "move" else a.pos
-        # (1) interactions, in agent order
-        for a in self.agents:
-            step = steps[a.name]
-            if step[0] == "interact":
-                self._interact(a, step[1])
+        # (1) interactions: all gives, then all takes, each pass in this second's order
+        acting = [(a, steps[a.name][1]) for a in order if steps[a.name][0] == "interact"]
+        gives = {a.name: self._gives(a, obj_id) for a, obj_id in acting}
+        for give_pass in (True, False):
+            for a, obj_id in acting:
+                if gives[a.name] == give_pass:
+                    self._interact(a, obj_id)
         # (2) movement
         self._move(steps, start_pos)
         # (3) pots cook
@@ -202,7 +221,7 @@ class Game:
                 self.score -= self.cfg.orders.penalty
                 self.missed += 1
                 self._emit("order_missed", None, order=o.id, points=-self.cfg.orders.penalty)
-        if self.t % self.cfg.orders.every_s == 0:
+        if self.t % self.cfg.orders.every_s == 0 and self.t < self.duration:
             self._new_order()
         out, self._events = self._events, []
         return out
@@ -352,6 +371,17 @@ class Game:
             return ("blocked", by, free_path[0], act)
         return ("stay",)
 
+    def _gives(self, a: Agent, obj_id: str) -> bool:
+        """True if this interaction hands an item over (counter put-down, onion into a pot,
+        serving); False if it takes one (counter pick-up, crate, rack, plating). Interactions
+        that will fail go where their kind would; failing changes nothing."""
+        kind = self.kitchen.objects[obj_id].kind
+        if kind == "counter":
+            return a.holding is not None
+        if kind == "pot":
+            return a.holding == "onion"
+        return kind == "hatch"
+
     def _interact(self, a: Agent, obj_id: str) -> None:
         act = a.plan[0]
         obj = self.kitchen.objects[obj_id]
@@ -473,11 +503,8 @@ class Game:
                            action=act.text())
                 if a.blocked >= BLOCKED_LIMIT:
                     self._fail(a, act, f"blocked by {by}")
-                elif same and self._index(a.name) > self._index(by):
-                    a.yield_to = by   # later agent gives way next second (avoids livelock)
-
-    def _index(self, name: str) -> int:
-        return next(i for i, a in enumerate(self.agents) if a.name == name)
+                elif same and self._rank[a.name] > self._rank[by]:
+                    a.yield_to = by   # later in this second's order: gives way next second
 
     def _new_order(self) -> None:
         if len(self.orders) >= self.cfg.orders.max_open:

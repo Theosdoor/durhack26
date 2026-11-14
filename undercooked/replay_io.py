@@ -1,8 +1,9 @@
 """Loading replays from disk: a Replay .json, or an Inspect .eval log (one Replay per sample/epoch).
 
 An .eval sample's replay is the InfoEvents with source "kitchen", in log order: the first is the
-Header, the rest are records. `served_by` is filled by the season solver from the ModelEvents of
-each decision (see season._served_by); the exporter takes it as logged.
+Header, the rest are records. `served_by` is filled by the season while it runs, from the raw
+response of each model call (providers.track_served_provider / served_providers, collected in
+season.Gen.add); the exporter takes it as logged.
 """
 
 from __future__ import annotations

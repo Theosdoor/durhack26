@@ -14,6 +14,7 @@ from typing import Callable
 from inspect_ai.tool import ToolDef
 
 from undercooked.board import MAX_POST_CHARS
+from undercooked.engine.actions import split_plan
 
 
 @dataclass
@@ -22,6 +23,8 @@ class Turn:
 
     plan: list[str] | None = None        # act(plan) as sent
     plan_error: str | None = None        # why the plan was rejected (None = accepted)
+    kept: list[str] | None = None        # the plan that will run: split into actions, cut to
+                                         # max_plan_len, up to the first invalid one; [] if rejected
     post: str | None = None
     note: str | None = None
     read_board: int = 0                  # read_board() calls
@@ -40,7 +43,9 @@ def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int)
         if turn.plan_error is not None:
             return (f"Plan rejected: {turn.plan_error}. You stand still and decide again when "
                     f"this decision lands.")
-        extra = f" Only the first {max_len} actions are kept." if len(plan) > max_len else ""
+        n = len(split_plan(plan))            # what the engine counts: ";", "," and newlines split
+        extra = (f" Your plan has {n} actions. Only the first {max_len} actions are kept."
+                 if n > max_len else "")
         return f"Plan accepted. It starts when this decision lands.{extra}"
 
     return ToolDef(

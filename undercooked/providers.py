@@ -121,17 +121,20 @@ def provider_options(pin: str) -> dict[str, Any]:
 
 
 def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
+    """The agent's Model. With a provider pinned in the config nothing is fetched (no blocking
+    GET), so `endpoints` is None; otherwise the endpoint list is fetched, kept in `endpoints`
+    (logged by the season solver) and the cheapest eligible endpoint is pinned."""
     config = generate_config(cfg)
     if not spec.model.startswith(OPENROUTER):
         model = track_served_provider(get_model(spec.model, config=config))
         return AgentModel(model, spec, spec.provider)
     model_id = spec.model[len(OPENROUTER):]
     endpoints, error = None, None
-    try:
-        endpoints = fetch_endpoints(model_id)
-    except Exception as e:   # only fatal when we must pick automatically
-        error = f"{type(e).__name__}: {e}"
-        if spec.provider is None:
+    if spec.provider is None:
+        try:
+            endpoints = fetch_endpoints(model_id)
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
             raise RuntimeError(f"cannot list endpoints for {model_id}: {error}") from e
     pin = spec.provider or pick_endpoint(endpoints or [], cfg.providers.min_quant)["tag"]
     model = track_served_provider(

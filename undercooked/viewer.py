@@ -144,12 +144,15 @@ def show_board(posts: list[Post], t: int, agents: list[str]) -> None:
 
 def decision_details(d: DecisionRecord) -> None:
     """Everything the viewer shows about one DecisionRecord."""
-    flags = [name for name, on in [("read_board", d.read_board), ("CUTOFF", d.cutoff), ("ready", d.ready)] if on]
+    flags = [name for name, on in [("read_board", d.read_board), ("CUTOFF", d.cutoff), ("ready", d.ready),
+                                   ("NOT LANDED (phase ended first; no effect)", not d.landed)] if on]
     st.caption(f"decided t={d.t}, lands t={d.lands_t} | tokens in/out/reasoning: "
                f"{d.input_tokens}/{d.output_tokens}/{d.reasoning_tokens} | served_by: {d.served_by} "
                + (f"| {', '.join(flags)}" if flags else ""))
     if d.plan:
         st.write("Plan: " + " > ".join(d.plan))
+    if d.plan_sent and d.plan_sent != d.plan:
+        st.write("Sent: " + " | ".join(d.plan_sent))
     if d.post:
         st.write(f"Post: {d.post}")
     if d.note:

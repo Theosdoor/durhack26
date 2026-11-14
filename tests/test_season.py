@@ -18,21 +18,33 @@ from tests import kitchen_fake as fake
 from undercooked.board import Board
 from undercooked.cli import main as cli
 from undercooked.config import NATO_NAMES, AgentSpec, Config
-from undercooked.prompts import CUTOFF_NOTICE
+from undercooked.engine import Kitchen
+from undercooked.prompts import cutoff_notice
 from undercooked.providers import pick_endpoint
 from undercooked.replay import DecisionRecord, Event, Frame, Header, Post, Replay
 from undercooked.replay_io import load_replay
-from undercooked.season import pick_names
+from undercooked.season import assign_seats, first_speaker, pick_names
 from undercooked.task import make_task
 
 VIEWER = Path(__file__).parent.parent / "undercooked" / "viewer.py"
 AGENTS = [AgentSpec(model="kitchenfake/cook"), AgentSpec(model="kitchenfake/passer")]
 
 
+def seed_where(seats: list[int], first: int) -> int:
+    """A seed whose epoch 1 gives these seats and this first speaker in chat 1."""
+    return next(s for s in range(1000)
+                if assign_seats(s, 1) == seats and first_speaker(s, 1, 1) == first)
+
+
+# agents[0] (the fake cook) starts in the pots-and-hatch room and speaks first in chat 1, so
+# "cook" below is both agents[0] and the seat-1 player; test_shuffled_seats covers the rest
+SEED = seed_where([1, 2], 0)
+
+
 def config(**kw) -> Config:
     base = dict(name="test_season", level="split_room", rounds=1, round_s=30, practice=True,
                 practice_s=20, chat_max_posts=2, epochs=1, cook_s=2, agents=AGENTS,
-                decision={"flat_s": 0, "post_words_per_s": 10})
+                decision={"flat_s": 0, "post_words_per_s": 10}, seed=SEED)
     return Config.model_validate({**base, **kw})
 
 
@@ -64,7 +76,8 @@ def test_export_and_header(season):
     assert all(e.data["kind"] != "header" for e in kitchen[1:])
     h = rep.header
     assert isinstance(h, Header) and h.epoch == 1 and h.level == "split_room" and h.round_s == 30
-    assert [a.name for a in h.agents] == pick_names(0, 1)
+    assert [a.name for a in h.agents] == pick_names(SEED, 1)
+    assert [a.seat for a in h.agents] == [1, 2]
     assert all(a.name in NATO_NAMES and a.letter == a.name[0] for a in h.agents)
     assert [a.model for a in h.agents] == ["kitchenfake/cook", "kitchenfake/passer"]
     assert h.map == ["XXXPX", "O X P", "O X X", "D X X", "XXXSX"]
@@ -145,9 +158,9 @@ def test_cutoff_and_rejected_plan(season):
     assert starts[:2] == [0, 1]                     # waited 1 s, then decided again
     cook_users = [m["content"] for m in log.samples[0].store["conversations"][cook]
                   if m["role"] == "user"]
-    assert sum(CUTOFF_NOTICE in u for u in cook_users) == 1
+    assert sum(cutoff_notice(1) in u for u in cook_users) == 1
     first = rep.select(DecisionRecord, "practice", 0, passer)[0]
-    assert first.plan == [fake.BAD_ACTION]
+    assert first.plan_sent == [fake.BAD_ACTION] and first.plan == []      # rejected: none runs
     land = next(e for e in rep.select(Event, "practice", 0, passer) if e.type == "decision_land")
     assert "pot_9" in land.data["reason"]
     conv = log.samples[0].store["conversations"][passer]
@@ -215,6 +228,35 @@ def test_cli_export(season, tmp_path):
     assert res.exit_code == 0, res.output
     again = Replay.model_validate_json(out.read_text())
     assert again.phases() == rep.phases() and len(again.records) == len(rep.records)
+
+
+def test_agents_never_see_model_or_provider_names(season):
+    log, _ = season
+    for conv in log.samples[0].store["conversations"].values():
+        for m in conv:
+            if m["role"] in ("system", "user", "tool"):
+                text = str(m["content"]).lower()
+                assert "kitchenfake" not in text and "fakecloud" not in text
+
+
+def test_shuffled_seats(tmp_path):
+    """agents[0] (the fake cook model) gets seat 2 (the onion/dish room) and agents[1] speaks
+    first: the header records the seats, the agents start at their seats' digits, the chat starts
+    with the drawn speaker, and the per-agent scores stay keyed by agent index (= model)."""
+    seed = seed_where([2, 1], 1)
+    log, [rep] = run_season(config(seed=seed, practice=False), tmp_path)
+    a0, a1 = rep.header.agents
+    assert (a0.model, a0.seat, a1.model, a1.seat) == ("kitchenfake/cook", 2, "kitchenfake/passer", 1)
+    kitchen = Kitchen.load("split_room")
+    start = {a.name: tuple(a.pos) for a in rep.frames("round", 1)[0].agents}
+    assert start == {a0.name: kitchen.starts[2], a1.name: kitchen.starts[1]}
+    [chat_start] = [e for e in rep.select(Event, "chat", 1) if e.type == "phase_start"]
+    assert chat_start.data["first"] == a1.name
+    assert rep.select(DecisionRecord, "chat", 1)[0].agent == a1.name
+    assert rep.frames("round", 1)[-1].served >= 1       # the fakes play the seat they got
+    v = log.samples[0].scores["season_score"].value
+    assert v["posts_agent1"] == 2 and v["posts_agent0"] == 1      # agent1 has the cook's job
+    assert v["cutoffs_agent0"] == 0 and log.samples[0].store["undercooked"]["seats"] == [2, 1]
 
 
 # ------------------------------------------------------------------------ other settings

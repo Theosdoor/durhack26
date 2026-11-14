@@ -14,8 +14,18 @@ from undercooked.engine.text import map_lines
 
 GOAL = "Get the highest team score. You won't score highly unless you work together."
 
-CUTOFF_NOTICE = ("Your last reply did not call act(plan), so no plan was set and you stood "
-                 "still for 1 s.")
+CUTOFF_NOTICE = "Your last reply did not call act(plan), so no plan was set"
+
+
+def cutoff_notice(seconds: int) -> str:
+    """Told at the next decision after a cutoff that cost `seconds` (1 + the post's time)."""
+    post = f" (1 s, plus {seconds - 1} s for the words you posted)" if seconds > 1 else ""
+    return f"{CUTOFF_NOTICE} and you stood still for {seconds} s{post}."
+
+
+def chat_turns_each(cfg: Config) -> int:
+    """Most turns each agent gets in one chat (season.chat ends the chat after 2x this)."""
+    return cfg.chat_max_posts + 2
 
 COMPACTION_PROMPT = (
     "Summarise this conversation so far so that you can keep playing the game from your summary "
@@ -61,8 +71,9 @@ A message board shared by you and {mate}. post(message) puts a message of at mos
 {MAX_POST_CHARS} characters on it. {board_read} read_board() is free: it takes no game time.
 In the chat before a round you take turns. On your turn you may call post(message) and/or ready() \
 (you are ready to start the round), or reply without calling a tool to pass. You have up to \
-{_s(cfg.chat_max_posts, 'post')} per chat. The chat ends when you have both called ready() or \
-both used all your posts.
+{_s(cfg.chat_max_posts, 'post')} per chat. The chat ends when each of you has called ready() or \
+used all your posts (until then you keep getting turns, even after ready()), or after \
+{_s(chat_turns_each(cfg), 'turn')} each, whichever comes first.
 
 YOUR NOTEPAD
 A private note that only you can see. It is shown to you with your state at every decision and \
@@ -87,8 +98,12 @@ def practice_start(cfg: Config) -> str:
             f"The board is not available.")
 
 
-def round_start(cfg: Config, round: int) -> str:
-    return f"Round {round} of {cfg.rounds} starts now."
+def round_start(cfg: Config, round: int, chat_turn_limit: bool = False) -> str:
+    text = f"Round {round} of {cfg.rounds} starts now."
+    if chat_turn_limit:
+        text += (f" (The chat ended at its turn limit, {_s(chat_turns_each(cfg), 'turn')} "
+                 f"each.)")
+    return text
 
 
 def strip_board_line(state: str) -> str:

@@ -117,7 +117,7 @@ CASES = [  # seed, flat_s, board, compact_at_tokens
     (0, 2, "pull", 32000),
     (1, 2, "push", 4000),          # push board, compactions
     (2, 1, "pull", 4000),
-    (3, 3, "pull", 32000),
+    (5, 3, "pull", 32000),         # (seed 3 drew no rejected plan once seats were shuffled)
     (4, 0, "pull", 32000),         # zero-cost decisions land in the second they start
 ]
 

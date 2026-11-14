@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # NATO alphabet minus "Alpha" (it reads as "leader", a confound for hierarchy) and minus the
 # names whose first letter is a map symbol (Delta=D dish rack, Oscar=O onion crate, Papa=P pot,
@@ -38,6 +38,13 @@ class Decision(_Strict):
     reasoning_tokens: int = 1000    # GenerateConfig.reasoning_tokens
     max_tokens: int = 4000          # GenerateConfig.max_tokens: hard cap; DeepSeek on Baidu overshoots reasoning_tokens
     pipeline: bool = True           # overlap model calls across game seconds (same outcomes; season.py)
+
+    @field_validator("mode")
+    @classmethod
+    def _only_simulated(cls, mode: str) -> str:
+        if mode != "simulated":     # kept in the schema for later; season.py has no realtime loop
+            raise ValueError("realtime mode is not implemented; use mode: simulated")
+        return mode
 
 
 class Providers(_Strict):

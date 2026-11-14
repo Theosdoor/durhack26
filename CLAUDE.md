@@ -18,8 +18,10 @@ The design lives in the "Implementation plan" tab of the team's Claude Doc (summ
   `S` serving hatch, `1`..`9` start positions. Coordinates are (x=column, y=row), origin top-left.
 
 ## Rules of the game (MVP)
-1 tick = 1 s = 1 tile, no diagonals. Interactions take 1 s. Per tick: interactions first, then
-movement (if two agents would collide or swap, neither moves), then pots cook, then orders update.
+1 tick = 1 s = 1 tile, no diagonals. Interactions take 1 s. Per tick: interactions first (every
+give, then every take), then movement (if two agents would collide or swap, neither moves), then
+pots cook, then orders update. No agent index has priority: other ties use a per-second order from
+the game's seeded RNG. Seats (start digits) and each chat's first speaker are seeded per season.
 Onion soup = 3 onions in a pot, cooks `cook_s` seconds by itself, plate with a dish, serve at the hatch.
 
 ## Never
