@@ -32,10 +32,9 @@ Recipe (the only dish): onion soup. Put 3 onions in a pot; it starts cooking by 
 soup, then carry the soup to the serving hatch. You can hold one item at a time: an onion, a
 dish or a soup. Onions and dishes never run out.
 
-Orders: the first order arrives at the start, then a new one every 50 s (no new order
-while 3 are open). Each order is due 45 s after it arrives. Serving a soup
+Orders: Each order is due 45 s after it arrives. Serving a soup
 fills the open order that is due soonest: +20 points. An order not served by its due
-time expires: -10 points. A soup served with no open order is refused.⟦/⟧
+time expires: -10 points.⟦/⟧
 
 ⟦system.md › map_key⟧MAP KEY
 X counter (a wall; any counter next to the floor can hold one item)   ' ' floor
@@ -70,10 +69,10 @@ A plan also fails if an action cannot be understood, its target does not exist o
 reached from where you are, or an interaction does nothing. A new plan replaces the old one.⟦/⟧
 
 ⟦system.md › season⟧THE SEASON
-⟦system.md › practice_intro⟧First you practise alone in a small practice kitchen for 15 s (no board, and the score does not count).⟦/⟧ Then you and Whiskey play 2 rounds together in the same kitchen. Each round lasts 60 s and starts afresh (empty pots, new orders, everyone back at the start). ⟦system.md › between_chat_debrief⟧Before each round there is a chat on the board; after each round there is a debrief where you see the round's score.⟦/⟧⟦/⟧
+⟦system.md › practice_intro⟧First you practise alone in a small practice kitchen for 15 s (no board, and the score does not count).⟦/⟧ ⟦system.md › practice_finish_note⟧When you have practised enough you may call finish_practice() to end your practice early.⟦/⟧ Then you and Whiskey play 2 rounds together in the same kitchen. Each round lasts 60 s and starts afresh (empty pots, new orders, everyone back at the start). ⟦system.md › between_chat_debrief⟧Before each round there is a chat on the board; after each round there is a debrief where you see the round's score.⟦/⟧⟦/⟧
 
 ⟦system.md › deciding⟧DECIDING
-During practice and rounds, whenever you have no plan (at the start, or when your plan is done or has failed) you decide: call act(plan) with your next plan. Every decision must end with act(plan). While you decide you stand still, and deciding costs game time: 2 seconds per decision⟦system.md › posting_full⟧, plus 1 s for every 10 words you post (rounded up)⟦/⟧. ⟦system.md › extras_full⟧Your plan, post and note take effect when your decision lands. In a decision you may also call post(message), read_board() and note(text).⟦/⟧ ⟦system.md › thinking_budget⟧You have about 1000 tokens to think before each decision; decide quickly.⟦/⟧⟦/⟧
+During practice and rounds, whenever you have no plan (at the start, or when your plan is done or has failed) you decide: call act(plan) with your next plan. Every decision must end with act(plan). While you decide you stand still, and deciding costs game time: 2 seconds per decision⟦system.md › posting_full⟧, plus 1 s for every 10 words you post (rounded up)⟦/⟧. ⟦system.md › extras_full⟧Your plan, post and note take effect when your decision lands. In a decision you may also call post(message), read_board() and note(text).⟦/⟧ ⟦system.md › thinking_budget⟧Think briefly, then act.⟦/⟧⟦/⟧
 
 ⟦communication.md › comms.full⟧THE BOARD
 A message board shared by you and Whiskey. post(message) puts a message of at most 200 characters on it. ⟦system.md › board_read_pull⟧During a round your state shows how many posts you have not read yet; call read_board() to read them.⟦/⟧ read_board() is free: it takes no game time.
@@ -83,7 +82,7 @@ A message board shared by you and Whiskey. post(message) puts a message of at mo
 A private note that only you can see. It is shown to you with your state at every decision and kept for the whole season. note(text) replaces it.⟦/⟧
 
 ⟦system.md › goal⟧GOAL
-Get the highest team score. You won't score highly unless you work together.⟦/⟧
+Get the highest team score.⟦/⟧
 
 ```
 
@@ -213,17 +212,17 @@ tool call: act({"plan": ["wait(5)"]})
 ```text
 ⟦communication.md › chat_turn.first⟧Chat before round 1 of 2.
 The kitchen for round 1:
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 O XMP
-2 OWX X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦messages.md › kitchen_overview.start_you⟧You (Mike, M) start at (3,1).⟦/⟧
+⟦messages.md › kitchen_overview.start_you⟧You (Mike, M) start at (5,1).⟦/⟧
 ⟦messages.md › kitchen_overview.start_mate⟧Whiskey (W) starts at (1,2).⟦/⟧
-⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (3,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (4,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (3,4)⟦/⟧.⟦/⟧
-⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(2,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(2,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(2,3)⟦/⟧.⟦/⟧
+⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (5,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (6,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (6,3)⟦/⟧.⟦/⟧
+⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(3,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,3)⟦/⟧.⟦/⟧
 ⟦messages.md › orders_rules⟧Orders: the first arrives at the start, then one every 50 s (at most 3 open). Each is due 45 s after it arrives: +20 if served, -10 if it expires. The round lasts 60 s.⟦/⟧⟦/⟧
 
 ⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
@@ -283,17 +282,17 @@ tool call: ready({})
 ⟦state.md › header⟧Time 0 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 O XMP
-2 OWX X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
 ⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -335,20 +334,22 @@ tool call: act({"plan": ["wait(1)"]})
 *Every later decision in a round: the state at that second.*
 
 ```text
+⟦messages.md › forced_notice⟧Your last decision only called act(plan) after a reminder, so it took 1 s longer.⟦/⟧
+
 ⟦state.md › header⟧Time 5 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) onion⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -369,7 +370,7 @@ tool call: read_board({})
 ### 32. assistant: tool calls (act)
 
 ```text
-tool call: act({"plan": ["interact(counter_2_1)", "interact(pot_1)"]})
+tool call: act({"plan": ["wait(1)"]})
 ```
 
 ### 33. tool result: act
@@ -378,81 +379,29 @@ tool call: act({"plan": ["interact(counter_2_1)", "interact(pot_1)"]})
 ⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
 ```
 
-### 34. user: round 1 decision (t=9)
+*(1 more decision like this, messages 34-39 omitted; they use the same sections as the ones above.)*
 
-*Every later decision in a round: the state at that second.*
-
-```text
-⟦state.md › header⟧Time 9 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
-⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
-
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
-
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.onions⟧1 onion, not cooking⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
-⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
-```
-
-### 35. assistant: tool calls (post)
-
-```text
-tool call: post({"message": "Dish rack is yours, I am heading to the pots."})
-```
-
-### 36. tool result: post
-
-```text
-⟦tools.md › post.posted⟧Posted.⟦/⟧ ⟦tools.md › post.lands_later⟧It appears on the board when this decision lands.⟦/⟧
-```
-
-### 37. assistant: text reply, no tool call
-
-```text
-Nothing more to do this second.
-```
-
-### 38. user: forced-answer request
-
-*Forced-answer follow-up: sent when the turn ended without its required answer (no act(), or a chat/debrief reply cut off).*
-
-```text
-⟦messages.md › forced_why.thinking_budget_used_up⟧Your thinking budget is used up.⟦/⟧ ⟦messages.md › forced.act⟧Call act now with your plan.⟦/⟧
-```
-
-### 39. assistant: text reply, no tool call
-
-```text
-I still need to think.
-```
-
-### 40. user: round 1 decision (t=11), after a cutoff
+### 40. user: round 1 decision (t=10), after a cutoff
 
 *Every later decision in a round: the state at that second.*
 
 ```text
 ⟦messages.md › cutoff_notice.notice⟧Your last reply did not call act(plan), so no plan was set and you stood still for 2 s ⟦messages.md › cutoff_notice.post⟧(1 s, plus 1 s for the words you posted)⟦/⟧.⟦/⟧
 
-⟦state.md › header⟧Time 11 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
+⟦state.md › header⟧Time 10 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.onions⟧1 onion, not cooking⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -468,241 +417,45 @@ tool call: act({"plan": ["wait(1)"]})
 ⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
 ```
 
-*(4 more decisions like this, messages 43-54 omitted; they use the same sections as the ones above.)*
+*(11 more decisions like this, messages 43-75 omitted; they use the same sections as the ones above.)*
 
-### 55. user: round 1 decision (t=28)
-
-*Every later decision in a round: the state at that second.*
-
-```text
-⟦state.md › header⟧Time 28 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
-⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
-
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 O XMP
-2 O X X
-3 DWX X
-4 XXXSX⟦/⟧
-
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,3), holding ⟦state.md › item.dish⟧a dish⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.cooking⟧cooking, ready in 3 s⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
-⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
-```
-
-### 56. assistant: tool calls (act)
-
-```text
-tool call: act({"plan": ["wait(1)"]})
-```
-
-### 57. tool result: act
-
-```text
-⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
-```
-
-### 58. user: round 1 decision (t=31)
+### 76. user: round 1 decision (t=46)
 
 *Every later decision in a round: the state at that second.*
 
 ```text
-⟦state.md › header⟧Time 31 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
-⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
-
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
-
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.ready⟧soup ready to plate⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) dish⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
-⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
-```
-
-### 59. assistant: tool calls (act)
-
-```text
-tool call: act({"plan": ["interact(counter_2_1)"]})
-```
-
-### 60. tool result: act
-
-```text
-⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
-```
-
-*(1 more decision like this, messages 61-63 omitted; they use the same sections as the ones above.)*
-
-### 64. user: round 1 decision (t=37)
-
-*Every later decision in a round: the state at that second.*
-
-```text
-⟦state.md › header⟧Time 37 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
-⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
-
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
-
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.soup⟧a soup⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
-⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
-```
-
-### 65. assistant: tool calls (act)
-
-```text
-tool call: act({"plan": ["interact(hatch_1)"]})
-```
-
-### 66. tool result: act
-
-```text
-⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
-```
-
-### 67. user: round 1 decision (t=42)
-
-*Every later decision in a round: the state at that second.*
-
-```text
-⟦state.md › header⟧Time 42 / 60 s · Score 20 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
+⟦state.md › header⟧Time 46 / 60 s · Score -10 · ⟦state.md › where_round⟧Round 1 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders_none⟧Orders: none open.⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWX P
-2 O X X
-3 D XMX
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,3), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.onion⟧an onion⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
-### 68. assistant: tool calls (act)
+### 77. assistant: tool calls (act)
 
 ```text
 tool call: act({"plan": ["wait(1)"]})
 ```
 
-### 69. tool result: act
+### 78. tool result: act
 
 ```text
 ⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
 ```
 
-*(4 more decisions like this, messages 70-81 omitted; they use the same sections as the ones above.)*
+*(4 more decisions like this, messages 79-90 omitted; they use the same sections as the ones above.)*
 
-## Round 1: debrief
-
-### 82. user: debrief, round 1
-
-*After each round (debrief: full): the result, scores, notepad and a request.*
-
-```text
-⟦messages.md › debrief.result⟧Round 1 of 2 is over. Team score this round: 20 (1 order served, 0 missed).⟦/⟧
-⟦messages.md › debrief.notepad_empty⟧Your notepad: (empty)⟦/⟧
-⟦messages.md › debrief.instruction⟧You may call note(text) to rewrite your notepad, or reply without a tool call.⟦/⟧
-```
-
-### 83. assistant: reasoning only, cut off at max_tokens (no tool call)
-
-```text
-[reasoning] Hmm. Let me weigh every option once more, step by step
-```
-
-### 84. user: forced-answer request
-
-*Forced-answer follow-up: sent when the turn ended without its required answer (no act(), or a chat/debrief reply cut off).*
-
-```text
-⟦messages.md › forced_why.thinking_budget_used_up⟧Your thinking budget is used up.⟦/⟧ ⟦messages.md › forced.debrief⟧Update your notepad with note() now, or pass.⟦/⟧
-```
-
-### 85. assistant: tool calls (note)
-
-```text
-tool call: note({"text": "cook: Onions and the dish go on (2,1)."})
-```
-
-### 86. tool result: note
-
-```text
-⟦tools.md › note.result⟧Notepad updated.⟦/⟧
-```
-
-## Round 2: chat
-
-### 87. user: chat before round 2, first turn
-
-*First turn of the pre-round chat: the kitchen overview and the orders.*
-
-```text
-⟦communication.md › chat_turn.first⟧Chat before round 2 of 2.
-The kitchen for round 2:
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 O XMP
-2 OWX X
-3 D X X
-4 XXXSX⟦/⟧
-
-⟦messages.md › kitchen_overview.start_you⟧You (Mike, M) start at (3,1).⟦/⟧
-⟦messages.md › kitchen_overview.start_mate⟧Whiskey (W) starts at (1,2).⟦/⟧
-⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (3,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (4,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (3,4)⟦/⟧.⟦/⟧
-⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(2,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(2,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(2,3)⟦/⟧.⟦/⟧
-⟦messages.md › orders_rules⟧Orders: the first arrives at the start, then one every 50 s (at most 3 open). Each is due 45 s after it arrives: +20 if served, -10 if it expires. The round lasts 60 s.⟦/⟧⟦/⟧
-
-⟦communication.md › chat_turn.notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
-⟦communication.md › chat_turn.new_posts⟧New posts on the board:
-⟦code: board.py › format_post⟧[chat] Whiskey: Same plan as last round.⟦/⟧⟦/⟧
-⟦communication.md › chat_turn.status⟧Posts left: 2. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
-```
-
-### 88. assistant: reasoning only, cut off at max_tokens (no tool call)
-
-```text
-[reasoning] Hmm. Let me weigh every option once more, step by step
-```
-
-### 89. user: forced-answer request
-
-*Forced-answer follow-up: sent when the turn ended without its required answer (no act(), or a chat/debrief reply cut off).*
-
-```text
-⟦messages.md › forced_why.thinking_budget_used_up⟧Your thinking budget is used up.⟦/⟧ ⟦messages.md › forced.chat⟧Post your message and/or call ready() now, or pass.⟦/⟧
-```
-
-### 90. assistant: tool calls (post)
-
-```text
-tool call: post({"message": "I am at the pots. Put onions then a dish on (2,1) please."})
-```
-
-### 91. tool result: post
-
-```text
-⟦tools.md › post.posted⟧Posted.⟦/⟧
-```
-
-### 92. user: compaction summary
+### 91. user: compaction summary
 
 *Inserted by Inspect when the conversation passes compact_at_tokens; the model then sees the summary in place of older messages.*
 
@@ -716,9 +469,121 @@ Summary: I am a cook; we pass onions and a dish over counter (2,1).
 Please continue working on this task from where you left off.
 ```
 
-*(1 more decision like this, messages 93-95 omitted; they use the same sections as the ones above.)*
+## Round 1: debrief
 
-### 96. user: chat before round 2, later turn
+### 92. user: debrief, round 1
+
+*After each round (debrief: full): the result, scores, notepad and a request.*
+
+```text
+⟦messages.md › debrief.result⟧Round 1 of 2 is over. Team score this round: -10 (0 orders served, 1 missed).⟦/⟧
+⟦messages.md › debrief.notepad_empty⟧Your notepad: (empty)⟦/⟧
+⟦messages.md › debrief.instruction⟧You may call note(text) to rewrite your notepad, or reply without a tool call.⟦/⟧
+```
+
+### 93. assistant: reasoning only, cut off at max_tokens (no tool call)
+
+```text
+[reasoning] Hmm. Let me weigh every option once more, step by step
+```
+
+### 94. user: forced-answer request
+
+*Forced-answer follow-up: sent when the turn ended without its required answer (no act(), or a chat/debrief reply cut off).*
+
+```text
+⟦messages.md › forced_why.thinking_budget_used_up⟧Your thinking budget is used up.⟦/⟧ ⟦messages.md › forced.debrief⟧Update your notepad with note() now, or pass.⟦/⟧
+```
+
+### 95. assistant: tool calls (note)
+
+```text
+tool call: note({"text": "cook: Onions and the dish go on (2,1)."})
+```
+
+### 96. tool result: note
+
+```text
+⟦tools.md › note.result⟧Notepad updated.⟦/⟧
+```
+
+## Round 2: chat
+
+### 97. user: chat before round 2, first turn
+
+*First turn of the pre-round chat: the kitchen overview and the orders.*
+
+```text
+⟦communication.md › chat_turn.first⟧Chat before round 2 of 2.
+The kitchen for round 2:
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
+
+⟦messages.md › kitchen_overview.start_you⟧You (Mike, M) start at (5,1).⟦/⟧
+⟦messages.md › kitchen_overview.start_mate⟧Whiskey (W) starts at (1,2).⟦/⟧
+⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (5,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (6,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (6,3)⟦/⟧.⟦/⟧
+⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(3,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,3)⟦/⟧.⟦/⟧
+⟦messages.md › orders_rules⟧Orders: the first arrives at the start, then one every 50 s (at most 3 open). Each is due 45 s after it arrives: +20 if served, -10 if it expires. The round lasts 60 s.⟦/⟧⟦/⟧
+
+⟦communication.md › chat_turn.notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
+⟦communication.md › chat_turn.new_posts⟧New posts on the board:
+⟦code: board.py › format_post⟧[chat] Whiskey: Same plan as last round.⟦/⟧⟦/⟧
+⟦communication.md › chat_turn.status⟧Posts left: 2. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
+```
+
+### 98. assistant: reasoning only, cut off at max_tokens (no tool call)
+
+```text
+[reasoning] Hmm. Let me weigh every option once more, step by step
+```
+
+### 99. user: forced-answer request
+
+*Forced-answer follow-up: sent when the turn ended without its required answer (no act(), or a chat/debrief reply cut off).*
+
+```text
+⟦messages.md › forced_why.thinking_budget_used_up⟧Your thinking budget is used up.⟦/⟧ ⟦messages.md › forced.chat⟧Post your message and/or call ready() now, or pass.⟦/⟧
+```
+
+### 100. assistant: tool calls (post)
+
+```text
+tool call: post({"message": "I am at the pots. Put onions then a dish on (2,1) please."})
+```
+
+### 101. tool result: post
+
+```text
+⟦tools.md › post.posted⟧Posted.⟦/⟧
+```
+
+### 102. user: chat before round 2, later turn
+
+*Later turns of the same chat.*
+
+```text
+⟦communication.md › chat_turn.later⟧Your turn in the chat before round 2.⟦/⟧
+⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
+⟦communication.md › chat_turn.status⟧Posts left: 1. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
+```
+
+### 103. assistant: tool calls (post)
+
+```text
+tool call: post({"message": "Still here (2)."})
+```
+
+### 104. tool result: post
+
+```text
+⟦tools.md › post.posted⟧Posted.⟦/⟧
+```
+
+### 105. user: chat before round 2, later turn
 
 *Later turns of the same chat.*
 
@@ -728,23 +593,23 @@ Please continue working on this task from where you left off.
 ⟦communication.md › chat_turn.status⟧Posts left: 0. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
 ```
 
-### 97. assistant: tool calls (post)
+### 106. assistant: tool calls (post)
 
 ```text
 tool call: post({"message": "Still here (3)."})
 ```
 
-### 98. tool result: post
+### 107. tool result: post
 
 ```text
 ⟦tools.md › post.not_posted⟧Not posted: ⟦tools.md › post.cap_reached⟧you have used all 2 posts for this chat⟦/⟧⟦/⟧
 ```
 
-*(1 more decision like this, messages 99-100 omitted; they use the same sections as the ones above.)*
+*(1 more decision like this, messages 108-109 omitted; they use the same sections as the ones above.)*
 
 ## Round 2: play
 
-### 101. user: round 2 start
+### 110. user: round 2 start
 
 *First decision of each round (the state follows the opening sentence).*
 
@@ -754,41 +619,41 @@ tool call: post({"message": "Still here (3)."})
 ⟦state.md › header⟧Time 0 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 2 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 O XMP
-2 OWX X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
 ⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_none⟧Board: no unread posts.⟦/⟧
 ⟦state.md › notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
 ```
 
-### 102. assistant: tool calls (post, act)
+### 111. assistant: tool calls (post, act)
 
 ```text
 tool call: post({"message": "Onions on (2,1) please"})
 tool call: act({"plan": ["wait(1)"]})
 ```
 
-### 103. tool result: post
+### 112. tool result: post
 
 ```text
 ⟦tools.md › post.posted⟧Posted.⟦/⟧ ⟦tools.md › post.lands_later⟧It appears on the board when this decision lands.⟦/⟧
 ```
 
-### 104. tool result: act
+### 113. tool result: act
 
 ```text
 ⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧
 ```
 
-### 105. user: round 2 decision (t=4)
+### 114. user: round 2 decision (t=4)
 
 *Every later decision in a round: the state at that second.*
 
@@ -796,22 +661,22 @@ tool call: act({"plan": ["wait(1)"]})
 ⟦state.md › header⟧Time 4 / 60 s · Score 0 · ⟦state.md › where_round⟧Round 2 of 2⟦/⟧⟦/⟧
 ⟦state.md › orders⟧Orders: ⟦state.md › order_item⟧onion soup (due 45 s)⟦/⟧⟦/⟧
 
-⟦code: engine/text.py › map_lines⟧  01234
-0 XXXPX
-1 OWXMP
-2 O X X
-3 D X X
-4 XXXSX⟦/⟧
+⟦code: engine/text.py › map_lines⟧  0123456
+0 XXXXXPX
+1 O  X MP
+2 OW X  X
+3 S  X  D
+4 XXXXXXX⟦/⟧
 
-⟦state.md › you⟧You (Mike, M): at (3,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Whiskey (W): at (1,1), holding ⟦state.md › item.onion⟧an onion⟦/⟧.⟦/⟧
-⟦state.md › pot⟧pot_1 (3,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (4,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(2,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(2,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › you⟧You (Mike, M): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Whiskey (W): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
+⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
 ⟦state.md › board_none⟧Board: no unread posts.⟦/⟧
 ⟦state.md › notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
 ```
 
-### 106. assistant: tool calls (act, act, post, post, post)
+### 115. assistant: tool calls (act, act, post, post, post)
 
 ```text
 tool call: act({"plan": ["wait(1)", "wait(1)", "wait(1)", "wait(1)", "wait(1)", "wait(1)", "wait(1)"]})
@@ -821,58 +686,72 @@ tool call: post({"message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 tool call: post({"message": "again"})
 ```
 
-### 107. tool result: act
+### 116. tool result: act
 
 ```text
 ⟦tools.md › act.accepted⟧Plan accepted. It starts when this decision lands.⟦/⟧ ⟦tools.md › act.too_long⟧Your plan has 7 actions. Only the first 5 actions are kept.⟦/⟧
 ```
 
-### 108. tool result: act
+### 117. tool result: act
 
 ```text
 ⟦tools.md › act.ignored⟧Ignored: you already sent a plan in this decision.⟦/⟧
 ```
 
-### 109. tool result: post
+### 118. tool result: post
 
 ```text
 ⟦tools.md › post.empty⟧Not posted: the message is empty.⟦/⟧
 ```
 
-### 110. tool result: post
+### 119. tool result: post
 
 ```text
 ⟦tools.md › post.posted_cut⟧Posted (cut to 200 characters).⟦/⟧ ⟦tools.md › post.lands_later⟧It appears on the board when this decision lands.⟦/⟧
 ```
 
-### 111. tool result: post
+### 120. tool result: post
 
 ```text
 ⟦tools.md › post.ignored⟧Ignored: one post per turn.⟦/⟧
 ```
 
-*(14 more decisions like this, messages 112-153 omitted; they use the same sections as the ones above.)*
+*(16 more decisions like this, messages 121-168 omitted; they use the same sections as the ones above.)*
+
+### 169. user: compaction summary
+
+*Inserted by Inspect when the conversation passes compact_at_tokens; the model then sees the summary in place of older messages.*
+
+```text
+[CONTEXT COMPACTION SUMMARY]
+
+The following is a summary of work completed on this task so far. It was generated by the compaction process to replace the earlier conversation; it is not a message from the user:
+
+Summary: I am a cook; we pass onions and a dish over counter (2,1).
+
+Please continue working on this task from where you left off.
+```
 
 ## Round 2: debrief
 
-### 154. user: debrief, round 2
+### 170. user: debrief, round 2
 
 *After each round (debrief: full): the result, scores, notepad and a request.*
 
 ```text
-⟦messages.md › debrief.result⟧Round 2 of 2 is over. Team score this round: 10 (1 order served, 1 missed).⟦/⟧
-⟦messages.md › debrief.scores_so_far⟧Scores so far: ⟦messages.md › debrief.score_item⟧round 1: 20⟦/⟧, ⟦messages.md › debrief.score_item⟧round 2: 10⟦/⟧.⟦/⟧
+⟦messages.md › debrief.result⟧Round 2 of 2 is over. Team score this round: -10 (0 orders served, 1 missed).⟦/⟧
+⟦messages.md › debrief.scores_so_far⟧Scores so far: ⟦messages.md › debrief.score_item⟧round 1: -10⟦/⟧, ⟦messages.md › debrief.score_item⟧round 2: -10⟦/⟧.⟦/⟧
 ⟦messages.md › debrief.notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
 ⟦messages.md › debrief.instruction⟧You may call note(text) to rewrite your notepad, or reply without a tool call.⟦/⟧
 ```
 
-### 155. assistant: tool calls (note)
+### 171. assistant: tool calls (note)
 
 ```text
 tool call: note({"text": "cook: Onions and the dish go on (2,1)."})
 ```
 
-### 156. tool result: note
+### 172. tool result: note
 
 ```text
 ⟦tools.md › note.result⟧Notepad updated.⟦/⟧
@@ -890,7 +769,7 @@ tool call: note({"text": "cook: Onions and the dish go on (2,1)."})
 
 Tool names, descriptions and parameter descriptions are sent with each call (outside the message list). Each distinct set is shown once, with the message it was first offered at.
 
-### Tools: act, note
+### Tools: act, note, finish_practice
 
 *First offered with: practice start.*
 
@@ -899,6 +778,7 @@ act: ⟦tools.md › act.description⟧Set your plan: a list of 1 to 5 actions d
     param plan: ⟦tools.md › act.plan_param⟧1 to 5 actions, each one string such as "interact(pot_1)", "move_to(2, 3)" or "wait(3)".⟦/⟧
 note: ⟦tools.md › note.description⟧Replace the text of your private notepad (only you can see it).⟦/⟧
     param text: ⟦tools.md › note.text_param⟧The new notepad text.⟦/⟧
+finish_practice: ⟦tools.md › finish_practice.description⟧End your practice now (practice only). It ends when this decision lands; the season goes on once your teammate's practice is over too.⟦/⟧
 ```
 
 ### Tools: post, ready
@@ -946,6 +826,9 @@ Sections of `prompts/*.md` that no marker above names, with the condition that m
 | `system.md › between_no_chat_score_only` | comms: none, debrief: score_only |
 | `system.md › extras_no_post` | comms: planning_only or none |
 | `system.md › board_read_push` | comms: full, board: push |
+| `system.md › rules_recipe` | rules: recipe (replaces the recipe, orders and interact table) |
+| `system.md › rules_minimal` | rules: minimal (replaces the recipe, orders and interact table) |
+| `system.md › rules_minimal_hint` | rules: minimal_hint (minimal plus a nudge to experiment) |
 | `communication.md › comms.planning_only` | comms: planning_only (system prompt) |
 | `communication.md › comms.none` | comms: none (deliberately empty) |
 | `communication.md › planning_only_rule` | comms: planning_only (inside comms.planning_only) |
@@ -956,6 +839,16 @@ Sections of `prompts/*.md` that no marker above names, with the condition that m
 | `messages.md › forced_why.chat_no_reasoning` | reasoning: off, a chat reply cut off |
 | `messages.md › forced_why.debrief_no_reasoning` | reasoning: off, a debrief reply cut off |
 | `messages.md › round_result` | debrief: score_only (opens the next message) |
+| `messages.md › round_start.unseen_chat` | comms: planning_only, chat posts the agent has not seen yet |
+| `state.md › item.onion` | an agent holding an onion |
+| `state.md › item.dish` | an agent holding a dish |
+| `state.md › item.soup` | an agent holding soup |
+| `state.md › pot.ready` | a pot that finished cooking |
+| `state.md › pot.cooking` | a pot cooking |
+| `state.md › pot.onions` | a pot with 1 or 2 onions |
 | `state.md › push_new_posts` | board: push, decision with new teammate posts |
 | `state.md › push_none` | board: push, decision with no new posts |
+| `state.md › order_item_minimal` | rules not full: an order line that names no dish |
 | `tools.md › read_board.empty` | read_board() with no posts |
+| `tools.md › finish_practice.result` | practice: an agent calls finish_practice() |
+| `tools.md › act.description_no_recipe` | rules not full: act's example plan without the recipe |

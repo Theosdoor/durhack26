@@ -27,7 +27,7 @@ from undercooked.replay import DecisionRecord, Event, Header, Post, Replay
 from undercooked.replay_io import load_replay
 from undercooked.season import FORCED_COST_S, FORCED_MAX_TOKENS
 
-GOAL = "Get the highest team score. You won't score highly unless you work together."
+GOAL = "Get the highest team score."
 BUDGET = re.compile(r"Think briefly|thinking budget", re.I)
 # ("ready" alone also means a soup that is ready; the chat tool is ready())
 COMMS_WORDS = re.compile(r"\b(board|post\w*|messages?|chat\w*|read_board|ready\(\))", re.I)

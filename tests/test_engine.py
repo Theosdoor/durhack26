@@ -455,7 +455,7 @@ def test_state_text_variants():
 def test_rules_text():
     cfg = make_cfg(cook_s=25)
     text = rules_text(cfg)
-    for s in ("25 s", "every 30 s", "+20 points", "-10 points", "interact(<id>)",
+    for s in ("25 s", "+20 points", "-10 points", "interact(<id>)",
               "move_to(x, y)", "wait(<seconds>)", "onion_crate_1", "counter_2_1", "1 to 5"):
         assert s in text, s
     low = text.lower()

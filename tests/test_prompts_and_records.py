@@ -24,7 +24,7 @@ from undercooked.replay import DecisionRecord, Event, Post
 from undercooked.season import Gen, Season
 from undercooked.tools import Turn, act_tool, note_tool, post_tool, read_board_tool, ready_tool
 
-GOAL = "Get the highest team score. You won't score highly unless you work together."
+GOAL = "Get the highest team score."
 REAL_AGENTS = [AgentSpec(model="openrouter/deepseek/deepseek-v4.1-flash", provider="baidu/fp8"),
                AgentSpec(model="openrouter/google/gemma-4-31b-it", provider="deepinfra/fp8")]
 LEAKS = ["deepseek", "gemma", "google", "baidu", "deepinfra", "novita", "openrouter", "fp8",

@@ -14,10 +14,9 @@ Recipe (the only dish): onion soup. Put 3 onions in a pot; it starts cooking by 
 soup, then carry the soup to the serving hatch. You can hold one item at a time: an onion, a
 dish or a soup. Onions and dishes never run out.
 
-Orders: the first order arrives at the start, then a new one every {every_s} s (no new order
-while {max_open} are open). Each order is due {due_s} s after it arrives. Serving a soup
+Orders: Each order is due {due_s} s after it arrives. Serving a soup
 fills the open order that is due soonest: +{reward} points. An order not served by its due
-time expires: -{penalty} points. A soup served with no open order is refused.
+time expires: -{penalty} points.
 
 ## map_key
 MAP KEY
@@ -69,7 +68,7 @@ A private note that only you can see. It is shown to you with your state at ever
 
 ## goal
 GOAL
-Get the highest team score. You won't score highly unless you work together.
+Get the highest team score.
 
 ## practice_intro
 First you practise alone in a small practice kitchen for {practice_s} s (no board, and the score does not count).

@@ -6,6 +6,7 @@ name: pilot_cross_family
 level: split_room
 orders: {every_s: 20}
 epochs: 2
+practice_s: 120   # longer practice so goal-only agents can explore; finish_practice() ends it early
 agents:
   - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
   - {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}
