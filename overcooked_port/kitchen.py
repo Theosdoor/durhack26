@@ -21,23 +21,23 @@ from overcooked_ai_py.mdp.overcooked_mdp import (EVENT_TYPES, OvercookedGridworl
                                                 Recipe)
 from overcooked_ai_py.planning.planners import MotionPlanner
 
+from overcooked_port.prompts import render
 from overcooked_port.replay import AgentState, Event, Frame, Phase, PotState
 
-# name -> (what you must hold before, terrain letters it can target, description)
-ACTIONS: dict[str, tuple[str, str, str]] = {
-    "get_onion": ("nothing", "OX", "pick up an onion from the onion crate (or a counter)"),
-    "get_dish": ("nothing", "DX", "pick up a dish from the dish rack (or a counter)"),
-    "put_in_pot": ("onion", "P", "put the onion you hold into a pot that is not full"),
-    "start_cooking": ("nothing", "P", "start cooking a pot that has onions in it"),
-    "plate_soup": ("dish", "P", "scoop a cooked soup from a pot onto your dish (waits by the "
-                                "pot while it cooks)"),
-    "serve": ("soup", "S", "deliver the soup you hold at the serving hatch"),
-    "place_on_counter": ("anything", "X", "put what you hold on an empty counter"),
-    "pick_up_from_counter": ("nothing", "X", "pick up an item from a counter"),
-    "interact": ("anything", "XODPS", "walk to the target and interact with it"),
-    "move_to": ("anything", "", "walk to the floor tile (x, y), e.g. to get out of your "
-                                "teammate's way"),
-    "wait": ("anything", "", "stand still for n steps (1-10)"),
+# name -> (what you must hold before, terrain letters it can target). The agent-facing
+# descriptions are in prompts/system.md (rules_full).
+ACTIONS: dict[str, tuple[str, str]] = {
+    "get_onion": ("nothing", "OX"),
+    "get_dish": ("nothing", "DX"),
+    "put_in_pot": ("onion", "P"),
+    "start_cooking": ("nothing", "P"),
+    "plate_soup": ("dish", "P"),
+    "serve": ("soup", "S"),
+    "place_on_counter": ("anything", "X"),
+    "pick_up_from_counter": ("nothing", "X"),
+    "interact": ("anything", "XODPS"),
+    "move_to": ("anything", ""),
+    "wait": ("anything", ""),
 }
 # which actions each rules mode offers
 VOCAB = {"full": [a for a in ACTIONS if a != "interact"],
@@ -140,14 +140,14 @@ class Kitchen:
         """The target tile of an action argument, or why it is not a valid target."""
         if isinstance(arg, str):
             if arg not in self.pot_by_id:
-                return f"there is no {arg} (pots: {', '.join(self.pot_by_id)})"
+                return render("errors", "no_such_pot", pot=arg, pots=", ".join(self.pot_by_id))
             return self.pot_by_id[arg]
         x, y = arg
         rows = self.mdp.terrain_mtx
         if not (0 <= y < len(rows) and 0 <= x < len(rows[0])):
-            return f"({x},{y}) is outside the kitchen"
+            return render("errors", "outside_kitchen", x=x, y=y)
         if self._terrain(arg) not in ACTIONS[name][1]:
-            return f"({x},{y}) is not something you can {name}"
+            return render("errors", "wrong_target", x=x, y=y, name=name)
         return arg
 
     def _candidates(self, p: Player, name: str, arg) -> list:
@@ -216,29 +216,30 @@ class Kitchen:
         parsed = parse_action(action)
         vocab = VOCAB[self.mode]
         if parsed is None or parsed[0] not in vocab:
-            return (f"unknown action {action!r}; use one of "
-                    + ", ".join(SIGNATURE.get(a, a) for a in vocab))
+            return render("errors", "unknown_action", action=action,
+                          actions=", ".join(SIGNATURE.get(a, a) for a in vocab))
         name, arg = parsed
         need = ACTIONS[name][0]
         held = self.holding(p)
         if need == "nothing" and held is not None:
-            return f"{name} needs empty hands, but you hold {held}"
+            return render("errors", "needs_empty_hands", name=name, held=held)
         if need not in ("nothing", "anything") and held != need:
-            return f"{name} needs you to hold {need}, but you hold {held or 'nothing'}"
+            return render("errors", "needs_item", name=name, need=need,
+                          held=held or render("state", "nothing"))
         if name == "wait":
             return None
         if name == "move_to":
             if arg not in self.mdp.get_valid_player_positions():
-                return f"move_to{arg}: not a floor tile"
+                return render("errors", "move_not_floor", target=arg)
             if not self.mp.positions_are_connected(self._pos_or(p), (arg, (0, -1))):
-                return f"move_to{arg}: you can't get there from your side of the kitchen"
+                return render("errors", "move_unreachable", target=arg)
             return None
         tiles = self._candidates(p, name, arg)
         if tiles and isinstance(tiles[0], str):
-            return f"{action}: {tiles[0]}"
+            return render("errors", "bad_target", action=action, reason=tiles[0])
         if not self._goals(p, tiles):
-            where = "there" if arg is not None else "anywhere to do that"
-            return f"{action}: you can't reach {where} from your side of the kitchen"
+            return render("errors", "unreachable_target" if arg is not None
+                          else "unreachable_any", action=action)
         return None
 
     def set_plan(self, p: Player, plan: list[str]) -> str | None:
@@ -246,7 +247,7 @@ class Kitchen:
         possible as the kitchen changes); returns why the first one was rejected."""
         p.plan, p.waited, p.stuck, p.idle = [], 0, 0, 0
         if not plan:
-            return "empty plan"
+            return render("errors", "empty_plan")
         err = self.check(p, plan[0])
         if err is None:
             p.plan = [a.strip() for a in plan]
@@ -270,7 +271,7 @@ class Kitchen:
     def _fail(self, p: Player, events: list[Event], phase: Phase, round: int, reason: str):
         events.append(Event(phase=phase, round=round, t=self.t, type="fail", agent=p.name,
                             data={"action": p.plan[0], "reason": reason}))
-        p.last_fail = f"step {self.t}: {reason}"
+        p.last_fail = render("errors", "failed_at", t=self.t, reason=reason)
         p.plan, p.stuck, p.idle = [], 0, 0
         return Action.STAY
 
@@ -290,11 +291,11 @@ class Kitchen:
         if err is None and p.stuck > STUCK_STEPS:
             mate = [q for q in self.players if q is not p][0]
             x, y = self.state.players[mate.index].position
-            err = (f"{action}: {mate.name} at ({x},{y}) blocked your way for {STUCK_STEPS} "
-                   f"steps. Ask them to move, go another way, or move_to somewhere else")
+            err = render("errors", "blocked", action=action, mate=mate.name, x=x, y=y,
+                         stuck_steps=STUCK_STEPS)
         if err is None and p.idle > WAIT_LIMIT:
-            err = f"{action}: nothing to do {'there' if arg is not None else 'yet'} " \
-                  f"for {WAIT_LIMIT} steps"
+            err = render("errors", "nothing_to_do_target" if arg is not None else "nothing_to_do",
+                         action=action, wait_limit=WAIT_LIMIT)
         if err is not None:
             return self._fail(p, events, phase, round, err)
         start = self._pos_or(p)
@@ -476,74 +477,43 @@ class Kitchen:
         w = len(rows[0])
         lines = ["   " + "".join(str(x) for x in range(w))]
         lines += [f"{y:2d} " + "".join(r) for y, r in enumerate(rows)]
-        lines.append("Legend: X counter, O onion crate, D dish rack, P pot, S serving hatch, "
-                     "space floor, " + ", ".join(f"{p.name[0]} {p.name}" for p in self.players)
-                     + ". Coordinates are (x, y) = (column, row).")
+        lines.append(render("state", "legend", cooks=", ".join(
+            render("state", "legend_cook", letter=p.name[0], name=p.name)
+            for p in self.players)))
         return "\n".join(lines)
 
     def state_text(self, me: Player) -> str:
-        lines = [f"Step {self.t}. Team score {self.score} ({self.served} soups served).",
-                 self.map_text()]
+        cooks = []
         for p in self.players:
             x, y = self.state.players[p.index].position
-            who = "You" if p is me else p.name
-            lines.append(f"{who} ({p.name[0]}) at ({x},{y}), holding {self.holding(p) or 'nothing'}.")
+            cooks.append(render("state", "cook", who=render("state", "you") if p is me
+                                else p.name, letter=p.name[0], x=x, y=y,
+                                holding=self.holding(p) or render("state", "nothing")))
+        pots = []
         for pos, pid in self.pot_ids.items():
             ps = self._pot(pos)
-            extra = f", ready in {ps.ready_in}" if ps.ready_in is not None else ""
+            extra = render("state", "pot_ready_in", n=ps.ready_in) \
+                if ps.ready_in is not None else ""
             if ps.state == "filling" and self.mode == "full":
-                extra += " (not cooking: needs start_cooking)"
-            lines.append(f"{pid} at ({pos[0]},{pos[1]}): {ps.onions} onions, {ps.state}{extra}.")
+                extra += render("state", "pot_needs_start")
+            pots.append(render("state", "pot", pot=pid, x=pos[0], y=pos[1], onions=ps.onions,
+                               state=ps.state, extra=extra))
         c = self.counters()
-        lines.append("Items on counters: " + (", ".join(f"{v} at ({k})" for k, v in c.items())
-                                              if c else "none") + ".")
-        return "\n".join(lines)
+        counters = ", ".join(render("state", "counter_item", item=v, where=k)
+                             for k, v in c.items()) if c else render("state", "counters_empty")
+        return render("state", "state", t=self.t, score=self.score, served=self.served,
+                      map=self.map_text(), cooks="\n".join(cooks), pots="\n".join(pots),
+                      counters=counters)
 
 
 def rules_text(k: Kitchen) -> str:
-    """The game rules the agents get. "full": recipe, scoring, timing and named actions.
-    "minimal": only the interface (interact / move_to / wait); the game is to be discovered."""
-    walking = (f"Cooks can't walk through each other. Walking goes around your teammate if there "
-               f"is another way; if there isn't, you wait, and after {STUCK_STEPS} blocked steps "
-               f"the action fails.")
+    """The game rules (prompts/system.md): rules_full (recipe, scoring, timing, named actions)
+    or rules_minimal (only the interact / move_to / wait interface)."""
+    walking = render("system", "walking", stuck_steps=STUCK_STEPS)
     if k.mode == "minimal":
-        return f"""\
-THE KITCHEN
-Your team scores points by delivering things at the serving hatch. How the kitchen works is \
-for you to find out by playing.
-{walking}
-
-ACTIONS
-- interact(target): walk to the target and interact with it. The target is a pot \
-(e.g. interact(pot_1)) or the (x, y) of any non-floor tile, e.g. interact(0, 1). What happens \
-depends on what is there and what you hold. If nothing would happen yet, you wait there for up \
-to {WAIT_LIMIT} steps until something can; then the action fails.
-- move_to(x, y): walk to the floor tile (x, y), e.g. to get out of your teammate's way.
-- wait(n): stand still for n steps (1-10).
-Walking is automatic: shortest path, one tile per step.
-"""
-    acts = "\n".join(f"- {SIGNATURE.get(a, a)}: {ACTIONS[a][2]} [hold: {ACTIONS[a][0]}]"
-                     for a in VOCAB["full"])
-    shared = ", ".join(f"({x},{y})" for x, y in k.shared_counters)
-    if not k.shared_counters:
-        counters = "No counter is reachable by both cooks: you can't pass items to each other."
-    else:
-        counters = f"Counters both cooks can reach (for passing items): {shared}."
-    return f"""\
-THE KITCHEN
-Onion soup = 3 onions in a pot; then someone with empty hands must start_cooking; it cooks for \
-{k.cook_time} steps; then plate it with a dish (plate_soup) and serve it at the serving hatch: \
-+20 points per soup. Soups with fewer than 3 onions score 0. You can hold one item at a time.
-{counters}
-{walking}
-
-ACTIONS
-You choose high-level actions; walking there is automatic (shortest path, one tile per step) \
-and the action finishes when you interact. Actions:
-{acts}
-Every action except move_to and wait takes an optional target: a pot for pot actions \
-(put_in_pot(pot_2)) or the (x, y) of a tile (pick_up_from_counter(3, 2)). Without a target you \
-use the nearest suitable one (put_in_pot: the fullest pot that isn't full). If there is nothing \
-to do yet (e.g. no item on the counter), you wait (by the target, if you named one) for up to \
-{WAIT_LIMIT} steps; then the action fails.
-"""
+        return render("system", "rules_minimal", walking=walking, wait_limit=WAIT_LIMIT) + "\n"
+    counters = (render("system", "counters_shared", shared=", ".join(
+        f"({x},{y})" for x, y in k.shared_counters)) if k.shared_counters
+        else render("system", "counters_none"))
+    return render("system", "rules_full", cook_time=k.cook_time, counters=counters,
+                  walking=walking, wait_limit=WAIT_LIMIT) + "\n"

@@ -26,9 +26,9 @@ from inspect_ai.util import collect, span
 from pydantic import BaseModel
 
 from overcooked_port.kitchen import Kitchen, Player, rules_text
+from overcooked_port.prompts import render
 from overcooked_port.replay import AgentInfo, DecisionRecord, Event, Header, Phase, Post
 
-GOAL = "Get the highest team score. You won't score highly unless you work together."
 NATO = ["Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett",
         "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra",
         "Tango", "Uniform", "Victor", "Whiskey", "Xray", "Yankee", "Zulu"]
@@ -113,6 +113,7 @@ class Turn:
 def tools_for(turn: Turn, *, act: Callable[[list[str]], str | None] | None = None,
               post: bool = False, read: Callable[[], str] | None = None, note: bool = False,
               ready: bool = False, max_len: int = 5, mode: str = "full") -> list[ToolDef]:
+    """Tools for one turn; descriptions and results are in prompts/tools.md."""
     out: list[ToolDef] = []
     if act is not None:
         async def act_fn(plan: list[str]) -> str:
@@ -122,48 +123,43 @@ def tools_for(turn: Turn, *, act: Callable[[list[str]], str | None] | None = Non
             err = act(plan)
             turn.plan, turn.plan_error = plan, err
             if err:
-                return f"Plan rejected: {err}. Call act(plan) again with a valid plan."
-            return "Plan accepted. It starts now."
-        example = ('["interact(0, 1)", "interact(pot_1)"]' if mode == "minimal" else
-                   '["get_onion", "put_in_pot(pot_1)"]')
-        one = '"interact(pot_2)"' if mode == "minimal" else '"put_in_pot(pot_2)"'
-        out.append(ToolDef(act_fn, name="act", description=(
-            f"Set your plan: 1 to {max_len} actions done in order, e.g. {example}. Your next "
-            "decision comes when the plan is done or fails. Every round decision must call act."),
-            parameters={"plan": f"1 to {max_len} actions, each one string such as {one} or "
-                                '"wait(3)".'}))
+                return render("tools", "act_rejected", error=err)
+            return render("tools", "act_accepted")
+        out.append(ToolDef(act_fn, name="act",
+                           description=render("tools", f"act_description_{mode}", max_len=max_len),
+                           parameters={"plan": render("tools", f"act_plan_{mode}",
+                                                      max_len=max_len)}))
     if post:
         async def post_fn(message: str) -> str:
             if turn.post is not None:
-                return "Ignored: one post per turn."
+                return render("tools", "post_ignored")
             message = " ".join(str(message).split())[:MAX_POST_CHARS]
             if not message:
-                return "Not posted: empty message."
+                return render("tools", "post_empty")
             turn.post = message
-            return "Posted."
-        out.append(ToolDef(post_fn, name="post", description=(
-            f"Post a message (at most {MAX_POST_CHARS} characters) on the board you share "
-            "with your teammate. One post per turn."), parameters={"message": "The message."}))
+            return render("tools", "post_ok")
+        out.append(ToolDef(post_fn, name="post",
+                           description=render("tools", "post_description",
+                                              max_chars=MAX_POST_CHARS),
+                           parameters={"message": render("tools", "post_message")}))
     if read is not None:
         async def read_fn() -> str:
             turn.read_board += 1
             return read()
-        out.append(ToolDef(read_fn, name="read_board", description=(
-            "Read the board: every post since the chat before this round, newest last. Free: "
-            "takes no game time."), parameters={}))
+        out.append(ToolDef(read_fn, name="read_board",
+                           description=render("tools", "read_board_description"), parameters={}))
     if note:
         async def note_fn(text: str) -> str:
             turn.note = str(text)
-            return "Notepad updated."
-        out.append(ToolDef(note_fn, name="note", description=(
-            "Replace the text of your private notepad (only you can see it)."),
-            parameters={"text": "The new notepad text."}))
+            return render("tools", "note_ok")
+        out.append(ToolDef(note_fn, name="note", description=render("tools", "note_description"),
+                           parameters={"text": render("tools", "note_text")}))
     if ready:
         async def ready_fn() -> str:
             turn.ready = True
-            return "Noted: you are ready to start the round."
-        out.append(ToolDef(ready_fn, name="ready", description=(
-            "Say you are ready to start the round (chat only)."), parameters={}))
+            return render("tools", "ready_ok")
+        out.append(ToolDef(ready_fn, name="ready",
+                           description=render("tools", "ready_description"), parameters={}))
     return out
 
 
@@ -224,34 +220,10 @@ class Agent:
 
 # ---------------------------------------------------------------- prompts
 def system_prompt(cfg: Config, k: Kitchen, me: str, mate: str) -> str:
-    return f"""\
-You are {me}, one of two cooks in a kitchen game. Your teammate is {mate}.
-
-{rules_text(k)}
-THE SEASON
-You and {mate} play {cfg.rounds} rounds in the same kitchen. Each round lasts \
-{cfg.round_steps} steps and starts afresh (empty pots, everyone back at the start). Before each \
-round there is a chat on the board; after each round there is a debrief where you see the score.
-
-DECIDING
-During a round, whenever you have no plan (at the start, or when your plan is done or has \
-failed) you decide: call act(plan) with up to {cfg.max_plan_len} actions. The game waits while \
-you decide. In a decision you may also call post(message) and read_board().
-
-THE BOARD
-A message board shared by you and {mate}. post(message) puts a message of at most \
-{MAX_POST_CHARS} characters on it. During a round your state shows how many posts you have not \
-read; read_board() reads them and is free. In the chat before a round you take turns: on your \
-turn you may call post(message) and/or ready(), or reply without a tool call to pass. The chat \
-ends when you have both called ready() or used all {cfg.chat_max_posts} posts.
-
-YOUR NOTEPAD
-A private note only you can see, shown to you at every decision and kept all season. \
-note(text) replaces it.
-
-GOAL
-{GOAL}
-"""
+    return render("system", "system", me=me, mate=mate, rules=rules_text(k).rstrip("\n"),
+                  rounds=cfg.rounds,
+                  round_steps=cfg.round_steps, max_plan_len=cfg.max_plan_len,
+                  max_post_chars=MAX_POST_CHARS, chat_max_posts=cfg.chat_max_posts) + "\n"
 
 
 class Board:
@@ -274,8 +246,14 @@ class Board:
 
 
 def fmt_posts(posts: list[Post]) -> str:
-    return "\n".join(f"[{'chat' if p.phase == 'chat' else f'step {p.t}'}] {p.agent}: {p.text}"
-                     for p in posts) or "(no posts)"
+    return "\n".join(render("messages", "post_chat" if p.phase == "chat" else "post_round",
+                            t=p.t, agent=p.agent, text=p.text)
+                     for p in posts) or render("messages", "board_empty")
+
+
+def scores_text(rounds: list[dict[str, Any]]) -> str:
+    return ", ".join(render("messages", "score_item", round=i + 1, score=x["score"])
+                     for i, x in enumerate(rounds))
 
 
 # ---------------------------------------------------------------- season
@@ -378,18 +356,20 @@ class Season:
             lines = []
             if a.name not in had_turn:
                 had_turn.add(a.name)
-                scores = ", ".join(f"round {i + 1}: {x['score']}" for i, x in enumerate(self.rounds))
-                lines += [f"Chat before round {r} of {cfg.rounds}." +
-                          (f" Scores so far: {scores}." if scores else ""),
-                          "The kitchen at the start of the round:", k.state_text(
+                scores = scores_text(self.rounds)
+                lines += [render("messages", "chat_start", round=r, rounds=cfg.rounds) +
+                          (render("messages", "chat_scores", scores=scores) if scores else ""),
+                          render("messages", "chat_kitchen"), k.state_text(
                               k.players[[p.name for p in k.players].index(a.name)]),
-                          f'Your notepad: "{a.notepad}"' if a.notepad else "Your notepad is empty."]
+                          render("messages", "notepad", notepad=a.notepad) if a.notepad
+                          else render("messages", "notepad_empty")]
             else:
-                lines.append(f"Your turn in the chat before round {r}.")
-            lines.append("New posts on the board:\n" + fmt_posts(new) if new else "No new posts.")
-            lines.append(("You have said you are ready. " if ready[a.name] else "") +
-                         f"Posts left: {cfg.chat_max_posts - used[a.name]}. Call post(message) "
-                         "and/or ready(), or reply without a tool call to pass.")
+                lines.append(render("messages", "chat_turn", round=r))
+            lines.append(render("messages", "chat_new_posts", posts=fmt_posts(new)) if new
+                         else render("messages", "chat_no_posts"))
+            lines.append((render("messages", "chat_ready_already") if ready[a.name] else "") +
+                         render("messages", "chat_footer",
+                                posts_left=cfg.chat_max_posts - used[a.name]))
             turn = Turn()
             tools = tools_for(turn, post=used[a.name] < cfg.chat_max_posts, ready=True)
             async with span(f"agent-{a.name}"):
@@ -410,14 +390,14 @@ class Season:
         cfg = self.cfg
         unread = self.board.unread(a.name, r)
         lines = ([intro] if intro else []) + [k.state_text(p)]
-        lines.append(f"Unread posts on the board: {len(unread)}." if unread else
-                     "No unread posts.")
+        lines.append(render("messages", "unread", n=len(unread)) if unread else
+                     render("messages", "no_unread"))
         if a.notepad:
-            lines.append(f'Your notepad: "{a.notepad}"')
+            lines.append(render("messages", "notepad", notepad=a.notepad))
         if p.last_fail:
-            lines.append(f"Your last plan stopped early ({p.last_fail}).")
+            lines.append(render("messages", "last_plan_stopped", reason=p.last_fail))
             p.last_fail = None
-        lines.append("You have no plan. Decide: call act(plan).")
+        lines.append(render("messages", "decide"))
         turn = Turn()
 
         def read() -> str:
@@ -427,7 +407,7 @@ class Season:
 
         def act(plan: list[str]) -> str | None:
             # dry-run the first action on the live kitchen (nothing moves while we decide)
-            return k.check(p, plan[0]) if plan else "empty plan"
+            return k.check(p, plan[0]) if plan else render("errors", "empty_plan")
 
         tools = tools_for(turn, act=act, post=True, read=read, max_len=cfg.max_plan_len,
                           mode=cfg.rules)
@@ -445,8 +425,7 @@ class Season:
                 self._post(a, "round", r, t, turn.post)
                 turn.post, turn.read_board = None, 0
                 gen = await self.model_turn(
-                    a, "Your last reply did not call act(plan), so you have no plan. "
-                       "Call act(plan) now.", tools, 2,
+                    a, render("messages", "cutoff_reask"), tools, 2,
                     lambda: turn.plan is not None and not turn.plan_error)
         a.decisions += 1
         for _ in range(turn.read_board):
@@ -476,7 +455,7 @@ class Season:
             if need:
                 for p in need:
                     p.status = "deciding"
-                intros = {p.name: (f"Round {r} of {cfg.rounds} starts now."
+                intros = {p.name: (render("messages", "round_start", round=r, rounds=cfg.rounds)
                                    if p.name not in started else None) for p in need}
                 started.update(intros)
                 await collect(*(self.decide(k, p, by_name[p.name], r, intros[p.name])
@@ -493,15 +472,14 @@ class Season:
         clock = time.monotonic()
         self.event("debrief", r, 0, "phase_start")
         res = self.rounds[-1]
-        hist = ", ".join(f"round {i + 1}: {x['score']}" for i, x in enumerate(self.rounds))
+        hist = scores_text(self.rounds)
 
         async def one(a: Agent) -> tuple[Turn, Gen]:
             turn = Turn()
-            text = (f"Round {r} of {self.cfg.rounds} is over. Team score this round: "
-                    f"{res['score']} ({res['served']} soups served). Scores so far: {hist}.\n"
-                    f'Your notepad: {chr(34) + a.notepad + chr(34) if a.notepad else "(empty)"}\n'
-                    "You may call note(text) to rewrite your notepad, or reply without a tool "
-                    "call.")
+            pad = (render("messages", "debrief_notepad", notepad=a.notepad) if a.notepad
+                   else render("messages", "debrief_notepad_empty"))
+            text = render("messages", "debrief", round=r, rounds=self.cfg.rounds,
+                          score=res["score"], served=res["served"], scores=hist, notepad=pad)
             async with span(f"agent-{a.name}"):
                 gen = await self.model_turn(a, text, tools_for(turn, note=True), 1, lambda: True)
             return turn, gen

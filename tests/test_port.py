@@ -182,3 +182,28 @@ def test_season_runs_in_minimal_mode(tmp_path):
     msgs = [e for e in full.samples[0].events if getattr(e, "event", "") == "model"]
     prompt = msgs[0].input[0].text
     assert "interact(target)" in prompt and "3 onions" not in prompt
+
+
+def test_prompts_match_golden():
+    from tests.golden_prompts import main
+    assert main() == 0, "prompts changed: run `uv run python -m tests.golden_prompts --update`"
+
+
+def test_prompt_loader(tmp_path, monkeypatch):
+    from overcooked_port import prompts
+    (tmp_path / "x.md").write_text("# notes\nignored\n## a\nHi {name}, {{ok}}\n\n# more notes\n"
+                                   "## b\n trailing space \n")
+    monkeypatch.setattr(prompts, "PROMPTS_DIR", tmp_path)
+    prompts._cache.clear()
+    assert prompts.render("x", "a", name="Kilo") == "Hi Kilo, {ok}"
+    assert prompts.render("x", "b") == " trailing space "
+    with pytest.raises(prompts.PromptError, match=r"x.md ## a: no value for placeholder \{name\}"):
+        prompts.render("x", "a")
+    with pytest.raises(prompts.PromptError, match="no section '## c'"):
+        prompts.render("x", "c")
+    import os
+    import time
+    (tmp_path / "x.md").write_text("## a\nBye {name}\n")         # edits apply at once
+    os.utime(tmp_path / "x.md", (time.time() + 5, time.time() + 5))
+    assert prompts.render("x", "a", name="Kilo") == "Bye Kilo"
+    prompts._cache.clear()
