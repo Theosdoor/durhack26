@@ -8,11 +8,11 @@ from undercooked.replay import Frame, OrderState
 
 
 def make_cfg(**kw) -> Config:
-    return Config(name="test", level="split_room", agents=[AgentSpec(model="mockllm/model")] * 2,
+    return Config(name="test", level="forced_coordination", agents=[AgentSpec(model="mockllm/model")] * 2,
                   **kw)
 
 
-def game(level="split_room", names=("Kilo", "Tango"), **kw) -> Game:
+def game(level="forced_coordination", names=("Kilo", "Tango"), **kw) -> Game:
     return Game(Kitchen.load(level), list(names), make_cfg(**kw))
 
 
@@ -34,7 +34,7 @@ def acts(events):
 
 # ------------------------------------------------------------------ kitchen
 def test_kitchen_ids_in_reading_order():
-    k = Kitchen.load("split_room")
+    k = Kitchen.load("forced_coordination")
     assert k.objects["pot_1"].pos == (3, 0)
     assert k.objects["pot_2"].pos == (4, 1)
     assert k.objects["onion_crate_1"].pos == (0, 1)
@@ -54,7 +54,7 @@ def test_kitchen_load_by_path():
 
 
 def test_pathfinding():
-    k = Kitchen.load("split_room")
+    k = Kitchen.load("forced_coordination")
     assert k.path((1, 1), [(1, 3)]) == [(1, 2), (1, 3)]
     assert k.path((1, 1), [(1, 1)]) == []
     assert k.path((1, 1), [(1, 3)], blocked=[(1, 2)]) is None
@@ -424,8 +424,8 @@ Your notepad: "..."\
 """
 
 
-def test_state_text_split_room_matches_spec():
-    g = Game(Kitchen.load("split_room"), ["Kilo", "Tango"], make_cfg(), round=2)
+def test_state_text_forced_coordination_matches_spec():
+    g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], make_cfg(), round=2)
     g.t, g.score = 37, 20
     g.orders[:] = [OrderState(id=3, created_t=10, due_t=70), OrderState(id=2, created_t=-8,
                                                                          due_t=52)]

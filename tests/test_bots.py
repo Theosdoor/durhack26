@@ -4,11 +4,11 @@ from undercooked.bots import SoloBot, run, split_room_pair, SplitCookBot, SplitP
 from undercooked.config import AgentSpec, Config
 from undercooked.engine import Game, Kitchen
 
-CFG = Config(name="test", level="split_room", agents=[AgentSpec(model="mockllm/model")] * 2)
+CFG = Config(name="test", level="forced_coordination", agents=[AgentSpec(model="mockllm/model")] * 2)
 
 
 def test_split_room_pair_serves_within_a_round():
-    g = Game(Kitchen.load("split_room"), ["Kilo", "Tango"], CFG)
+    g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], CFG)
     bots = split_room_pair(g)
     assert isinstance(bots["Kilo"], SplitCookBot) and isinstance(bots["Tango"], SplitPasserBot)
     events = run(g, bots, 180)
@@ -20,8 +20,8 @@ def test_split_room_pair_serves_within_a_round():
                for e in events)
 
 
-def test_single_solo_bot_cannot_score_on_split_room():
-    g = Game(Kitchen.load("split_room"), ["Kilo"], CFG)
+def test_single_solo_bot_cannot_score_on_forced_coordination():
+    g = Game(Kitchen.load("forced_coordination"), ["Kilo"], CFG)
     run(g, {"Kilo": SoloBot("Kilo")}, 180)
     assert g.served == 0 and g.score < 0
 

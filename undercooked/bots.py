@@ -149,7 +149,7 @@ class SoloBot:
 
 
 class SplitPasserBot:
-    """split_room, onion/dish room: keeps the middle counters stocked with onions and a dish."""
+    """Split levels, onion room: keeps the middle counters stocked with onions and a dish."""
 
     def __init__(self, name: str, max_onions: int = 2):
         self.name = name
@@ -184,7 +184,7 @@ class SplitPasserBot:
 
 
 class SplitCookBot:
-    """split_room, pot/hatch room: takes onions and dishes off the middle counters, cooks, serves."""
+    """Split levels, pot room: takes onions and dishes off the middle counters, cooks, serves."""
 
     def __init__(self, name: str):
         self.name = name

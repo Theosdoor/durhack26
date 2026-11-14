@@ -29,7 +29,7 @@ GOLDEN = Path(__file__).parent / "fixtures" / "prompts_golden.json"
 
 
 def cfg(**kw: Any) -> Config:
-    base: dict[str, Any] = dict(name="t", level="split_room", rounds=3, round_s=180, practice=True,
+    base: dict[str, Any] = dict(name="t", level="forced_coordination", rounds=3, round_s=180, practice=True,
                                 agents=[AgentSpec(model="mockllm/model")] * 2)
     return Config.model_validate({**base, **kw})
 
@@ -123,7 +123,7 @@ def _state_texts() -> dict[str, Any]:
         a.notepad = None
         out[f"{board_mode}|{comms}|{phase}|nonotepad"] = s.state_text(g, a, None)
     c = cfg()
-    g = Game(Kitchen.load("split_room"), ["Kilo", "Tango"], c, phase="round", round=1)
+    g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], c, phase="round", round=1)
     for n in (0, 1, 2):
         out[f"engine.unread{n}"] = g.state_text("Kilo", unread_posts=n, notepad="n",
                                                 last_plan_result="failed: blocked by Tango.")

@@ -2,7 +2,7 @@
  "header": {
   "kind": "header",
   "config_name": "split_room_min",
-  "level": "split_room",
+  "level": "forced_coordination",
   "map": [
    "XXXPX",
    "O X P",

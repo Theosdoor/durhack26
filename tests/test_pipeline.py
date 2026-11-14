@@ -33,7 +33,7 @@ CHAOS = [AgentSpec(model="kitchenfake/cook+chaos"), AgentSpec(model="kitchenfake
 
 
 def config(**kw: Any) -> Config:
-    base = dict(name="pipeline", level="split_room", rounds=2, round_s=25, practice=True,
+    base = dict(name="pipeline", level="forced_coordination", rounds=2, round_s=25, practice=True,
                 practice_s=15, chat_max_posts=2, epochs=1, cook_s=2, agents=CHAOS,
                 decision={"flat_s": 2, "post_words_per_s": 10})
     return Config.model_validate({**base, **kw})
@@ -263,7 +263,7 @@ def test_landing_does_not_change_teammates_state_text():
     from undercooked.engine import Game, Kitchen
 
     cfg = config()
-    g = Game(Kitchen.load("split_room"), ["Kilo", "Tango"], cfg)
+    g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], cfg)
     g.set_status("Kilo", "deciding")
     g.set_status("Tango", "deciding")
 

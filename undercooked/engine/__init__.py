@@ -1,6 +1,6 @@
 """Game engine: levels, state, rules, plans and pathfinding.
 
-    kitchen = Kitchen.load("split_room")
+    kitchen = Kitchen.load("forced_coordination")
     game = Game(kitchen, ["Tango", "Kilo"], cfg)
     game.set_plan("Tango", ["interact(onion_crate)", "interact(counter_2_2)"])
     events = game.tick()

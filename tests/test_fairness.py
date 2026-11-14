@@ -18,7 +18,7 @@ SEEDS = range(400)
 
 
 def cfg(**kw) -> Config:
-    return Config(name="fair", level="split_room", agents=[AgentSpec(model="mockllm/model")] * 2,
+    return Config(name="fair", level="forced_coordination", agents=[AgentSpec(model="mockllm/model")] * 2,
                   **kw)
 
 
@@ -34,11 +34,11 @@ def share_of_index0(outcomes: list[int]) -> float:
 # ------------------------------------------------------------------ handover (R1b)
 @pytest.mark.parametrize("putter_index", [0, 1])
 def test_same_second_handover_works_in_both_index_orders(putter_index):
-    """split_room: one agent puts an onion on counter_2_1 while the other picks it up, in the
+    """forced_coordination: one agent puts an onion on counter_2_1 while the other picks it up, in the
     same second. Before the fix the pick-up failed whenever the picker came first in the list."""
     for seed in range(50):                     # every tie order the RNG might draw
         names = ["Kilo", "Tango"]
-        g = game("split_room", names, seed)
+        g = game("forced_coordination", names, seed)
         putter, picker = names[putter_index], names[1 - putter_index]
         g.agent(putter).pos, g.agent(picker).pos = (1, 1), (3, 1)   # either side of (2,1)
         g.agent(putter).holding = "onion"
@@ -55,7 +55,7 @@ def test_same_second_handover_works_in_both_index_orders(putter_index):
 def counter_pickup_winner(seed: int) -> int:
     """Both empty-handed, both take the one onion on counter_2_1 in the same second."""
     names = ["Kilo", "Tango"]
-    g = game("split_room", names, seed)
+    g = game("forced_coordination", names, seed)
     g.agent("Kilo").pos, g.agent("Tango").pos = (3, 1), (1, 1)
     g.counters[(2, 1)] = "onion"
     for n in names:
@@ -68,7 +68,7 @@ def counter_pickup_winner(seed: int) -> int:
 def counter_putdown_winner(seed: int) -> int:
     """Both hold an onion and put it on the empty counter_2_1 in the same second."""
     names = ["Kilo", "Tango"]
-    g = game("split_room", names, seed)
+    g = game("forced_coordination", names, seed)
     g.agent("Kilo").pos, g.agent("Tango").pos = (3, 1), (1, 1)
     for n in names:
         g.agent(n).holding = "onion"
@@ -170,6 +170,6 @@ def test_season_seats_place_agents_at_their_start_digits():
     for epoch in range(1, 9):
         s = Season(c, [agent_model(spec, c) for spec in c.agents], epoch)
         assert [a.seat for a in s.agents] == assign_seats(0, epoch)
-        g = Game(Kitchen.load("split_room"), s.seated, c)
+        g = Game(Kitchen.load("forced_coordination"), s.seated, c)
         for a in s.agents:
             assert g.agent(a.name).pos == g.kitchen.starts[a.seat]

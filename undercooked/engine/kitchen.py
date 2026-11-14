@@ -31,7 +31,7 @@ class Obj:
 
 
 class Kitchen:
-    """Immutable level layout. Build with `Kitchen.load("split_room")`."""
+    """Immutable level layout. Build with `Kitchen.load("forced_coordination")`."""
 
     def __init__(self, name: str, rows: list[str]):
         if not rows:

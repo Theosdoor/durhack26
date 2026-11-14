@@ -1,7 +1,7 @@
 """A scripted, offline model API for season tests: `kitchenfake/cook` and `kitchenfake/passer`.
 
 The scripts read only what a real agent reads (the conversation and the offered tools) and play
-split_room: the passer (left room) puts onions and then a dish on counter (2,1); the cook (right
+forced_coordination: the passer (left room) puts onions and then a dish on counter (2,1); the cook (right
 room) takes them, cooks in pot_1 and serves. Along the way they post, read the board (pull mode),
 write notes and, once, reply without act() (a cutoff). Responses report provider "FakeCloud" in
 the ModelCall, the way OpenRouter reports its served provider.
@@ -219,7 +219,7 @@ _SEAT = re.compile(r"^You \(\w+, \w\):? (?:at|start at) \((\d+),\d+\)", re.M)
 
 
 def job(role: str, messages: list[ChatMessage]) -> str:
-    """"cook" if the latest position shown (state or chat overview) is in split_room's right
+    """"cook" if the latest position shown (state or chat overview) is in forced_coordination's right
     room (x >= 3), else "passer"; the model's role if no position was shown yet."""
     for m in reversed(messages):
         if m.role == "user" and (hit := _SEAT.search(m.text)):

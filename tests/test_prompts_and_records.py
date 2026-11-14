@@ -32,7 +32,7 @@ LEAKS = ["deepseek", "gemma", "google", "baidu", "deepinfra", "novita", "openrou
 
 
 def cfg(**kw: Any) -> Config:
-    base = dict(name="t", level="split_room", rounds=2, round_s=12, practice=False,
+    base = dict(name="t", level="forced_coordination", rounds=2, round_s=12, practice=False,
                 chat_max_posts=2, agents=[AgentSpec(model="mockllm/model")] * 2,
                 decision={"flat_s": 2, "post_words_per_s": 10})
     return Config.model_validate({**base, **kw})
@@ -155,7 +155,7 @@ def test_realtime_mode_is_refused(tmp_path):
     with pytest.raises(ValidationError, match="realtime mode is not implemented"):
         cfg(decision={"mode": "realtime"})
     path = tmp_path / "c.yaml"
-    path.write_text("name: x\nlevel: split_room\ndecision: {mode: realtime}\n"
+    path.write_text("name: x\nlevel: forced_coordination\ndecision: {mode: realtime}\n"
                     "agents: [{model: m}, {model: m}]\n")
     with pytest.raises(ValidationError, match="realtime mode is not implemented"):
         Config.load(path)

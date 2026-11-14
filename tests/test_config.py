@@ -10,4 +10,4 @@ def test_names_never_look_like_map_symbols():
 
 def test_pilot_config_loads():
     cfg = Config.load("configs/split_room.yaml")
-    assert cfg.level == "split_room" and len(cfg.agents) == 2
+    assert cfg.level == "forced_coordination" and len(cfg.agents) == 2

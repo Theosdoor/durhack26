@@ -1,5 +1,5 @@
 name: split_room_noreason
-level: split_room
+level: forced_coordination
 rounds: 3
 round_s: 180
 practice: true

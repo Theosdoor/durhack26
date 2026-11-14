@@ -4,7 +4,7 @@ import pytest
 
 from undercooked.engine import Kitchen, ParseError, parse_action, split_plan
 
-K = Kitchen.load("split_room")
+K = Kitchen.load("forced_coordination")
 
 
 @pytest.mark.parametrize("text, canonical", [

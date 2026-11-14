@@ -42,7 +42,7 @@ SEED = seed_where([1, 2], 0)
 
 
 def config(**kw) -> Config:
-    base = dict(name="test_season", level="split_room", rounds=1, round_s=30, practice=True,
+    base = dict(name="test_season", level="forced_coordination", rounds=1, round_s=30, practice=True,
                 practice_s=20, chat_max_posts=2, epochs=1, cook_s=2, agents=AGENTS,
                 decision={"flat_s": 0, "post_words_per_s": 10}, seed=SEED)
     return Config.model_validate({**base, **kw})
@@ -75,7 +75,7 @@ def test_export_and_header(season):
     assert kitchen[0].data["kind"] == "header"
     assert all(e.data["kind"] != "header" for e in kitchen[1:])
     h = rep.header
-    assert isinstance(h, Header) and h.epoch == 1 and h.level == "split_room" and h.round_s == 30
+    assert isinstance(h, Header) and h.epoch == 1 and h.level == "forced_coordination" and h.round_s == 30
     assert [a.name for a in h.agents] == pick_names(SEED, 1)
     assert [a.seat for a in h.agents] == [1, 2]
     assert all(a.name in NATO_NAMES and a.letter == a.name[0] for a in h.agents)
@@ -247,7 +247,7 @@ def test_shuffled_seats(tmp_path):
     log, [rep] = run_season(config(seed=seed, practice=False), tmp_path)
     a0, a1 = rep.header.agents
     assert (a0.model, a0.seat, a1.model, a1.seat) == ("kitchenfake/cook", 2, "kitchenfake/passer", 1)
-    kitchen = Kitchen.load("split_room")
+    kitchen = Kitchen.load("forced_coordination")
     start = {a.name: tuple(a.pos) for a in rep.frames("round", 1)[0].agents}
     assert start == {a0.name: kitchen.starts[2], a1.name: kitchen.starts[1]}
     [chat_start] = [e for e in rep.select(Event, "chat", 1) if e.type == "phase_start"]

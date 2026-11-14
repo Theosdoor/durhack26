@@ -40,10 +40,10 @@ def test_pot_states_render():
     ET.fromstring(render_svg(REP.header, by_state["empty"][0]))
 
 
-def test_split_room_middle_counters_get_pass_through_style():
+def test_forced_coordination_middle_counters_get_pass_through_style():
     from undercooked.sprites import STRIP, T, is_pass_through
 
-    rows = REP.header.map   # split_room: column 2 is the wall with three hand-over counters
+    rows = REP.header.map   # forced_coordination: column 2 is the wall with three hand-over counters
     svg = render_svg(REP.header, FRAMES[0])
     assert svg.count("data-tile='pass'") == 3
     for y in (1, 2, 3):
