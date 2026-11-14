@@ -42,7 +42,10 @@ def season_values(s: dict[str, Any]) -> dict[str, float]:
         "served": sum(r["served"] for r in rounds),
         "missed": sum(r["missed"] for r in rounds),
     }
-    for key in ("posts", "read_board", "cutoffs", "decisions"):
+    # cutoffs / forced: practice and rounds; *_chat / *_debrief: those turns, kept apart so that
+    # the round metrics stay comparable with runs from before chat and debrief were counted
+    for key in ("posts", "read_board", "cutoffs", "decisions", "forced", "cutoffs_chat",
+                "forced_chat", "cutoffs_debrief", "forced_debrief"):
         for i, n in enumerate(s[key]):
             value[f"{key}_agent{i}"] = n
     return value
@@ -89,9 +92,15 @@ def make_task(cfg: Config) -> Task:
 @task
 def undercooked(config: str = "configs/split_room.yaml", rounds: int | None = None,
                 round_s: int | None = None, practice: bool | None = None,
-                epochs: int | None = None, pipeline: bool | None = None) -> Task:
-    cfg = load_config(config, rounds=rounds, round_s=round_s, practice=practice, epochs=epochs)
+                epochs: int | None = None, pipeline: bool | None = None,
+                reasoning: str | None = None, comms: str | None = None,
+                debrief: str | None = None) -> Task:
+    cfg = load_config(config, rounds=rounds, round_s=round_s, practice=practice, epochs=epochs,
+                      comms=comms, debrief=debrief)
     if pipeline is not None:
         cfg = cfg.model_copy(update={"decision": cfg.decision.model_copy(
             update={"pipeline": pipeline})})
+    if reasoning is not None:                        # validated like the YAML field
+        cfg = Config.model_validate({**cfg.model_dump(), "decision": {
+            **cfg.decision.model_dump(), "reasoning": reasoning}})
     return make_task(cfg)

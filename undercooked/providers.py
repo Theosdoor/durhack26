@@ -111,8 +111,34 @@ def served_providers() -> Iterator[list[str]]:
 
 
 def generate_config(cfg: Config) -> GenerateConfig:
+    if cfg.decision.reasoning == "off":            # no reasoning budget next to enabled: false
+        return GenerateConfig(max_tokens=cfg.decision.max_tokens)
     return GenerateConfig(reasoning_tokens=cfg.decision.reasoning_tokens,
                           max_tokens=cfg.decision.max_tokens)
+
+
+# Reasoning off. Inspect's OpenRouter provider takes a `reasoning_enabled` model arg (a
+# constructor arg, not a GenerateConfig field) and sends it as extra_body
+# {"reasoning": {"enabled": false}}; with no reasoning_tokens in the config that is the whole
+# "reasoning" object (inspect_ai/model/_providers/openrouter.py, completion_params). So a model
+# without reasoning is its own Model instance. Other model APIs get the same arg (the offline
+# fakes record it); a non-OpenRouter API that does not accept it cannot be run with reasoning off.
+NO_REASONING = {"reasoning_enabled": False}
+
+
+def reasoning_args(cfg: Config) -> dict[str, Any]:
+    """Model args for the agents' main model: none when reasoning is on."""
+    return dict(NO_REASONING) if cfg.decision.reasoning == "off" else {}
+
+
+def no_reasoning_model(am: AgentModel, max_tokens: int) -> Model:
+    """The agent's model (same endpoint pin) with reasoning disabled and a small max_tokens: the
+    forced-answer follow-up call (season.py). get_model memoizes, so this is cheap to repeat."""
+    config = GenerateConfig(max_tokens=max_tokens)
+    if not am.spec.model.startswith(OPENROUTER):
+        return track_served_provider(get_model(am.spec.model, config=config, **NO_REASONING))
+    return track_served_provider(get_model(am.spec.model, provider=provider_options(am.provider),
+                                           config=config, **NO_REASONING))
 
 
 def provider_options(pin: str) -> dict[str, Any]:
@@ -125,8 +151,9 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
     GET), so `endpoints` is None; otherwise the endpoint list is fetched, kept in `endpoints`
     (logged by the season solver) and the cheapest eligible endpoint is pinned."""
     config = generate_config(cfg)
+    args = reasoning_args(cfg)
     if not spec.model.startswith(OPENROUTER):
-        model = track_served_provider(get_model(spec.model, config=config))
+        model = track_served_provider(get_model(spec.model, config=config, **args))
         return AgentModel(model, spec, spec.provider)
     model_id = spec.model[len(OPENROUTER):]
     endpoints, error = None, None
@@ -138,5 +165,5 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
             raise RuntimeError(f"cannot list endpoints for {model_id}: {error}") from e
     pin = spec.provider or pick_endpoint(endpoints or [], cfg.providers.min_quant)["tag"]
     model = track_served_provider(
-        get_model(spec.model, provider=provider_options(pin), config=config))
+        get_model(spec.model, provider=provider_options(pin), config=config, **args))
     return AgentModel(model, spec, pin, endpoints, error)

@@ -12,7 +12,9 @@ Each game second t:
   2. every agent in game.needs_decision() starts a decision (status "deciding"; it stands still);
      decisions that start in the same second run concurrently and are awaited before the clock
      moves on. A decision lands at t + flat_s + ceil(words posted / post_words_per_s); a reply
-     with no act() (a "cutoff") lands at t + 1 (+ the post cost, if it posted);
+     with no act() (a "cutoff") lands at t + 1 (+ the post cost, if it posted); a decision whose
+     replies had no act() but whose one follow-up call did act (a "forced answer", see
+     `Season.forced_answer`) lands 1 s later than an ordinary one;
   3. decisions with zero cost land (only possible when flat_s = 0);
   4. game.tick(); its events and the frame after it are logged.
 So a decision that starts at t and lands at L keeps the agent standing still for exactly L - t
@@ -41,7 +43,7 @@ import random
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, NamedTuple
 
 from inspect_ai.log import transcript
 from inspect_ai.model import (
@@ -64,11 +66,14 @@ from undercooked.board import Board, format_posts
 from undercooked.config import NATO_NAMES, Config
 from undercooked.engine import Game, Kitchen
 from undercooked.providers import AgentModel, agent_model, served_providers
+from undercooked.providers import no_reasoning_model
 from undercooked.replay import AgentInfo, DecisionRecord, Event, Header, Phase, Post
 from undercooked.tools import Turn, act_tool, note_tool, post_tool, read_board_tool, ready_tool
 
 STORE_KEY = "undercooked"          # season summary in the sample store (read by the scorer)
 ROUND_EXTRA_GENERATIONS = 2        # generations allowed after one without act()
+FORCED_MAX_TOKENS = 400            # max_tokens of the forced-answer follow-up call (no reasoning)
+FORCED_COST_S = 1                  # game seconds a forced answer adds to its decision
 
 
 def pick_names(seed: int, epoch: int, n: int = 2) -> list[str]:
@@ -101,6 +106,10 @@ class Agent:
     posts: int = 0
     read_board: int = 0
     cutoffs: int = 0
+    forced: int = 0                 # decisions that acted only on the forced-answer follow-up
+    talk_cutoffs: dict[str, int] = field(default_factory=lambda: {"chat": 0, "debrief": 0})
+    talk_forced: dict[str, int] = field(default_factory=lambda: {"chat": 0, "debrief": 0})
+    inbox: list[str] = field(default_factory=list)   # put before the agent's next user message
     decisions: int = 0              # round decisions (not practice, chat or debrief)
     compactions: int = 0
     last_cutoff: int = 0            # seconds the previous decision's cutoff cost (0: not a cutoff)
@@ -122,6 +131,9 @@ class Gen:
     served_by: list[str] = field(default_factory=list)
     compactions: int = 0
     generations: int = 0
+    followed_up: bool = False       # the forced-answer follow-up call was made
+    forced: bool = False            # ... and it answered
+    cutoff: bool = False            # ... and it did not answer either
 
     def add(self, output: ModelOutput, served_by: str | None) -> None:
         self.generations += 1
@@ -149,7 +161,20 @@ class Gen:
             input_tokens=self.input_tokens if self.generations else None,
             output_tokens=self.output_tokens if self.generations else None,
             reasoning_tokens=self.reasoning_tokens,
-            served_by=",".join(self.served_by) or None, **kw)
+            served_by=",".join(self.served_by) or None,
+            **{"forced": self.forced, "cutoff": self.cutoff, **kw})
+
+
+class Force(NamedTuple):
+    """A turn's forced-answer follow-up: its user message, and whether a reply still needs it."""
+
+    prompt: str
+    needed: Callable[[ModelOutput], bool]
+
+
+def cut_off(output: ModelOutput) -> bool:
+    """A chat or debrief reply that ran out of tokens before calling a tool (passing is fine)."""
+    return output.stop_reason in ("max_tokens", "model_length") and not output.message.tool_calls
 
 
 @dataclass
@@ -258,7 +283,7 @@ class Season:
             system = ChatMessageSystem(content=prompts.system_prompt(cfg, name, mate))
             intro = ChatMessageUser(content=prompts.season_intro(cfg), source="input")
             strategy = CompactionSummary(threshold=cfg.compact_at_tokens,
-                                         prompt=prompts.COMPACTION_PROMPT)
+                                         prompt=prompts.compaction_prompt(cfg))
             handler = compaction(strategy, prefix=[system, intro], model=am.model)
             self.agents.append(Agent(i, name, am, [system, intro], handler, seat=seat))
         self.by_name = {a.name: a for a in self.agents}
@@ -292,7 +317,8 @@ class Season:
             agents=[AgentInfo(name=a.name, letter=a.letter, model=a.am.spec.model,
                               provider=a.am.provider, seat=a.seat) for a in self.agents],
             seed=cfg.seed, epoch=self.epoch, round_s=cfg.round_s, rounds=cfg.rounds,
-            cook_s=cfg.cook_s, practice_s=cfg.practice_s if cfg.practice else None))
+            cook_s=cfg.cook_s, practice_s=cfg.practice_s if cfg.practice else None,
+            **condition(cfg)))
         clock = time.monotonic()
         self.event("briefing", 0, 0, "phase_start")
         self.event("briefing", 0, 0, "phase_end", duration_s=round(time.monotonic() - clock, 1))
@@ -300,15 +326,35 @@ class Season:
             async with span("practice"):
                 await self.practice()
         for r in range(1, cfg.rounds + 1):
-            async with span(f"chat-{r}"):
-                await self.chat(r)
+            if cfg.comms != "none":                       # comms "none": no planning chat
+                async with span(f"chat-{r}"):
+                    await self.chat(r)
             async with span(f"round-{r}"):
                 game = await self.round(r)
             self.rounds.append({"score": game.score, "served": game.served,
                                 "missed": game.missed})
-            async with span(f"debrief-{r}"):
-                await self.debrief(r)
+            if cfg.debrief == "full":
+                async with span(f"debrief-{r}"):
+                    await self.debrief(r)
+            else:
+                self.post_result(r)
+        self.deliver_inbox()
         return self.summary()
+
+    def post_result(self, r: int) -> None:
+        """debrief "score_only": no debrief turn; the round's result opens each agent's next
+        message (the next chat turn or round decision, or the end of the season)."""
+        res = self.rounds[r - 1]
+        line = prompts.round_result(self.cfg, r, res["score"], res["served"], res["missed"])
+        for a in self.agents:
+            a.inbox.append(line)
+
+    def deliver_inbox(self) -> None:
+        """The season is over: what is still in an inbox goes into the conversation (no call)."""
+        for a in self.agents:
+            if a.inbox:
+                a.messages.append(ChatMessageUser(content="\n\n".join(a.inbox)))
+                a.inbox.clear()
 
     def summary(self) -> dict[str, Any]:
         return {
@@ -320,15 +366,19 @@ class Season:
             "posts": [a.posts for a in self.agents],
             "read_board": [a.read_board for a in self.agents],
             "cutoffs": [a.cutoffs for a in self.agents],
+            "forced": [a.forced for a in self.agents],
+            **{f"{kind}_{phase}": [getattr(a, f"talk_{kind}")[phase] for a in self.agents]
+               for kind in ("cutoffs", "forced") for phase in ("chat", "debrief")},
             "decisions": [a.decisions for a in self.agents],
             "compactions": [a.compactions for a in self.agents],
         }
 
     # ------------------------------------------------------------------ model I/O
     async def model_turn(self, a: Agent, text: str, tools: list[ToolDef], max_gens: int,
-                         done: Callable[[], bool]) -> Gen:
+                         done: Callable[[], bool], force: Force | None = None) -> Gen:
         """Append `text` as a user message, then generate (and run tools) until `done()`, a reply
-        without tool calls, or `max_gens` generations.
+        without tool calls, or `max_gens` generations. With `force`, one follow-up call if the
+        turn has not answered (see `forced_answer`).
 
         Compaction runs once, at the start of the turn and before the new user message, so the
         model always sees the current state verbatim (a summary would otherwise swallow it)."""
@@ -338,7 +388,11 @@ class Season:
             a.messages.append(summary)
             gen.compactions += 1
         start = len(a.messages)
+        if a.inbox:                    # debrief "score_only": the round results come first
+            text = "\n\n".join([*a.inbox, text])
+            a.inbox.clear()
         a.messages.append(ChatMessageUser(content=text))
+        output = None
         for _ in range(max_gens):
             model_input = base + a.messages[start:]
             with served_providers() as served:
@@ -351,7 +405,34 @@ class Season:
                 a.messages.extend(result.messages)
             if done() or not output.message.tool_calls:
                 break
+        if force is not None and output is not None and force.needed(output):
+            output = await self.forced_answer(a, base, start, tools, gen, force.prompt)
+            gen.followed_up = True
+            gen.cutoff = force.needed(output)
+            gen.forced = not gen.cutoff
         return gen
+
+    async def forced_answer(self, a: Agent, base: list[ChatMessage], start: int,
+                            tools: list[ToolDef], gen: Gen, prompt: str) -> ModelOutput:
+        """Budget forcing. The turn ended without its answer (in practice and rounds: no act();
+        in chat and debrief: a reply cut off at max_tokens with no tool call), typically a model
+        that thought until max_tokens. Its replies stay in the conversation as Inspect produced
+        them; we add `prompt` as a user message and generate ONCE more, with reasoning disabled
+        and FORCED_MAX_TOKENS, offering the same tools. The call is part of the same turn (in
+        play, the same decision task), so the pipeline's equivalence is unaffected; a practice
+        or round decision that acts here costs FORCED_COST_S more (see think)."""
+        a.messages.append(ChatMessageUser(content=prompt))
+        model = no_reasoning_model(a.am, FORCED_MAX_TOKENS)
+        model_input = base + a.messages[start:]
+        with served_providers() as served:
+            output = await model.generate(model_input, tools=tools, tool_choice="auto")
+        await a.compact.record_output(model_input, output)
+        a.messages.append(output.message)
+        gen.add(output, served[-1] if served else None)
+        if output.message.tool_calls:
+            result = await execute_tools(a.messages, tools)
+            a.messages.extend(result.messages)
+        return output
 
     def _log_side_events(self, phase: Phase, round: int, t: int, a: Agent, gen: Gen,
                          turn: Turn, messages: int | None = None) -> None:
@@ -361,11 +442,26 @@ class Season:
                        messages=len(a.messages) if messages is None else messages)
         for _ in range(turn.read_board):
             self.event(phase, round, t, "read_board", a.name)
+        self._log_forcing(phase, round, t, a, gen)
+
+    def _log_forcing(self, phase: Phase, round: int, t: int, a: Agent, gen: Gen) -> None:
+        """forced_answer events (every phase), and cutoff events of chat and debrief turns
+        (practice and round cutoffs are logged by the play loops, as before)."""
+        talk = phase in ("chat", "debrief")
+        if gen.forced:
+            if talk:
+                a.talk_forced[phase] += 1
+            else:
+                a.forced += 1
+            self.event(phase, round, t, "forced_answer", a.name)
+        if talk and gen.cutoff:
+            a.talk_cutoffs[phase] += 1
+            self.event(phase, round, t, "cutoff", a.name)
 
     # ------------------------------------------------------------------ decisions
     def state_text(self, game: Game, a: Agent, board: Board | None) -> str:
         last = game.last_plan_result(a.name)
-        if board is None:    # practice: no board at all
+        if board is None:    # practice (or a round without comms "full"): no board at all
             return prompts.strip_board_line(game.state_text(
                 a.name, unread_posts=0, notepad=a.notepad, last_plan_result=last))
         if self.cfg.board == "pull":
@@ -416,11 +512,14 @@ class Season:
         """The model call(s) of a decision prepared at second t0, and when it lands."""
         async with span(f"agent-{a.name}"):
             gen = await self.model_turn(a, text, tools, 1 + ROUND_EXTRA_GENERATIONS,
-                                        lambda: turn.plan is not None)
+                                        lambda: turn.plan is not None,
+                                        Force(prompts.forced_prompt(self.cfg, "act"),
+                                              lambda _: turn.plan is None))
         cutoff = turn.plan is None
         d = self.cfg.decision
         words = len(turn.post.split()) if turn.post else 0
-        cost = (1 if cutoff else d.flat_s) + math.ceil(words / d.post_words_per_s)
+        cost = ((1 if cutoff else d.flat_s + FORCED_COST_S * gen.forced)
+                + math.ceil(words / d.post_words_per_s))
         record = gen.record(phase=game.phase, round=game.round, t=t0, agent=a.name,
                             plan=turn.kept or [], plan_sent=turn.plan or [], post=turn.post,
                             note=turn.note, read_board=turn.read_board > 0, cutoff=cutoff)
@@ -678,7 +777,8 @@ class Season:
                     seed=self._game_seed("round", r))
         intro = prompts.round_start(self.cfg, r,
                                     chat_turn_limit=self._chat_turn_limit.get(r, False))
-        await self.play([(game, self.agents)], self.board, intro)
+        board = self.board if self.cfg.comms == "full" else None    # no board during rounds
+        await self.play([(game, self.agents)], board, intro)
         self.event("round", r, game.t, "phase_end", duration_s=round(time.monotonic() - clock, 1),
                    score=game.score, served=game.served, missed=game.missed)
         return game
@@ -724,7 +824,8 @@ class Season:
                      lands_later=False),
                      ready_tool(turn)]
             async with span(f"agent-{a.name}"):
-                gen = await self.model_turn(a, text, tools, 1, lambda: True)
+                gen = await self.model_turn(a, text, tools, 1, lambda: True,
+                                            Force(prompts.forced_prompt(cfg, "chat"), cut_off))
             self._log_side_events("chat", r, turn_i, a, gen, turn)
             if turn.post is not None:
                 used[a.name] += 1
@@ -754,7 +855,9 @@ class Season:
             text = prompts.debrief(self.cfg, r, res["score"], res["served"], res["missed"],
                                    history, a.notepad)
             async with span(f"agent-{a.name}"):
-                gen = await self.model_turn(a, text, [note_tool(turn)], 1, lambda: True)
+                gen = await self.model_turn(a, text, [note_tool(turn)], 1, lambda: True,
+                                            Force(prompts.forced_prompt(self.cfg, "debrief"),
+                                                  cut_off))
             return turn, gen
 
         results = await collect(*(one(a) for a in self.agents))
@@ -767,6 +870,11 @@ class Season:
             self.log(gen.record(phase="debrief", round=r, t=t, agent=a.name, note=turn.note))
         self.event("debrief", r, len(self.agents), "phase_end",
                    duration_s=round(time.monotonic() - clock, 1))
+
+
+def condition(cfg: Config) -> dict[str, str]:
+    """The experimental condition, for grouping runs in analysis (also in the Header)."""
+    return {"reasoning": cfg.decision.reasoning, "comms": cfg.comms, "debrief": cfg.debrief}
 
 
 def _conversation(messages: list[ChatMessage]) -> list[dict[str, Any]]:
@@ -788,6 +896,7 @@ def season_solver(cfg: Config) -> Solver:
             {"agent_index": p["agent_index"], "model": p["model"], "pin": p["pin"],
              "endpoint": next((e for e in p["endpoints"] or [] if e.get("tag") == p["pin"]), None),
              "endpoints_error": p["endpoints_error"]} for p in providers]
+        state.metadata["condition"] = condition(cfg)
         season = Season(cfg, models, state.epoch)
         summary = await season.run()
         state.store.set(STORE_KEY, summary)

@@ -50,7 +50,7 @@ def scripted_season(c: Config, script: Script, epoch: int = 1) -> Season:
     s._emit = s.logged.append                                # type: ignore[method-assign]
     count: dict[str, int] = {}
 
-    async def model_turn(a, text, tools, max_gens, done) -> Gen:
+    async def model_turn(a, text, tools, max_gens, done, force=None) -> Gen:  # no follow-ups
         n = count[a.name] = count.get(a.name, -1) + 1
         s.seen.append((a.name, text))
         by = {t.name: t for t in tools}

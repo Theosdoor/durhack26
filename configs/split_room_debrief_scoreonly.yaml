@@ -1,0 +1,21 @@
+name: split_room_debrief_scoreonly
+level: split_room
+rounds: 3
+round_s: 180
+practice: true
+chat_max_posts: 6
+orders: {every_s: 30, due_s: 60, max_open: 3, reward: 20, penalty: 10}
+cook_s: 20
+decision: {mode: simulated, flat_s: 2, post_words_per_s: 10, reasoning_tokens: 1000, max_tokens: 4000}
+max_plan_len: 5
+epochs: 10                                   # seasons per run (Inspect epochs)
+seed: 0
+names: nato_random                           # drawn each season; Alpha left out
+board: pull                                  # unread count; read_board() is free
+debrief: score_only                          # no debrief turn: the score opens the next message
+compact_at_tokens: 32000                     # Inspect CompactionSummary; no game time
+providers: {pick: cheapest, min_quant: fp8}  # default rule
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  # mixed team: make one {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}  # ~2x faster than novita/bf16 (14 Nov test)

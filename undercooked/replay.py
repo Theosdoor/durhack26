@@ -47,6 +47,11 @@ class Header(BaseModel):
     rounds: int
     cook_s: int = 20               # seconds a full pot cooks (config.cook_s); viewers draw progress from it
     practice_s: int | None = None  # practice phase length, if practice ran
+    # experimental condition (config.decision.reasoning, config.comms, config.debrief);
+    # the defaults are what older logs ran with
+    reasoning: Literal["on", "off"] = "on"
+    comms: Literal["full", "planning_only", "none"] = "full"
+    debrief: Literal["full", "score_only"] = "full"
 
 
 class AgentState(BaseModel):
@@ -92,7 +97,8 @@ class Event(BaseModel):
     """Something that happened. `type` values:
     pickup, putdown, add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
     bump (blocked by another agent), order_new, order_missed, decision_start, decision_land,
-    cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end.
+    cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end,
+    forced_answer (no act at first, then act on the one follow-up call; see season.py).
 
     Keys used in `data` (include those that apply): item ("onion"|"dish"|"soup"),
     at ("x,y" of the tile acted on), pot (pot id), onions (count after the action),
@@ -146,12 +152,13 @@ class DecisionRecord(BaseModel):
     note: str | None = None
     read_board: bool = False
     ready: bool = False            # chat phase: agent called ready()
-    cutoff: bool = False           # reply had no act() in a round
+    cutoff: bool = False           # reply had no act() in a round (chat, debrief: see season.cut_off)
     landed: bool = True            # False: still in flight when the phase ended (no effect)
     input_tokens: int | None = None
     output_tokens: int | None = None
     reasoning_tokens: int | None = None
     served_by: str | None = None   # provider OpenRouter reports for this call
+    forced: bool = False           # answered only on the forced-answer follow-up call (season.py)
 
 
 Record = Annotated[Union[Header, Frame, Event, Post, DecisionRecord], Field(discriminator="kind")]
