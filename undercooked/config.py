@@ -8,11 +8,14 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
-# NATO alphabet minus "Alpha" (it reads as "leader", a confound for hierarchy).
+# NATO alphabet minus "Alpha" (it reads as "leader", a confound for hierarchy) and minus the
+# names whose first letter is a map symbol (Delta=D dish rack, Oscar=O onion crate, Papa=P pot,
+# Sierra=S hatch, Xray=X counter): an agent shows on the map as its first letter.
+MAP_SYMBOLS = set("XODPS")
 NATO_NAMES = [
-    "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett",
-    "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra",
-    "Tango", "Uniform", "Victor", "Whiskey", "Xray", "Yankee", "Zulu",
+    "Bravo", "Charlie", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett",
+    "Kilo", "Lima", "Mike", "November", "Quebec", "Romeo",
+    "Tango", "Uniform", "Victor", "Whiskey", "Yankee", "Zulu",
 ]
 
 
