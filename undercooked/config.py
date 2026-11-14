@@ -36,7 +36,7 @@ class Decision(_Strict):
     flat_s: int = 2                 # game seconds every decision costs
     post_words_per_s: int = 10      # extra game seconds = ceil(words posted / this)
     reasoning_tokens: int = 1000    # GenerateConfig.reasoning_tokens
-    max_tokens: int = 1500          # GenerateConfig.max_tokens (the real cap for some models)
+    max_tokens: int = 4000          # GenerateConfig.max_tokens: hard cap; DeepSeek on Baidu overshoots reasoning_tokens
 
 
 class Providers(_Strict):
