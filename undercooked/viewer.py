@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from undercooked.replay import DecisionRecord, Event, Frame, Post, Replay  # noqa: E402
 from undercooked.replay_io import load_replay  # noqa: E402
+from undercooked.sprites import render_svg  # noqa: E402
 
 # Colours are semi-transparent and text is never set explicitly, so the page's own text
 # colour (light or dark theme) always has contrast against them.
@@ -220,6 +221,7 @@ def main() -> None:
     phase, rnd = phases[[phase_label(*p) for p in phases].index(label)]
     names = [a.name for a in rep.header.agents]
     agents = st.sidebar.multiselect("Agents", names, default=names) or names
+    graphics = st.sidebar.toggle("Graphics", value=True)   # illustrated SVG map vs minimal HTML table
     st.sidebar.caption(f"{rep.header.config_name} | level {rep.header.level} | seed {rep.header.seed}")
 
     frames = rep.select(Frame, phase, rnd)
@@ -243,7 +245,8 @@ def main() -> None:
                 b1.button("< -1 s", on_click=step_time, args=(key, -1, 0, hi))
                 b2.button("+1 s >", on_click=step_time, args=(key, +1, 0, hi))
                 frame = frame_at(frames, t)
-                st.markdown(render_map(rep, frame), unsafe_allow_html=True)
+                st.markdown(render_svg(rep.header, frame) if graphics else render_map(rep, frame),
+                            unsafe_allow_html=True)
                 show_status(frame, t)
             with right:
                 show_board(posts, t, agents)
@@ -252,7 +255,9 @@ def main() -> None:
 
     with tab_dec:
         shown = [d for d in decisions if d.agent in agents]
-        st.dataframe(decisions_table(shown), use_container_width=True, hide_index=True)
+        st.dataframe(decisions_table(shown), use_container_width=True, hide_index=True,
+                     column_config={"plan": st.column_config.TextColumn(width="large"),
+                                    "post": st.column_config.TextColumn(width="medium")})
     with tab_ev:
         shown = [e for e in events if e.agent is None or e.agent in agents]
         st.dataframe(events_table(shown), use_container_width=True, hide_index=True)
