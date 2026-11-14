@@ -3,6 +3,7 @@
     uv run inspect eval overcooked_port/task.py -T rounds=3 -T round_steps=60
     uv run inspect eval overcooked_port/task.py -T mixed=true      # DeepSeek + Gemma
     uv run inspect eval overcooked_port/task.py -T layout=coordination_ring
+    uv run inspect eval overcooked_port/task.py -T rules=minimal   # discover the game by playing
 
 Layouts (the four classic ones, onion soup only): forced_coordination, asymmetric_advantages,
 coordination_ring, counter_circuit (= Overcooked-AI's counter_circuit_o_1order). Any other
@@ -51,9 +52,12 @@ LAYOUTS = {"counter_circuit": "counter_circuit_o_1order"}
 
 @task
 def overcooked_port(rounds: int = 3, round_steps: int = 100, epochs: int = 1, seed: int = 0,
-                    mixed: bool = False, layout: str = "forced_coordination") -> Task:
+                    mixed: bool = False, layout: str = "forced_coordination",
+                    rules: str = "full") -> Task:
+    if rules not in ("full", "minimal"):
+        raise ValueError(f"rules must be 'full' or 'minimal', not {rules!r}")
     agents = [DEEPSEEK, GEMMA] if mixed else [DEEPSEEK, DEEPSEEK]
     cfg = Config(rounds=rounds, round_steps=round_steps, seed=seed, agents=agents,
-                 layout=LAYOUTS.get(layout, layout),
-                 name=f"{layout}_{'mixed' if mixed else 'deepseek'}")
+                 layout=LAYOUTS.get(layout, layout), rules=rules,
+                 name=f"{layout}_{rules}_{'mixed' if mixed else 'deepseek'}")
     return make_task(cfg, epochs)

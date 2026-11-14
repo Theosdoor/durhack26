@@ -44,6 +44,7 @@ class AgentSpec(BaseModel):
 class Config(BaseModel):
     name: str = "forced_coordination_pilot"
     layout: str = "forced_coordination"
+    rules: str = "full"                   # "full" (recipe + named actions) or "minimal"
     rounds: int = 3
     round_steps: int = 100
     max_plan_len: int = 5
@@ -111,7 +112,7 @@ class Turn:
 
 def tools_for(turn: Turn, *, act: Callable[[list[str]], str | None] | None = None,
               post: bool = False, read: Callable[[], str] | None = None, note: bool = False,
-              ready: bool = False, max_len: int = 5) -> list[ToolDef]:
+              ready: bool = False, max_len: int = 5, mode: str = "full") -> list[ToolDef]:
     out: list[ToolDef] = []
     if act is not None:
         async def act_fn(plan: list[str]) -> str:
@@ -123,12 +124,14 @@ def tools_for(turn: Turn, *, act: Callable[[list[str]], str | None] | None = Non
             if err:
                 return f"Plan rejected: {err}. Call act(plan) again with a valid plan."
             return "Plan accepted. It starts now."
+        example = ('["interact(0, 1)", "interact(pot_1)"]' if mode == "minimal" else
+                   '["get_onion", "put_in_pot(pot_1)"]')
+        one = '"interact(pot_2)"' if mode == "minimal" else '"put_in_pot(pot_2)"'
         out.append(ToolDef(act_fn, name="act", description=(
-            f"Set your plan: 1 to {max_len} actions done in order, e.g. "
-            '["get_onion", "place_on_counter"]. A new plan replaces the old one. Every round '
-            "decision must call act."),
-            parameters={"plan": f"1 to {max_len} action names, e.g. \"put_in_pot\" or "
-                                "\"wait(3)\"."}))
+            f"Set your plan: 1 to {max_len} actions done in order, e.g. {example}. Your next "
+            "decision comes when the plan is done or fails. Every round decision must call act."),
+            parameters={"plan": f"1 to {max_len} actions, each one string such as {one} or "
+                                '"wait(3)".'}))
     if post:
         async def post_fn(message: str) -> str:
             if turn.post is not None:
@@ -290,7 +293,8 @@ class Season:
         self.rounds: list[dict[str, Any]] = []
 
     def kitchen(self) -> Kitchen:
-        return Kitchen(self.cfg.layout, [self.agents[i].name for i in self.start_order])
+        return Kitchen(self.cfg.layout, [self.agents[i].name for i in self.start_order],
+                       mode=self.cfg.rules)
 
     def log(self, rec: BaseModel) -> None:
         transcript().info(rec.model_dump(mode="json"), source="kitchen")
@@ -410,6 +414,9 @@ class Season:
                      "No unread posts.")
         if a.notepad:
             lines.append(f'Your notepad: "{a.notepad}"')
+        if p.last_fail:
+            lines.append(f"Your last plan stopped early ({p.last_fail}).")
+            p.last_fail = None
         lines.append("You have no plan. Decide: call act(plan).")
         turn = Turn()
 
@@ -422,7 +429,8 @@ class Season:
             # dry-run the first action on the live kitchen (nothing moves while we decide)
             return k.check(p, plan[0]) if plan else "empty plan"
 
-        tools = tools_for(turn, act=act, post=True, read=read, max_len=cfg.max_plan_len)
+        tools = tools_for(turn, act=act, post=True, read=read, max_len=cfg.max_plan_len,
+                          mode=cfg.rules)
         t = k.t
         cut = 0
         async with span(f"agent-{a.name}"):

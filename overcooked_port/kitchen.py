@@ -17,46 +17,59 @@ import re
 from dataclasses import dataclass, field
 
 from overcooked_ai_py.mdp.actions import Action
-from overcooked_ai_py.mdp.overcooked_mdp import OvercookedGridworld, OvercookedState, Recipe
+from overcooked_ai_py.mdp.overcooked_mdp import (EVENT_TYPES, OvercookedGridworld, OvercookedState,
+                                                Recipe)
 from overcooked_ai_py.planning.planners import MotionPlanner
 
 from overcooked_port.replay import AgentState, Event, Frame, Phase, PotState
 
-# name -> (what you must hold before, description)
-ACTIONS: dict[str, tuple[str, str]] = {
-    "get_onion": ("nothing", "pick up an onion from the onion crate or a counter"),
-    "get_dish": ("nothing", "pick up a dish from the dish rack or a counter"),
-    "put_in_pot": ("onion", "put the onion you hold into a pot that is not full"),
-    "start_cooking": ("nothing", "start cooking a pot that has onions in it (3 onions = soup)"),
-    "plate_soup": ("dish", "scoop a cooked soup from a pot onto your dish (waits by the pot "
-                           "if it is still cooking)"),
-    "serve": ("soup", "deliver the soup you hold at the serving hatch (+20 for a 3-onion soup)"),
-    "place_on_counter": ("anything", "put what you hold on the nearest empty counter that your "
-                                     "teammate can also reach"),
-    "pick_up_from_counter": ("nothing", "pick up the nearest item on a counter you can reach"),
-    "move_to": ("anything", "walk to the floor tile (x, y), e.g. to get out of your "
-                            "teammate's way"),
-    "wait": ("anything", "stand still for n steps (1-10)"),
+# name -> (what you must hold before, terrain letters it can target, description)
+ACTIONS: dict[str, tuple[str, str, str]] = {
+    "get_onion": ("nothing", "OX", "pick up an onion from the onion crate (or a counter)"),
+    "get_dish": ("nothing", "DX", "pick up a dish from the dish rack (or a counter)"),
+    "put_in_pot": ("onion", "P", "put the onion you hold into a pot that is not full"),
+    "start_cooking": ("nothing", "P", "start cooking a pot that has onions in it"),
+    "plate_soup": ("dish", "P", "scoop a cooked soup from a pot onto your dish (waits by the "
+                                "pot while it cooks)"),
+    "serve": ("soup", "S", "deliver the soup you hold at the serving hatch"),
+    "place_on_counter": ("anything", "X", "put what you hold on an empty counter"),
+    "pick_up_from_counter": ("nothing", "X", "pick up an item from a counter"),
+    "interact": ("anything", "XODPS", "walk to the target and interact with it"),
+    "move_to": ("anything", "", "walk to the floor tile (x, y), e.g. to get out of your "
+                                "teammate's way"),
+    "wait": ("anything", "", "stand still for n steps (1-10)"),
 }
-SIGNATURE = {"move_to": "move_to(x, y)", "wait": "wait(n)"}
-WAIT_RE = re.compile(r"^wait\((\d+)\)$")
-MOVE_RE = re.compile(r"^move_to\(\(?(\d+),(\d+)\)?\)$")
+# which actions each rules mode offers
+VOCAB = {"full": [a for a in ACTIONS if a != "interact"],
+         "minimal": ["interact", "move_to", "wait"]}
+SIGNATURE = {"move_to": "move_to(x, y)", "wait": "wait(n)", "interact": "interact(target)"}
+CALL_RE = re.compile(r"^([a-z_]+)(?:\((.*)\))?$")
+POT_RE = re.compile(r"^pot_?(\d+)$")
+XY_RE = re.compile(r"^\(?(\d+),(\d+)\)?$")
 STUCK_STEPS = 8          # an action blocked by the teammate this many steps in a row fails
+WAIT_LIMIT = 10          # an action with nothing to do yet waits this many steps, then fails
 
 
-def parse_action(s: str) -> tuple[str, int | tuple[int, int]] | None:
-    """'get_onion' -> ('get_onion', 0); 'wait(3)' -> ('wait', 3);
-    'move_to(2, 3)' -> ('move_to', (2, 3)); unknown -> None."""
-    s = s.strip().lower().replace(" ", "")
-    if s.endswith("()"):
-        s = s[:-2]
-    if m := WAIT_RE.match(s):
-        return ("wait", max(1, min(10, int(m.group(1)))))
-    if s == "wait":
-        return ("wait", 1)
-    if m := MOVE_RE.match(s):
-        return ("move_to", (int(m.group(1)), int(m.group(2))))
-    return (s, 0) if s in ACTIONS and s != "move_to" else None
+def parse_action(s: str) -> tuple[str, int | tuple[int, int] | str | None] | None:
+    """'get_onion' -> ('get_onion', None); 'wait(3)' -> ('wait', 3);
+    'move_to(2, 3)' / 'pick_up_from_counter(2, 3)' -> (name, (2, 3));
+    'put_in_pot(pot_2)' -> ('put_in_pot', 'pot_2'); malformed or unknown -> None."""
+    s = s.strip().lower().replace(" ", "").replace('"', "").replace("'", "")
+    m = CALL_RE.match(s)
+    if m is None or m.group(1) not in ACTIONS:
+        return None
+    name, raw = m.group(1), (m.group(2) or "")
+    if name == "wait":
+        if raw and not raw.isdigit():
+            return None
+        return ("wait", max(1, min(10, int(raw or 1))))
+    if not raw:
+        return None if name in ("move_to", "interact") else (name, None)
+    if xy := XY_RE.match(raw):
+        return (name, (int(xy.group(1)), int(xy.group(2))))
+    if (pot := POT_RE.match(raw)) and name != "move_to":
+        return (name, f"pot_{pot.group(1)}")
+    return None
 
 
 @dataclass
@@ -65,14 +78,18 @@ class Player:
     index: int                            # Overcooked player index
     plan: list[str] = field(default_factory=list)   # remaining actions, current first
     waited: int = 0                       # steps done of the current wait(n)
-    stuck: int = 0                        # steps without progress on the current action
+    stuck: int = 0                        # steps blocked by the teammate in a row
+    idle: int = 0                         # steps the current action had nothing to do
+    last_fail: str | None = None          # why the last plan stopped early (shown once)
     status: str = "idle"
 
 
 class Kitchen:
-    def __init__(self, layout: str, names: list[str]):
-        """`names[i]` plays Overcooked player i (start position i+1 in the layout)."""
+    def __init__(self, layout: str, names: list[str], mode: str = "full"):
+        """`names[i]` plays Overcooked player i (start position i+1 in the layout).
+        `mode`: "full" (named actions) or "minimal" (interact / move_to / wait)."""
         self.layout = layout
+        self.mode = mode
         self.mdp = OvercookedGridworld.from_layout_name(layout)
         self.cook_time = Recipe(("onion",) * 3).time    # Overcooked default: 20 steps
         counters = self.mdp.get_counter_locations()
@@ -84,6 +101,7 @@ class Kitchen:
         self.served = 0
         pots = sorted(self.mdp.get_pot_locations(), key=lambda p: (p[1], p[0]))
         self.pot_ids = {p: f"pot_{i + 1}" for i, p in enumerate(pots)}
+        self.pot_by_id = {v: k for k, v in self.pot_ids.items()}
         # counters both players can reach: where items are passed between the two halves
         self.shared_counters = sorted(
             [c for c in counters if all(self._reachable(p, [c]) for p in self.players)],
@@ -105,6 +123,9 @@ class Kitchen:
     def _reachable(self, p: Player, targets: list) -> bool:
         return bool(self._goals(p, targets))
 
+    def _terrain(self, pos) -> str:
+        return self.mdp.get_terrain_type_at_pos(pos)
+
     def map_rows(self) -> list[str]:
         """Terrain rows (no players), Overcooked letters: X counter, O onions, D dishes, P pot,
         S serving hatch, ' ' floor."""
@@ -115,36 +136,88 @@ class Kitchen:
         obj = self.state.players[p.index].held_object
         return obj.name if obj is not None else None
 
-    def _targets(self, p: Player, name: str) -> list:
-        """Terrain positions the action can be done at, right now."""
+    def _resolve(self, name: str, arg) -> tuple | str:
+        """The target tile of an action argument, or why it is not a valid target."""
+        if isinstance(arg, str):
+            if arg not in self.pot_by_id:
+                return f"there is no {arg} (pots: {', '.join(self.pot_by_id)})"
+            return self.pot_by_id[arg]
+        x, y = arg
+        rows = self.mdp.terrain_mtx
+        if not (0 <= y < len(rows) and 0 <= x < len(rows[0])):
+            return f"({x},{y}) is outside the kitchen"
+        if self._terrain(arg) not in ACTIONS[name][1]:
+            return f"({x},{y}) is not something you can {name}"
+        return arg
+
+    def _candidates(self, p: Player, name: str, arg) -> list:
+        """Tiles the action may use (ready now or not): the named target, or every tile of the
+        right kind. Untargeted place_on_counter prefers counters your teammate can reach."""
+        if arg is not None:
+            return [self._resolve(name, arg)]
+        letters = ACTIONS[name][1]
+        tiles = [(x, y) for y, row in enumerate(self.mdp.terrain_mtx)
+                 for x, c in enumerate(row) if c in letters]
+        if name == "place_on_counter" and self.shared_counters:
+            tiles = list(self.shared_counters)
+        return tiles
+
+    def _ready(self, p: Player, name: str, pos) -> bool:
+        """Can `name` do its thing at `pos` right now?"""
         m, s = self.mdp, self.state
-        objs = m.get_counter_objects_dict(s)
-        pots = m.get_pot_states(s)
-        if name == "get_onion":
-            return m.get_onion_dispenser_locations() + objs["onion"]
-        if name == "get_dish":
-            return m.get_dish_dispenser_locations() + objs["dish"]
+        kind = self._terrain(pos)
+        obj = s.get_object(pos) if s.has_object(pos) else None
+        if name == "interact":
+            return self._would_change(p, pos)
+        if name in ("get_onion", "get_dish"):
+            item = "onion" if name == "get_onion" else "dish"
+            return kind != "X" or (obj is not None and obj.name == item)
         if name == "put_in_pot":
-            return pots["empty"] + m.get_partially_full_pots(pots)
+            return obj is None or not obj.is_full and not obj.is_cooking and not obj.is_ready
         if name == "start_cooking":
-            return m.get_partially_full_pots(pots) + m.get_full_but_not_cooking_pots(pots)
+            return m.soup_to_be_cooked_at_location(s, pos)
         if name == "plate_soup":
-            return pots["ready"] + pots["cooking"]
+            return obj is not None and (obj.is_ready or obj.is_cooking)
         if name == "serve":
-            return m.get_serving_locations()
+            return True
         if name == "place_on_counter":
-            empty = set(m.get_empty_counter_locations(s))
-            return [c for c in self.shared_counters if c in empty]
+            return obj is None
         if name == "pick_up_from_counter":
-            return [pos for pos in s.objects if m.get_terrain_type_at_pos(pos) == "X"]
-        return []
+            return obj is not None
+        return False
+
+    def _would_change(self, p: Player, pos) -> bool:
+        """Would interacting with `pos` (from a tile next to it) change anything? Simulated
+        with Overcooked's own interaction rules on a copy of the state."""
+        goals = self._goals(p, [pos])
+        if not goals:
+            return False
+        sim = self.state.deepcopy()
+        (gpos, gor), _ = goals[0]
+        sim.players[p.index].update_pos_and_or(gpos, gor)
+        joint = [Action.STAY] * len(self.players)
+        joint[p.index] = Action.INTERACT
+        before = self._signature(sim)
+        events = {e: [False] * len(self.players) for e in EVENT_TYPES}
+        self.mdp.resolve_interacts(sim, joint, events)
+        return self._signature(sim) != before
+
+    @staticmethod
+    def _signature(state) -> tuple:
+        held = tuple(pl.held_object.name if pl.held_object else None for pl in state.players)
+        objs = tuple(sorted(
+            (pos, o.name, len(getattr(o, "ingredients", ())), getattr(o, "is_cooking", False))
+            for pos, o in state.objects.items()))
+        return held, objs
 
     def check(self, p: Player, action: str) -> str | None:
-        """Why `action` can't start now for `p` (None = it can)."""
+        """Why `action` can't be planned for `p` now (None = it can). Only things that can't
+        change while you wait are checked: the action, what you hold, the target, reach."""
         parsed = parse_action(action)
-        if parsed is None:
+        vocab = VOCAB[self.mode]
+        if parsed is None or parsed[0] not in vocab:
             return (f"unknown action {action!r}; use one of "
-                    + ", ".join(SIGNATURE.get(a, a) for a in ACTIONS))
+                    + ", ".join(SIGNATURE.get(a, a) for a in vocab))
         name, arg = parsed
         need = ACTIONS[name][0]
         held = self.holding(p)
@@ -160,16 +233,18 @@ class Kitchen:
             if not self.mp.positions_are_connected(self._pos_or(p), (arg, (0, -1))):
                 return f"move_to{arg}: you can't get there from your side of the kitchen"
             return None
-        if not self._targets(p, name):
-            return f"{name}: nothing to do that with right now"
-        if not self._goals(p, self._targets(p, name)):
-            return f"{name}: you can't reach anywhere to do that from your side of the kitchen"
+        tiles = self._candidates(p, name, arg)
+        if tiles and isinstance(tiles[0], str):
+            return f"{action}: {tiles[0]}"
+        if not self._goals(p, tiles):
+            where = "there" if arg is not None else "anywhere to do that"
+            return f"{action}: you can't reach {where} from your side of the kitchen"
         return None
 
     def set_plan(self, p: Player, plan: list[str]) -> str | None:
         """Replace p's plan. Only the first action is checked now (later ones may become
         possible as the kitchen changes); returns why the first one was rejected."""
-        p.plan, p.waited, p.stuck = [], 0, 0
+        p.plan, p.waited, p.stuck, p.idle = [], 0, 0, 0
         if not plan:
             return "empty plan"
         err = self.check(p, plan[0])
@@ -182,37 +257,46 @@ class Kitchen:
         return [p for p in self.players if not p.plan]
 
     def _priority(self, name: str, target) -> int:
-        """Lower = preferred: fuller pots first for put_in_pot, ready pots first for plating."""
+        """Lower = preferred when no target is named: fuller pots first for put_in_pot, ready
+        pots first for plating, crate/rack before counters (don't take back a pass)."""
         if name == "put_in_pot":
             return -self._pot(target).onions
         if name == "plate_soup":
             return 0 if self._pot(target).state == "ready" else 1
-        if name in ("get_onion", "get_dish"):   # crate/rack before counters (don't take back
-            return 1 if self.mdp.get_terrain_type_at_pos(target) == "X" else 0   # a pass)
+        if name in ("get_onion", "get_dish"):
+            return 1 if self._terrain(target) == "X" else 0
         return 0
+
+    def _fail(self, p: Player, events: list[Event], phase: Phase, round: int, reason: str):
+        events.append(Event(phase=phase, round=round, t=self.t, type="fail", agent=p.name,
+                            data={"action": p.plan[0], "reason": reason}))
+        p.last_fail = f"step {self.t}: {reason}"
+        p.plan, p.stuck, p.idle = [], 0, 0
+        return Action.STAY
 
     def _low_level(self, p: Player, events: list[Event], phase: Phase, round: int):
         """Overcooked action for p this step; pops finished actions, logs fails."""
         if not p.plan:
             return Action.STAY
-        name, arg = parse_action(p.plan[0]) or ("?", 0)
+        action = p.plan[0]
+        name, arg = parse_action(action) or ("?", None)
         if name == "wait":
             p.waited += 1
             if p.waited >= arg:
                 p.plan.pop(0)
                 p.waited = 0
             return Action.STAY
-        err = self.check(p, p.plan[0])
+        err = self.check(p, action)
         if err is None and p.stuck > STUCK_STEPS:
             mate = [q for q in self.players if q is not p][0]
             x, y = self.state.players[mate.index].position
-            err = (f"{name}: {mate.name} at ({x},{y}) blocked your way for {STUCK_STEPS} "
+            err = (f"{action}: {mate.name} at ({x},{y}) blocked your way for {STUCK_STEPS} "
                    f"steps. Ask them to move, go another way, or move_to somewhere else")
+        if err is None and p.idle > WAIT_LIMIT:
+            err = f"{action}: nothing to do {'there' if arg is not None else 'yet'} " \
+                  f"for {WAIT_LIMIT} steps"
         if err is not None:
-            events.append(Event(phase=phase, round=round, t=self.t, type="fail",
-                                agent=p.name, data={"action": p.plan[0], "reason": err}))
-            p.plan, p.stuck = [], 0
-            return Action.STAY
+            return self._fail(p, events, phase, round, err)
         start = self._pos_or(p)
         if name == "move_to":
             if start[0] == arg:
@@ -221,17 +305,28 @@ class Kitchen:
                 return Action.STAY
             route = self._route(p, [(arg, None)])
         else:
-            goals = self._goals(p, self._targets(p, name))
-            route = self._route(p, [(g, t) for g, t in goals], name)
+            tiles = self._candidates(p, name, arg)
+            ready = [t for t in tiles if self._ready(p, name, t)]
+            if not ready:                     # nothing to do yet: wait (by the target if named)
+                cooking = any(self._pot(t).state == "cooking" for t in tiles if t in self.pot_ids)
+                if not (self.holding(p) == "dish" and cooking):   # waiting to plate: no limit
+                    p.idle += 1
+                if arg is None:
+                    return Action.STAY
+                route = self._route(p, self._goals(p, tiles), name)
+                if route is None or route[0] == [Action.INTERACT]:
+                    return Action.STAY
+                return route[0][0]
+            route = self._route(p, self._goals(p, ready), name)
         if route is None:                    # every way there is blocked by the teammate
             p.stuck += 1
             return Action.STAY
         actions, target = route
         if actions == [Action.INTERACT]:
             if name == "plate_soup" and not self.mdp.soup_ready_at_location(self.state, target):
-                return Action.STAY            # wait by the cooking pot (not "stuck")
+                return Action.STAY            # wait by the cooking pot (no time limit)
             p.plan.pop(0)
-            p.stuck = 0
+            p.stuck = p.idle = 0
             return Action.INTERACT
         if p.stuck and (self.t + p.index) % 2:   # break symmetric collisions: alternate who
             p.stuck += 1                         # yields while both keep bumping
@@ -396,7 +491,7 @@ class Kitchen:
         for pos, pid in self.pot_ids.items():
             ps = self._pot(pos)
             extra = f", ready in {ps.ready_in}" if ps.ready_in is not None else ""
-            if ps.state == "filling":
+            if ps.state == "filling" and self.mode == "full":
                 extra += " (not cooking: needs start_cooking)"
             lines.append(f"{pid} at ({pos[0]},{pos[1]}): {ps.onions} onions, {ps.state}{extra}.")
         c = self.counters()
@@ -406,8 +501,29 @@ class Kitchen:
 
 
 def rules_text(k: Kitchen) -> str:
-    acts = "\n".join(f"- {SIGNATURE.get(a, a)}: {d} [hold: {h}]"
-                     for a, (h, d) in ACTIONS.items())
+    """The game rules the agents get. "full": recipe, scoring, timing and named actions.
+    "minimal": only the interface (interact / move_to / wait); the game is to be discovered."""
+    walking = (f"Cooks can't walk through each other. Walking goes around your teammate if there "
+               f"is another way; if there isn't, you wait, and after {STUCK_STEPS} blocked steps "
+               f"the action fails.")
+    if k.mode == "minimal":
+        return f"""\
+THE KITCHEN
+Your team scores points by delivering things at the serving hatch. How the kitchen works is \
+for you to find out by playing.
+{walking}
+
+ACTIONS
+- interact(target): walk to the target and interact with it. The target is a pot \
+(e.g. interact(pot_1)) or the (x, y) of any non-floor tile, e.g. interact(0, 1). What happens \
+depends on what is there and what you hold. If nothing would happen yet, you wait there for up \
+to {WAIT_LIMIT} steps until something can; then the action fails.
+- move_to(x, y): walk to the floor tile (x, y), e.g. to get out of your teammate's way.
+- wait(n): stand still for n steps (1-10).
+Walking is automatic: shortest path, one tile per step.
+"""
+    acts = "\n".join(f"- {SIGNATURE.get(a, a)}: {ACTIONS[a][2]} [hold: {ACTIONS[a][0]}]"
+                     for a in VOCAB["full"])
     shared = ", ".join(f"({x},{y})" for x, y in k.shared_counters)
     if not k.shared_counters:
         counters = "No counter is reachable by both cooks: you can't pass items to each other."
@@ -419,11 +535,15 @@ Onion soup = 3 onions in a pot; then someone with empty hands must start_cooking
 {k.cook_time} steps; then plate it with a dish (plate_soup) and serve it at the serving hatch: \
 +20 points per soup. Soups with fewer than 3 onions score 0. You can hold one item at a time.
 {counters}
-Cooks can't walk through each other. Walking goes around your teammate if there is another \
-way; if there isn't, you wait, and after {STUCK_STEPS} blocked steps the action fails.
+{walking}
 
 ACTIONS
 You choose high-level actions; walking there is automatic (shortest path, one tile per step) \
 and the action finishes when you interact. Actions:
 {acts}
+Every action except move_to and wait takes an optional target: a pot for pot actions \
+(put_in_pot(pot_2)) or the (x, y) of a tile (pick_up_from_counter(3, 2)). Without a target you \
+use the nearest suitable one (put_in_pot: the fullest pot that isn't full). If there is nothing \
+to do yet (e.g. no item on the counter), you wait (by the target, if you named one) for up to \
+{WAIT_LIMIT} steps; then the action fails.
 """
