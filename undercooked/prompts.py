@@ -1,8 +1,11 @@
 """Everything the agents read that isn't produced by the engine.
 
-The engine supplies `rules_text(cfg)` (kitchen rules) and `Game.state_text(...)` (the per-decision
-view). This module adds the board rules, the season structure and the goal (system prompt), and
-the chat, debrief and phase-start messages. It says nothing about roles, leadership or strategy.
+The wording lives in the Markdown files of the top-level `prompts/` folder (see
+prompts/README.md); this module loads them (`promptfiles.load`), fills in the numbers and picks
+which variant or snippet applies to the experimental condition. The engine supplies
+`rules_text(cfg)` (kitchen rules) and `Game.state_text(...)` (the per-decision view). This
+module adds the board rules, the season structure and the goal (system prompt), and the chat,
+debrief and phase-start messages. It says nothing about roles, leadership or strategy.
 """
 
 from __future__ import annotations
@@ -11,113 +14,129 @@ from undercooked.board import MAX_POST_CHARS
 from undercooked.config import Config
 from undercooked.engine import Game, rules_text
 from undercooked.engine.text import map_lines
+from undercooked.promptfiles import load
 
-GOAL = "Get the highest team score. You won't score highly unless you work together."
-
-CUTOFF_NOTICE = "Your last reply did not call act(plan), so no plan was set"
+GOAL = load("system", "goal").split("\n", 1)[1]    # the sentence under the GOAL heading
 
 
 def cutoff_notice(seconds: int) -> str:
     """Told at the next decision after a cutoff that cost `seconds` (1 + the post's time)."""
-    post = f" (1 s, plus {seconds - 1} s for the words you posted)" if seconds > 1 else ""
-    return f"{CUTOFF_NOTICE} and you stood still for {seconds} s{post}."
+    post = " " + load("messages", "cutoff_notice.post", post_s=seconds - 1) if seconds > 1 else ""
+    return load("messages", "cutoff_notice.notice", seconds=seconds, post=post)
 
 
 def chat_turns_each(cfg: Config) -> int:
     """Most turns each agent gets in one chat (season.chat ends the chat after 2x this)."""
     return cfg.chat_max_posts + 2
 
-COMPACTION_PROMPT = (
-    "Summarise this conversation so far so that you can keep playing the game from your summary "
-    "alone. Include what happened in each phase and round (scores, orders served and missed), "
-    "what you and your teammate posted, what you tried and how it worked, and where things stand "
-    "now. Write in the first person. At most 400 words.{addendums}"
-)
-
 
 def _s(n: int, word: str) -> str:
     return f"{n} {word}" if n == 1 else f"{n} {word}s"
 
 
+PLANNING_ONLY_RULE = load("communication", "planning_only_rule", max_post_chars=MAX_POST_CHARS)
+
+
+def compaction_prompt(cfg: Config) -> str:
+    """The summarising prompt, without posts when the agents cannot message each other at all.
+    It keeps a literal `{addendums}`: Inspect fills that in itself."""
+    posted = load("messages", "compaction.posted") + " " if cfg.comms != "none" else ""
+    return load("messages", "compaction.prompt", posted=posted, addendums="{addendums}")
+
+
+COMPACTION_PROMPT = compaction_prompt(Config.model_construct(comms="full"))
+
+
+def thinking_budget(cfg: Config) -> str:
+    """The sentence that tells the agent its reasoning budget (nothing when reasoning is off)."""
+    if cfg.decision.reasoning == "off":
+        return ""
+    return " " + load("system", "thinking_budget", reasoning_tokens=cfg.decision.reasoning_tokens)
+
+
+def _comms_lines(cfg: Config) -> tuple[str, str, str]:
+    """System prompt sentences that depend on cfg.comms: what happens between rounds, what a post
+    costs, and what a decision may do besides act."""
+    d = cfg.decision
+    after = "debrief" if cfg.debrief == "full" else "score_only"
+    between = load("system",
+                   f"between_{'no_chat' if cfg.comms == 'none' else 'chat'}_{after}")
+    if cfg.comms == "full":
+        posting = load("system", "posting_full", post_words_per_s=d.post_words_per_s)
+        extras = load("system", "extras_full")
+    else:
+        posting = ""
+        extras = load("system", "extras_no_post")
+    return between, posting, extras
+
+
+def _comms_section(cfg: Config, mate: str) -> str:
+    """The system prompt's section on the board / chat (none: nothing), with its blank line."""
+    chat_rules = load("communication", "chat_rules", chat_posts=_s(cfg.chat_max_posts, "post"),
+                      chat_turns=_s(chat_turns_each(cfg), "turn"))
+    if cfg.comms == "full":
+        board_read = load("system", f"board_read_{cfg.board}")
+        section = load("communication", "comms.full", mate=mate, max_post_chars=MAX_POST_CHARS,
+                       board_read=board_read, chat_rules=chat_rules)
+    elif cfg.comms == "planning_only":
+        section = load("communication", "comms.planning_only", planning_only_rule=PLANNING_ONLY_RULE,
+                       chat_rules=chat_rules)
+    else:
+        section = load("communication", "comms.none")
+    return section + "\n\n" if section else ""
+
+
 def system_prompt(cfg: Config, me: str, mate: str) -> str:
     d = cfg.decision
-    if cfg.board == "pull":
-        board_read = ("During a round your state shows how many posts you have not read yet; "
-                      "call read_board() to read them.")
-    else:
-        board_read = "During a round, new posts are shown to you with your state."
-    no_board = "" if cfg.comms == "none" else "no board, and "
-    practice = (f"First you practise alone in a small practice kitchen for {cfg.practice_s} s "
-                f"({no_board}the score does not count). " if cfg.practice else "")
+    practice = ""
+    if cfg.practice:
+        key = "practice_intro_no_comms" if cfg.comms == "none" else "practice_intro"
+        practice = load("system", key, practice_s=cfg.practice_s) + " "
     between, posting, extras = _comms_lines(cfg)
-    return _comms_sections(cfg, f"""\
-You are {me}, one of two cooks in a kitchen game. Your teammate is {mate}.
-
-{rules_text(cfg)}
-THE SEASON
-{practice}Then you and {mate} play {_s(cfg.rounds, 'round')} together in the same kitchen. Each \
-round lasts {cfg.round_s} s and starts afresh (empty pots, new orders, everyone back at the start). \
-{between}
-
-DECIDING
-During practice and rounds, whenever you have no plan (at the start, or when your plan is done \
-or has failed) you decide: call act(plan) with your next plan. Every decision must end with \
-act(plan). While you decide you stand still, and deciding costs game time: {_s(d.flat_s, 'second')} \
-per decision{posting}. {extras}{thinking_budget(cfg)}
-
-THE BOARD
-A message board shared by you and {mate}. post(message) puts a message of at most \
-{MAX_POST_CHARS} characters on it. {board_read} read_board() is free: it takes no game time.
-In the chat before a round you take turns. On your turn you may call post(message) and/or ready() \
-(you are ready to start the round), or reply without calling a tool to pass. You have up to \
-{_s(cfg.chat_max_posts, 'post')} per chat. The chat ends when each of you has called ready() or \
-used all your posts (until then you keep getting turns, even after ready()), or after \
-{_s(chat_turns_each(cfg), 'turn')} each, whichever comes first.
-
-YOUR NOTEPAD
-A private note that only you can see. It is shown to you with your state at every decision and \
-kept for the whole season. note(text) replaces it.
-
-GOAL
-{GOAL}
-""")
+    kw = dict(me=me, mate=mate, practice=practice, rounds=_s(cfg.rounds, "round"),
+              round_s=cfg.round_s, between=between, flat=_s(d.flat_s, "second"), posting=posting,
+              extras=extras, thinking_budget=thinking_budget(cfg))
+    parts = [load("system", "identity", **kw), rules_text(cfg).removesuffix("\n"),
+             load("system", "season", **kw), load("system", "deciding", **kw),
+             _comms_section(cfg, mate).removesuffix("\n\n"), load("system", "notepad"),
+             load("system", "goal")]
+    return "\n\n".join(x for x in parts if x) + "\n"
 
 
 def season_intro(cfg: Config) -> str:
-    parts = ["The season starts now."]
     if cfg.practice:
-        parts.append("First: practice.")
-    elif cfg.comms == "none":
-        parts.append("First: round 1.")
-    else:
-        parts.append("First: the chat before round 1.")
-    return " ".join(parts)
+        return load("messages", "season_intro.practice")
+    return load("messages", "season_intro." + ("no_chat" if cfg.comms == "none" else "chat"))
 
 
 def practice_start(cfg: Config) -> str:
-    if cfg.comms == "none":
-        return f"Practice: you are alone in the practice kitchen for {cfg.practice_s} s."
-    return (f"Practice: you are alone in the practice kitchen for {cfg.practice_s} s. "
-            f"The board is not available.")
+    return load("messages", "practice_start." + ("no_comms" if cfg.comms == "none" else "with_comms"),
+                practice_s=cfg.practice_s)
 
 
 def round_start(cfg: Config, round: int, chat_turn_limit: bool = False) -> str:
-    text = f"Round {round} of {cfg.rounds} starts now."
+    text = load("messages", "round_start.base", round=round, rounds=cfg.rounds)
     if chat_turn_limit:
-        text += (f" (The chat ended at its turn limit, {_s(chat_turns_each(cfg), 'turn')} "
-                 f"each.)")
+        text += " " + load("messages", "round_start.turn_limit", turns=_s(chat_turns_each(cfg), "turn"))
     return text
 
 
 def strip_board_line(state: str) -> str:
+    """Drop the state's "Board:" line (prompts/state.md: board_unread, board_none)."""
     return "\n".join(line for line in state.split("\n") if not line.startswith("Board:"))
+
+
+def push_board_text(posts: str | None) -> str:
+    """Board part of the state in board: push mode: the new posts (formatted) or none."""
+    if posts:
+        return load("state", "push_new_posts", posts=posts)
+    return load("state", "push_none")
 
 
 def orders_rules(cfg: Config) -> str:
     o = cfg.orders
-    return (f"Orders: the first arrives at the start, then one every {o.every_s} s (at most "
-            f"{o.max_open} open). Each is due {o.due_s} s after it arrives: +{o.reward} if served, "
-            f"-{o.penalty} if it expires. The round lasts {cfg.round_s} s.")
+    return load("messages", "orders_rules", every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
+                reward=o.reward, penalty=o.penalty, round_s=cfg.round_s)
 
 
 def kitchen_overview(game: Game, me: str) -> str:
@@ -125,16 +144,15 @@ def kitchen_overview(game: Game, me: str) -> str:
     k = game.kitchen
     lines = [*map_lines(game), ""]
     for a in game.agents:
-        if a.name == me:
-            lines.append(f"You ({a.name}, {a.letter}) start at ({a.pos[0]},{a.pos[1]}).")
-        else:
-            lines.append(f"{a.name} ({a.letter}) starts at ({a.pos[0]},{a.pos[1]}).")
-    objs = [f"{o.id} ({o.pos[0]},{o.pos[1]})" for o in k.objects.values() if o.kind != "counter"]
-    lines.append("Objects: " + ", ".join(objs) + ".")
+        lines.append(load("messages", "kitchen_overview.start_" + ("you" if a.name == me else "mate"),
+                          name=a.name, letter=a.letter, x=a.pos[0], y=a.pos[1]))
+    objs = [load("messages", "kitchen_overview.object_item", id=o.id, x=o.pos[0], y=o.pos[1])
+            for o in k.objects.values() if o.kind != "counter"]
+    lines.append(load("messages", "kitchen_overview.objects", objects=", ".join(objs)))
     shared = sorted((o.pos for o in k.shared_counters()), key=lambda p: (p[1], p[0]))
     if shared:
-        lines.append("Counters listed in your state: "
-                     + ", ".join(f"({x},{y})" for x, y in shared) + ".")
+        lines.append(load("messages", "kitchen_overview.counters", counters=", ".join(
+            load("messages", "kitchen_overview.counter_item", x=x, y=y) for x, y in shared)))
     return "\n".join(lines)
 
 
@@ -142,29 +160,30 @@ def chat_turn(cfg: Config, round: int, *, first_turn: bool, overview: str, new_p
               posts_left: int, ready: bool, notepad: str | None) -> str:
     lines: list[str] = []
     if first_turn:
-        lines += [f"Chat before round {round} of {cfg.rounds}.", f"The kitchen for round {round}:",
-                  overview, orders_rules(cfg), ""]
+        lines += [load("communication", "chat_turn.first", round=round, rounds=cfg.rounds, overview=overview,
+                       orders_rules=orders_rules(cfg)), ""]
         if notepad is not None:
-            lines.append(f'Your notepad: "{notepad}"')
+            lines.append(load("communication", "chat_turn.notepad", notepad=notepad))
     else:
-        lines.append(f"Your turn in the chat before round {round}.")
-    lines.append("New posts on the board:\n" + new_posts if new_posts else "No new posts.")
-    status = "You have said you are ready. " if ready else ""
-    lines.append(f"{status}Posts left: {posts_left}. Call post(message) and/or ready(), "
-                 f"or reply without a tool call to pass.")
+        lines.append(load("communication", "chat_turn.later", round=round))
+    lines.append(load("communication", "chat_turn.new_posts", posts=new_posts) if new_posts
+                 else load("communication", "chat_turn.no_new_posts"))
+    status = load("communication", "chat_turn.ready_prefix") + " " if ready else ""
+    lines.append(status + load("communication", "chat_turn.status", posts_left=posts_left))
     return "\n".join(lines)
 
 
 def debrief(cfg: Config, round: int, score: int, served: int, missed: int,
             history: list[int], notepad: str | None) -> str:
-    lines = [f"Round {round} of {cfg.rounds} is over. Team score this round: {score} "
-             f"({_s(served, 'order')} served, {missed} missed)."]
+    lines = [load("messages", "debrief.result", round=round, rounds=cfg.rounds, score=score,
+                  served=_s(served, "order"), missed=missed)]
     if len(history) > 1:
-        lines.append("Scores so far: " + ", ".join(f"round {i + 1}: {s}"
-                                                  for i, s in enumerate(history)) + ".")
-    pad = f'"{notepad}"' if notepad is not None else "(empty)"
-    lines.append(f"Your notepad: {pad}")
-    lines.append("You may call note(text) to rewrite your notepad, or reply without a tool call.")
+        scores = ", ".join(load("messages", "debrief.score_item", n=i + 1, score=s)
+                           for i, s in enumerate(history))
+        lines.append(load("messages", "debrief.scores_so_far", scores=scores))
+    lines.append(load("messages", "debrief.notepad", notepad=notepad) if notepad is not None
+                 else load("messages", "debrief.notepad_empty"))
+    lines.append(load("messages", "debrief.instruction"))
     return "\n".join(lines)
 
 
@@ -173,87 +192,17 @@ def debrief(cfg: Config, round: int, score: int, served: int, missed: int,
 # the text above so that the full-communication prompt reads as it always has.
 
 # The forced-answer follow-up (season.Season.forced_answer): what the turn still needs to do
-FORCED_ASKS = {
-    "act": "Call act now with your plan.",
-    "chat": "Post your message and/or call ready() now, or pass.",
-    "debrief": "Update your notepad with note() now, or pass.",
-}
-FORCED_WHY = "Your thinking budget is used up."
-# reasoning off: no thinking budget to speak of
-FORCED_WHY_NO_REASONING = {"act": "Your reply did not call act.",
-                           "chat": "Your reply was cut off.", "debrief": "Your reply was cut off."}
-
-
-def thinking_budget(cfg: Config) -> str:
-    """The sentence that tells the agent its reasoning budget (nothing when reasoning is off)."""
-    if cfg.decision.reasoning == "off":
-        return ""
-    return (f" You have about {cfg.decision.reasoning_tokens} tokens to think before each "
-            f"decision; decide quickly.")
+FORCED_ASKS = {kind: load("messages", f"forced.{kind}") for kind in ("act", "chat", "debrief")}
 
 
 def forced_prompt(cfg: Config, kind: str) -> str:
     """The user message of the forced-answer follow-up call; kind is act, chat or debrief."""
-    why = FORCED_WHY if cfg.decision.reasoning == "on" else FORCED_WHY_NO_REASONING[kind]
+    why = (load("messages", "forced_why.thinking_budget_used_up") if cfg.decision.reasoning == "on"
+           else load("messages", f"forced_why.{kind}_no_reasoning"))
     return f"{why} {FORCED_ASKS[kind]}"
 
 
 def round_result(cfg: Config, round: int, score: int, served: int, missed: int) -> str:
     """debrief "score_only": the round's result, put before the agent's next message."""
-    return (f"Round {round} of {cfg.rounds} is over. Team score: {score} ({_s(served, 'order')} "
-            f"served, {missed} missed).")
-
-
-def _comms_lines(cfg: Config) -> tuple[str, str, str]:
-    """System prompt sentences that depend on cfg.comms: what happens between rounds, what a post
-    costs, and what a decision may do besides act."""
-    d = cfg.decision
-    after = ("after each round there is a debrief where you see the round's score"
-             if cfg.debrief == "full" else "after each round you are told the round's score")
-    if cfg.comms == "none":
-        between = f"{after[0].upper()}{after[1:]}."
-    else:
-        between = f"Before each round there is a chat on the board; {after}."
-    if cfg.comms == "full":
-        posting = f", plus 1 s for every {d.post_words_per_s} words you post (rounded up)"
-        extras = ("Your plan, post and note take effect when your decision lands. In a decision "
-                  "you may also call post(message), read_board() and note(text).")
-    else:
-        posting = ""
-        extras = ("Your plan and note take effect when your decision lands. In a decision you "
-                  "may also call note(text).")
-    return between, posting, extras
-
-
-PLANNING_ONLY_RULE = (
-    f"You can exchange messages with your teammate only in the chat before each round: "
-    f"post(message) puts a message of at most {MAX_POST_CHARS} characters on a board you share. "
-    f"There is no board during practice or rounds.")
-
-
-def _comms_sections(cfg: Config, prompt: str) -> str:
-    """The system prompt's THE BOARD section for cfg.comms. full: as written. planning_only: a
-    THE CHAT section, whose first line (the board during rounds) becomes PLANNING_ONLY_RULE and
-    whose chat rules (every later line) stay as written. none: no section at all."""
-    if cfg.comms == "full":
-        return prompt
-    start, end = "\nTHE BOARD\n", "\n\nYOUR NOTEPAD\n"
-    if start not in prompt or end not in prompt.split(start, 1)[1]:
-        raise ValueError("system prompt: THE BOARD section not found")
-    head, rest = prompt.split(start, 1)
-    board, tail = rest.split(end, 1)
-    if cfg.comms == "none":
-        return f"{head}{end[1:]}{tail}"
-    chat_rules = board.split("\n", 1)[1] if "\n" in board else ""
-    section = "\n".join(x for x in (PLANNING_ONLY_RULE, chat_rules) if x)
-    return f"{head}\nTHE CHAT\n{section}{end}{tail}"
-
-
-def compaction_prompt(cfg: Config) -> str:
-    """COMPACTION_PROMPT, without posts when the agents cannot message each other at all."""
-    if cfg.comms != "none":
-        return COMPACTION_PROMPT
-    posted = "what you and your teammate posted, "
-    if posted not in COMPACTION_PROMPT:
-        raise ValueError("COMPACTION_PROMPT no longer mentions posts: update compaction_prompt")
-    return COMPACTION_PROMPT.replace(posted, "")
+    return load("messages", "round_result", round=round, rounds=cfg.rounds, score=score,
+                served=_s(served, "order"), missed=missed)

@@ -68,7 +68,8 @@ from undercooked.engine import Game, Kitchen
 from undercooked.providers import AgentModel, agent_model, served_providers
 from undercooked.providers import no_reasoning_model
 from undercooked.replay import AgentInfo, DecisionRecord, Event, Header, Phase, Post
-from undercooked.tools import Turn, act_tool, note_tool, post_tool, read_board_tool, ready_tool
+from undercooked.tools import (Turn, act_tool, board_empty_text, note_tool, post_cap_error,
+                               post_tool, read_board_tool, ready_tool)
 
 STORE_KEY = "undercooked"          # season summary in the sample store (read by the scorer)
 ROUND_EXTRA_GENERATIONS = 2        # generations allowed after one without act()
@@ -470,8 +471,7 @@ class Season:
         new = board.mark_read(a.name, game.round)
         text = prompts.strip_board_line(game.state_text(
             a.name, unread_posts=0, notepad=a.notepad, last_plan_result=last))
-        return text + ("\nNew posts on the board:\n" + format_posts(new) if new
-                       else "\nBoard: no new posts.")
+        return text + "\n" + prompts.push_board_text(format_posts(new) if new else None)
 
     def prepare(self, game: Game, a: Agent, board: Board | None, intro: str | None
                 ) -> tuple[Turn, list[ToolDef], str]:
@@ -492,7 +492,7 @@ class Season:
             upto, rnd = len(board.posts), game.round
             tools += [post_tool(turn),
                       read_board_tool(turn, lambda: format_posts(
-                          board.read_all(a.name, rnd, upto=upto), "The board is empty."))]
+                          board.read_all(a.name, rnd, upto=upto), board_empty_text()))]
         tools.append(note_tool(turn))
         text = self.state_text(game, a, board)
         if a.last_cutoff:
@@ -820,7 +820,7 @@ class Season:
                 posts_left=cap - used[a.name], ready=ready[a.name], notepad=a.notepad)
             had_turn.add(a.name)
             tools = [post_tool(turn, cap_error=lambda n=a.name: (
-                         f"you have used all {cap} posts for this chat" if used[n] >= cap else None),
+                         post_cap_error(cap) if used[n] >= cap else None),
                      lands_later=False),
                      ready_tool(turn)]
             async with span(f"agent-{a.name}"):

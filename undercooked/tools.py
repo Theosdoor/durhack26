@@ -4,6 +4,7 @@ Tools are built per decision (or chat/debrief turn) as Inspect `ToolDef`s over c
 call writes into that decision's `Turn` record and the season's state; they run through Inspect's
 `execute_tools`, so every call shows as a ToolEvent in Inspect View. Nothing here touches the game
 clock: the season applies a decision's plan, post and note when the decision lands.
+The texts the tools show and return are in prompts/tools.md.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from inspect_ai.tool import ToolDef
 
 from undercooked.board import MAX_POST_CHARS
 from undercooked.engine.actions import split_plan
+from undercooked.promptfiles import load
 
 
 @dataclass
@@ -34,27 +36,23 @@ class Turn:
 def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int) -> ToolDef:
     async def act(plan: list[str]) -> str:
         if turn.plan is not None:
-            return "Ignored: you already sent a plan in this decision."
+            return load("tools", "act.ignored")
         if isinstance(plan, str):
             plan = [plan]
         plan = [str(p) for p in plan]
         turn.plan = plan
         turn.plan_error = check(plan)
         if turn.plan_error is not None:
-            return (f"Plan rejected: {turn.plan_error}. You stand still and decide again when "
-                    f"this decision lands.")
+            return load("tools", "act.rejected", error=turn.plan_error)
         n = len(split_plan(plan))            # what the engine counts: ";", "," and newlines split
-        extra = (f" Your plan has {n} actions. Only the first {max_len} actions are kept."
+        extra = (" " + load("tools", "act.too_long", n=n, max_len=max_len)
                  if n > max_len else "")
-        return f"Plan accepted. It starts when this decision lands.{extra}"
+        return load("tools", "act.accepted") + extra
 
     return ToolDef(
         act, name="act",
-        description=(f"Set your plan: a list of 1 to {max_len} actions done in order, e.g. "
-                     f'["interact(onion_crate)", "interact(pot_1)"]. Every decision must end '
-                     f"with act. A new plan replaces your old one."),
-        parameters={"plan": f"1 to {max_len} actions, each one string such as "
-                            f'"interact(pot_1)", "move_to(2, 3)" or "wait(3)".'},
+        description=load("tools", "act.description", max_len=max_len),
+        parameters={"plan": load("tools", "act.plan_param", max_len=max_len)},
     )
 
 
@@ -62,23 +60,33 @@ def post_tool(turn: Turn, cap_error: Callable[[], str | None] | None = None,
               lands_later: bool = True) -> ToolDef:
     async def post(message: str) -> str:
         if turn.post is not None:
-            return "Ignored: one post per turn."
+            return load("tools", "post.ignored")
         if cap_error is not None and (err := cap_error()) is not None:
-            return f"Not posted: {err}"
+            return load("tools", "post.not_posted", reason=err)
         message = " ".join(str(message).split())
         if not message:
-            return "Not posted: the message is empty."
+            return load("tools", "post.empty")
         cut = len(message) > MAX_POST_CHARS
         turn.post = message[:MAX_POST_CHARS]
-        when = " It appears on the board when this decision lands." if lands_later else ""
-        return ("Posted" + (f" (cut to {MAX_POST_CHARS} characters)" if cut else "") + "." + when)
+        text = (load("tools", "post.posted_cut", max_post_chars=MAX_POST_CHARS) if cut
+                else load("tools", "post.posted"))
+        return text + (" " + load("tools", "post.lands_later") if lands_later else "")
 
     return ToolDef(
         post, name="post",
-        description=(f"Post a message (at most {MAX_POST_CHARS} characters) on the board you "
-                     f"share with your teammate. One post per turn."),
-        parameters={"message": "The message."},
+        description=load("tools", "post.description", max_post_chars=MAX_POST_CHARS),
+        parameters={"message": load("tools", "post.message_param")},
     )
+
+
+def post_cap_error(cap: int) -> str:
+    """Why a post is refused once `cap` posts are used up in a chat."""
+    return load("tools", "post.cap_reached", cap=cap)
+
+
+def board_empty_text() -> str:
+    """What read_board() answers when there are no posts."""
+    return load("tools", "read_board.empty")
 
 
 def read_board_tool(turn: Turn, read: Callable[[], str]) -> ToolDef:
@@ -88,8 +96,7 @@ def read_board_tool(turn: Turn, read: Callable[[], str]) -> ToolDef:
 
     return ToolDef(
         read_board, name="read_board",
-        description=("Read the board: every post since the chat before this round, newest last. "
-                     "Free: takes no game time. Marks the posts as read."),
+        description=load("tools", "read_board.description"),
         parameters={},
     )
 
@@ -97,22 +104,22 @@ def read_board_tool(turn: Turn, read: Callable[[], str]) -> ToolDef:
 def note_tool(turn: Turn) -> ToolDef:
     async def note(text: str) -> str:
         turn.note = str(text)
-        return "Notepad updated."
+        return load("tools", "note.result")
 
     return ToolDef(
         note, name="note",
-        description="Replace the text of your private notepad (only you can see it).",
-        parameters={"text": "The new notepad text."},
+        description=load("tools", "note.description"),
+        parameters={"text": load("tools", "note.text_param")},
     )
 
 
 def ready_tool(turn: Turn) -> ToolDef:
     async def ready() -> str:
         turn.ready = True
-        return "Noted: you are ready to start the round."
+        return load("tools", "ready.result")
 
     return ToolDef(
         ready, name="ready",
-        description="Say that you are ready to start the round (chat only).",
+        description=load("tools", "ready.description"),
         parameters={},
     )

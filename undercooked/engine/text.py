@@ -7,11 +7,16 @@ from typing import TYPE_CHECKING
 from undercooked.config import Config
 from undercooked.engine.actions import WAIT_MAX, WAIT_MIN
 from undercooked.engine.game import BLOCKED_LIMIT
+from undercooked.promptfiles import load
 
 if TYPE_CHECKING:
     from undercooked.engine.game import Game
 
-_ITEM = {None: "nothing", "onion": "an onion", "dish": "a dish", "soup": "a soup"}
+_ITEMS = {None: "nothing", "onion": "onion", "dish": "dish", "soup": "soup"}
+
+
+def _item(holding: str | None) -> str:
+    return load("state", f"item.{_ITEMS[holding]}") if holding in _ITEMS else str(holding)
 
 
 def _plural(n: int, word: str) -> str:
@@ -33,14 +38,14 @@ def map_lines(game: "Game") -> list[str]:
 
 def _pot_text(p) -> str:
     if p.ready:
-        what = "soup ready to plate"
+        what = load("state", "pot.ready")
     elif p.cooking:
-        what = f"cooking, ready in {p.ready_in} s"
+        what = load("state", "pot.cooking", ready_in=p.ready_in)
     elif p.onions == 0:
-        what = "empty"
+        what = load("state", "pot.empty")
     else:
-        what = f"{_plural(p.onions, 'onion')}, not cooking"
-    return f"{p.id} ({p.pos[0]},{p.pos[1]}): {what}."
+        what = load("state", "pot.onions", onions=_plural(p.onions, "onion"))
+    return load("state", "pot", id=p.id, x=p.pos[0], y=p.pos[1], what=what)
 
 
 def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | None,
@@ -48,87 +53,48 @@ def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | No
     me = game.agent(agent)
     k = game.kitchen
     if game.phase == "practice":
-        where = "Practice"
+        where = load("state", "where_practice")
     else:
-        where = f"Round {game.round} of {game.cfg.rounds}"
-    lines = [f"Time {game.t} / {game.duration} s · Score {game.score} · {where}"]
+        where = load("state", "where_round", round=game.round, rounds=game.cfg.rounds)
+    lines = [load("state", "header", t=game.t, duration=game.duration, score=game.score,
+                  where=where)]
     if game.orders:
-        lines.append("Orders: " + ", ".join(f"onion soup (due {o.due_t} s)"
-                                            for o in sorted(game.orders, key=lambda o: o.due_t)))
+        orders = ", ".join(load("state", "order_item", due_t=o.due_t)
+                           for o in sorted(game.orders, key=lambda o: o.due_t))
+        lines.append(load("state", "orders", orders=orders))
     else:
-        lines.append("Orders: none open.")
+        lines.append(load("state", "orders_none"))
     lines += ["", *map_lines(game), ""]
     result = last_plan_result.strip().rstrip(".")
-    lines.append(f"You ({me.name}, {me.letter}): at ({me.pos[0]},{me.pos[1]}), "
-                 f"holding {_ITEM.get(me.holding, me.holding)}. Last plan: {result}.")
+    lines.append(load("state", "you", name=me.name, letter=me.letter, x=me.pos[0], y=me.pos[1],
+                      item=_item(me.holding), result=result))
     for a in game.agents:
         if a is not me:
-            lines.append(f"{a.name} ({a.letter}): at ({a.pos[0]},{a.pos[1]}), "
-                         f"holding {_ITEM.get(a.holding, a.holding)}.")
+            lines.append(load("state", "teammate", name=a.name, letter=a.letter, x=a.pos[0],
+                              y=a.pos[1], item=_item(a.holding)))
     if game.pots:
         lines.append(" ".join(_pot_text(p) for p in game.pots.values()))
     shown = {o.pos for o in k.shared_counters()} | set(game.counters)
     if shown:
-        parts = [f"({x},{y}) {game.counters.get((x, y), 'empty')}"
+        parts = [load("state", "counter", x=x, y=y,
+                      what=game.counters.get((x, y), load("state", "counter.empty")))
                  for (x, y) in sorted(shown, key=lambda p: (p[1], p[0]))]
-        lines.append("Counters: " + ", ".join(parts) + ".")
+        lines.append(load("state", "counters", counters=", ".join(parts)))
     else:
-        lines.append("Counters: all empty.")
-    lines.append(f"Board: {_plural(unread_posts, 'unread post')}." if unread_posts
-                 else "Board: no unread posts.")
+        lines.append(load("state", "counters_none"))
+    lines.append(load("state", "board_unread", unread=_plural(unread_posts, "unread post"))
+                 if unread_posts else load("state", "board_none"))
     if notepad is not None:
-        lines.append(f'Your notepad: "{notepad}"')
+        lines.append(load("state", "notepad", notepad=notepad))
     return "\n".join(lines)
 
 
 def rules_text(cfg: Config) -> str:
-    """Plain-English rules, controls, map key and interact table for the system prompt."""
+    """Plain-English rules, controls, map key and interact table for the system prompt (the
+    kitchen_rules ... plans sections of prompts/system.md)."""
     o = cfg.orders
-    return f"""\
-HOW THE KITCHEN WORKS
-Time runs in game seconds. In one second you either walk one tile (up, down, left or right; no
-diagonals) or do one interaction. You can only walk on floor tiles; counters, crates, racks,
-pots and the hatch block movement, and so do other players.
-
-Recipe (the only dish): onion soup. Put 3 onions in a pot; it starts cooking by itself when the
-3rd onion goes in and is ready {cfg.cook_s} s later. Take a dish to the ready pot to plate the
-soup, then carry the soup to the serving hatch. You can hold one item at a time: an onion, a
-dish or a soup. Onions and dishes never run out.
-
-Orders: the first order arrives at the start, then a new one every {o.every_s} s (no new order
-while {o.max_open} are open). Each order is due {o.due_s} s after it arrives. Serving a soup
-fills the open order that is due soonest: +{o.reward} points. An order not served by its due
-time expires: -{o.penalty} points. A soup served with no open order is refused.
-
-MAP KEY
-X counter (a wall; any counter next to the floor can hold one item)   ' ' floor
-O onion crate   D dish rack   P pot   S serving hatch
-Capital letters on the floor are players (the first letter of their name).
-Coordinates are (x, y): x is the column (left to right), y is the row (top to bottom),
-both starting at 0, as labelled around the map.
-
-ACTIONS (your plan is a list of 1 to {cfg.max_plan_len} of these, done in order)
-interact(<id>)    walk next to the object (shortest path), then interact with it (1 s).
-move_to(x, y)     walk to that floor tile.
-move_to(<id>)     walk next to that object without interacting.
-wait(<seconds>)   stand still for {WAIT_MIN} to {WAIT_MAX} s.
-Object ids are numbered in reading order (row by row, left to right): onion_crate_1,
-dish_rack_1, pot_1, pot_2, hatch_1, ... Counters are named by position: counter_2_1 is the
-counter at (2,1). An unnumbered id (onion_crate, dish_rack, pot, hatch) means the nearest one
-you can reach. You interact from any floor tile beside the object; facing does not matter.
-
-INTERACT TABLE (anything else does nothing and your plan fails, with the reason)
-onion crate + empty hands  -> you take an onion
-dish rack   + empty hands  -> you take a dish
-counter     + holding item -> you put it on the counter (if the counter is empty)
-counter     + empty hands  -> you pick up the item on the counter
-pot         + onion        -> the onion goes in (max 3; not while cooking or ready)
-pot         + dish         -> if the soup is ready, you now hold the soup and the pot is empty
-hatch       + soup         -> served: fills the open order due soonest
-
-PLANS
-Your plan runs step by step until it is done or fails. If another player is in your way you
-wait for them; if you are blocked for {BLOCKED_LIMIT} seconds in a row the plan fails ("blocked by <name>").
-A plan also fails if an action cannot be understood, its target does not exist or cannot be
-reached from where you are, or an interaction does nothing. A new plan replaces the old one.
-"""
+    kw = dict(cook_s=cfg.cook_s, every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
+              reward=o.reward, penalty=o.penalty, max_plan_len=cfg.max_plan_len,
+              wait_min=WAIT_MIN, wait_max=WAIT_MAX, blocked_limit=BLOCKED_LIMIT)
+    keys = ("kitchen_rules", "map_key", "actions", "interact_table", "plans")
+    return "\n\n".join(load("system", k, **kw) for k in keys) + "\n"
