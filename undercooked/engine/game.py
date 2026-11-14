@@ -88,6 +88,7 @@ class Game:
         self.seed = seed if seed is not None else f"{cfg.seed}|{phase}|{round}"
         self.rng = random.Random(self.seed)
         self.duration = cfg.practice_s if phase == "practice" else cfg.round_s
+        self.ended = False                 # ended early (see end())
         self.agents: list[Agent] = []
         for i, name in enumerate(agent_names):
             if i + 1 not in kitchen.starts:
@@ -111,7 +112,11 @@ class Game:
     # ================================================================ public API
     @property
     def over(self) -> bool:
-        return self.t >= self.duration
+        return self.ended or self.t >= self.duration
+
+    def end(self) -> None:
+        """End the phase now (practice: the agent called finish_practice()). No more ticks."""
+        self.ended = True
 
     def agent(self, name: str) -> Agent:
         try:

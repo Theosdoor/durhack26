@@ -42,10 +42,11 @@ def season_values(s: dict[str, Any]) -> dict[str, float]:
         "served": sum(r["served"] for r in rounds),
         "missed": sum(r["missed"] for r in rounds),
     }
-    # cutoffs / forced: practice and rounds; *_chat / *_debrief: those turns, kept apart so that
-    # the round metrics stay comparable with runs from before chat and debrief were counted
-    for key in ("posts", "read_board", "cutoffs", "decisions", "forced", "cutoffs_chat",
-                "forced_chat", "cutoffs_debrief", "forced_debrief"):
+    # cutoffs, forced, decisions: round decisions only; *_practice, *_chat, *_debrief: those
+    # phases. (Logs from before this split counted practice in cutoffs and forced.)
+    for key in ("posts", "read_board", "cutoffs", "forced", "decisions", "cutoffs_practice",
+                "forced_practice", "decisions_practice", "cutoffs_chat", "forced_chat",
+                "cutoffs_debrief", "forced_debrief", "practice_finished"):
         for i, n in enumerate(s[key]):
             value[f"{key}_agent{i}"] = n
     return value

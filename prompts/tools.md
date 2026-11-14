@@ -65,3 +65,9 @@ Say that you are ready to start the round (chat only).
 
 ## ready.result
 Noted: you are ready to start the round.
+
+## finish_practice.description
+End your practice now (practice only). It ends when this decision lands; the season goes on once your teammate's practice is over too.
+
+## finish_practice.result
+Noted: your practice ends when this decision lands.

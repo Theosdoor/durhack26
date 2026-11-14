@@ -285,8 +285,8 @@ def test_chat_ends_at_the_turn_limit_and_the_round_says_so(monkeypatch):
 
     monkeypatch.setattr(s, "play", play)
     asyncio.run(s.round(1))
-    assert intros == ["Round 1 of 2 starts now. (The chat ended at its turn limit, 4 turns "
-                      "each.)"]
+    text = "Round 1 of 2 starts now. (The chat ended at its turn limit, 4 turns each.)"
+    assert intros == [{a.name: text for a in s.agents}]
 
 
 def test_chat_ends_when_each_is_ready_or_out_of_posts():

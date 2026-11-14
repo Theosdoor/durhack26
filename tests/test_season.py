@@ -193,10 +193,15 @@ def test_scorer(season):
     assert v["served"] == final.served and v["missed"] == final.missed
     assert v["posts_agent0"] == 2 and v["posts_agent1"] == 1
     assert v["read_board_agent0"] == 0 and v["read_board_agent1"] == 1
-    assert v["cutoffs_agent0"] == 1 and v["cutoffs_agent1"] == 0
+    # cutoffs, forced, decisions: rounds only; the cook's one cutoff was in practice
+    assert v["cutoffs_agent0"] == v["cutoffs_agent1"] == 0
+    assert v["cutoffs_practice_agent0"] == 1 and v["cutoffs_practice_agent1"] == 0
     cook, passer = names_of(rep)
-    assert v["decisions_agent0"] == len(rep.select(DecisionRecord, "round", 1, cook))
-    assert v["decisions_agent1"] == len(rep.select(DecisionRecord, "round", 1, passer))
+    for i, name in enumerate((cook, passer)):
+        assert v[f"decisions_agent{i}"] == len(rep.select(DecisionRecord, "round", 1, name))
+        assert v[f"decisions_practice_agent{i}"] == len(
+            rep.select(DecisionRecord, "practice", 0, name))
+        assert v[f"practice_finished_agent{i}"] == 0
     assert cook in score.explanation and "team score" in score.explanation
     metrics = {k for s in log.results.scores for k in s.metrics}
     assert {"mean", "stderr"} <= metrics

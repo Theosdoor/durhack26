@@ -117,14 +117,17 @@ def test_forced_answer_rounds_practice_chat_debrief(tmp_path, requests):
     assert any(r.last_user.endswith("Update your notepad with note() now, or pass.")
                for r in follow)
 
-    # scorer: practice + round forced answers per agent; chat and debrief apart
+    # scorer: round forced answers per agent; practice, chat and debrief apart
     v = log.samples[0].scores["season_score"].value
     for i, name in enumerate((cook, passer)):
-        assert v[f"forced_agent{i}"] == sum(d.agent == name for d in forced)
+        for phase, key in (("round", ""), ("practice", "_practice")):
+            mine = [d for d in played if d.agent == name and d.phase == phase]
+            assert v[f"forced{key}_agent{i}"] == sum(d.forced for d in mine)
+            assert v[f"cutoffs{key}_agent{i}"] == sum(d.cutoff for d in mine)
+            assert v[f"decisions{key}_agent{i}"] == len(mine)
         assert v[f"forced_chat_agent{i}"] == sum(d.agent == name for d in chat)
         assert v[f"forced_debrief_agent{i}"] == 1
         assert v[f"cutoffs_chat_agent{i}"] == v[f"cutoffs_debrief_agent{i}"] == 0
-        assert v[f"cutoffs_agent{i}"] == sum(d.agent == name and d.cutoff for d in played)
 
 
 def test_follow_up_that_fails_is_a_cutoff_in_every_phase(tmp_path, requests):
@@ -224,7 +227,7 @@ def test_comms_none(tmp_path, requests):
                             ("round", 2), ("debrief", 2)]
     assert not rep.select(DecisionRecord, "chat") and not rep.select(Post)
     assert not any(e.phase == "chat" for e in rep.select(Event))
-    assert all(set(r.tools) <= {"act", "note"} for r in requests)
+    assert all(set(r.tools) <= {"act", "note", "finish_practice"} for r in requests)
     assert any(e.type == "compaction" for e in rep.select(Event))
     # no prompt offers communication (the teammate and the private notepad may be named)
     for name in (cook, passer):
@@ -245,8 +248,13 @@ def test_comms_planning_only(tmp_path, requests):
     cook, passer = names_of(rep)
     assert [d.agent for d in rep.select(DecisionRecord, "chat", 1)] == [cook, passer, cook]
     assert [p.phase for p in rep.select(Post)] == ["chat", "chat"]
-    rounds = [r for r in requests if "act" in r.tools]
+    acts = [r for r in requests if "act" in r.tools]     # practice and round decisions
+    assert all(set(r.tools) in ({"act", "note"}, {"act", "note", "finish_practice"})
+               for r in acts)
+    rounds = [r for r in acts if re.search(r"^Time \d+ / \d+ s .* Round", r.last_user, re.M)]
+    practice = [r for r in acts if "Practice" in r.last_user]
     assert rounds and all(set(r.tools) == {"act", "note"} for r in rounds)
+    assert practice and all("finish_practice" in r.tools for r in practice)
     chats = [r for r in requests if "ready" in r.tools]
     assert chats and all(set(r.tools) == {"post", "ready"} for r in chats)
     states = [u for u in users(log, passer) if re.search(r"^Time \d+ /", u, re.M)]

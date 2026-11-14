@@ -165,6 +165,39 @@ def test_pipeline_matches_sequential(tmp_path, monkeypatch, calls):
     assert restarts > 0                        # a late landing + same-second restart happened
 
 
+@pytest.mark.parametrize("flat_s", [2, 1, 0])
+def test_pipeline_matches_sequential_when_practice_ends_early(tmp_path, monkeypatch, flat_s):
+    """Both agents call finish_practice() at different seconds (with and without a last plan):
+    the same replay, conversations and scores either way, and each practice game stops at its
+    landing (flat_s 0: in the second the decision started)."""
+    monkeypatch.setattr(fake, "DELAY", (9, 0.0, 0.03))
+    agents = [AgentSpec(model="kitchenfake/cook+chaos+finish"),
+              AgentSpec(model="kitchenfake/passer+chaos+finish")]
+    cfg = config(rounds=1, round_s=12, practice_s=20, agents=agents,
+                 decision={"flat_s": flat_s, "post_words_per_s": 10})
+    out = {}
+    for on in (False, True):
+        log, _ = run(with_pipeline(cfg, on), tmp_path / str(on))
+        [rep] = load_replay(log.location)
+        out[on] = (comparable(rep), season_of(log, 1))
+    assert out[True] == out[False]
+    rep = Replay.model_validate(out[False][0])
+    done = {e.agent: e.t for e in rep.select(Event, "practice", 0)
+            if e.type == "practice_finished"}
+    assert set(done) == {a.name for a in rep.header.agents}
+    assert all(t < cfg.practice_s for t in done.values())
+    for name, t in done.items():
+        frames = [f for f in rep.frames("practice", 0) if f.agents[0].name == name]
+        assert frames[-1].t == t                              # no frame after the landing
+        [d] = [d for d in rep.select(DecisionRecord, "practice", 0, name) if d.finish_practice]
+        assert d.lands_t == t and d.lands_t - d.t == flat_s and not d.cutoff
+        assert not [d for d in rep.select(DecisionRecord, "practice", 0, name) if d.t > t]
+    [end] = [e for e in rep.select(Event, "practice", 0) if e.type == "phase_end"]
+    assert end.t == max(done.values())
+    v = out[False][1]["score"]
+    assert v["practice_finished_agent0"] == v["practice_finished_agent1"] == 1
+
+
 # ------------------------------------------------------------------- (b) speed-up
 def test_pipeline_speedup(tmp_path, monkeypatch, capsys):
     """Wall time with 0.2-0.5 s calls, flat_s = 2: the whole eval, and the practice + round

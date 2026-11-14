@@ -23,7 +23,8 @@ from undercooked.engine import Game, Kitchen, rules_text
 from undercooked.providers import agent_model
 from undercooked.replay import Post
 from undercooked.season import Season
-from undercooked.tools import Turn, act_tool, note_tool, post_tool, read_board_tool, ready_tool
+from undercooked.tools import (Turn, act_tool, finish_practice_tool, note_tool, post_tool,
+                               read_board_tool, ready_tool)
 
 GOLDEN = Path(__file__).parent / "fixtures" / "prompts_golden.json"
 
@@ -95,6 +96,8 @@ def _tool_texts() -> dict[str, Any]:
     out["note"] = [*_desc(n), _call(n, "x")]
     y = ready_tool(t)
     out["ready"] = [*_desc(y), _call(y)]
+    f = finish_practice_tool(t)
+    out["finish_practice"] = [*_desc(f), _call(f)]
     return out
 
 
@@ -168,6 +171,8 @@ def render_all() -> dict[str, Any]:
                               notepad=None),
         ]
     out["cutoff_notice"] = {str(n): prompts.cutoff_notice(n) for n in (1, 2, 4, 11)}
+    out["forced_notice"] = {str(n): prompts.forced_notice(n) for n in (1, 2)}
+    out["unseen_chat"] = prompts.unseen_chat("[chat] Tango: hi\n[chat] Tango: go")
     out["constants"] = {"GOAL": prompts.GOAL, "COMPACTION_PROMPT": prompts.COMPACTION_PROMPT,
                         "PLANNING_ONLY_RULE": prompts.PLANNING_ONLY_RULE,
                         "FORCED_ASKS": prompts.FORCED_ASKS}

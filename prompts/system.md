@@ -106,3 +106,6 @@ During a round, new posts are shown to you with your state.
 
 ## thinking_budget
 You have about {reasoning_tokens} tokens to think before each decision; decide quickly.
+
+## practice_finish_note
+When you have practised enough you may call finish_practice() to end your practice early.

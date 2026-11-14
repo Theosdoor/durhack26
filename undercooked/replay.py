@@ -98,7 +98,8 @@ class Event(BaseModel):
     pickup, putdown, add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
     bump (blocked by another agent), order_new, order_missed, decision_start, decision_land,
     cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end,
-    forced_answer (no act at first, then act on the one follow-up call; see season.py).
+    forced_answer (no act at first, then act on the one follow-up call; see season.py),
+    practice_finished (the agent's finish_practice() landed: its practice game ends at `t`).
 
     Keys used in `data` (include those that apply): item ("onion"|"dish"|"soup"),
     at ("x,y" of the tile acted on), pot (pot id), onions (count after the action),
@@ -152,13 +153,20 @@ class DecisionRecord(BaseModel):
     note: str | None = None
     read_board: bool = False
     ready: bool = False            # chat phase: agent called ready()
-    cutoff: bool = False           # reply had no act() in a round (chat, debrief: see season.cut_off)
+    # cutoff / forced. Practice and rounds: cutoff = no act() (nor finish_practice()) in the
+    # decision, even after the forced-answer follow-up; forced = only the follow-up acted.
+    # Chat and debrief: a turn needs the follow-up when its reply had no tool call and did not
+    # stop normally (season.cut_off). forced = the follow-up then called a tool; a follow-up with
+    # no tool call (still cut off, or a pass) leaves the turn a cutoff, not forced. A reply with no
+    # tool call that stopped normally is a deliberate pass: neither.
+    cutoff: bool = False
     landed: bool = True            # False: still in flight when the phase ended (no effect)
     input_tokens: int | None = None
     output_tokens: int | None = None
     reasoning_tokens: int | None = None
     served_by: str | None = None   # provider OpenRouter reports for this call
-    forced: bool = False           # answered only on the forced-answer follow-up call (season.py)
+    forced: bool = False           # answered only on the forced-answer follow-up call (above)
+    finish_practice: bool = False  # called finish_practice() (practice only)
 
 
 Record = Annotated[Union[Header, Frame, Event, Post, DecisionRecord], Field(discriminator="kind")]

@@ -1,4 +1,4 @@
-"""The agents' tools: act, post, read_board, note, ready.
+"""The agents' tools: act, post, read_board, note, ready, finish_practice.
 
 Tools are built per decision (or chat/debrief turn) as Inspect `ToolDef`s over closures, so each
 call writes into that decision's `Turn` record and the season's state; they run through Inspect's
@@ -9,6 +9,7 @@ The texts the tools show and return are in prompts/tools.md.
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Callable
 
@@ -31,15 +32,31 @@ class Turn:
     note: str | None = None
     read_board: int = 0                  # read_board() calls
     ready: bool = False
+    finish: bool = False                 # finish_practice() called (practice only)
+
+
+def plan_list(plan: list[str] | str) -> list[str]:
+    """act's `plan` as a list of strings. The schema accepts a list or a string (models differ in
+    which they send): a string that is a JSON list is that list; any other string is one entry
+    (the engine still splits it on ";", "," and newlines)."""
+    if isinstance(plan, str):
+        text = plan.strip()
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+            except ValueError:
+                parsed = None
+            if isinstance(parsed, list):
+                return [str(p) for p in parsed]
+        return [plan]
+    return [str(p) for p in plan]
 
 
 def act_tool(turn: Turn, check: Callable[[list[str]], str | None], max_len: int) -> ToolDef:
-    async def act(plan: list[str]) -> str:
+    async def act(plan: list[str] | str) -> str:
         if turn.plan is not None:
             return load("tools", "act.ignored")
-        if isinstance(plan, str):
-            plan = [plan]
-        plan = [str(p) for p in plan]
+        plan = plan_list(plan)
         turn.plan = plan
         turn.plan_error = check(plan)
         if turn.plan_error is not None:
@@ -121,5 +138,17 @@ def ready_tool(turn: Turn) -> ToolDef:
     return ToolDef(
         ready, name="ready",
         description=load("tools", "ready.description"),
+        parameters={},
+    )
+
+
+def finish_practice_tool(turn: Turn) -> ToolDef:
+    async def finish_practice() -> str:
+        turn.finish = True
+        return load("tools", "finish_practice.result")
+
+    return ToolDef(
+        finish_practice, name="finish_practice",
+        description=load("tools", "finish_practice.description"),
         parameters={},
     )

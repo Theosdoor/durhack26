@@ -19,7 +19,10 @@ Flavours, added to the model name with "+" (e.g. `kitchenfake/cook+chaos+tagged`
   reasoning and stops at max_tokens with no tool call; the forced-answer follow-up then answers
   as the plain script would have;
 - stubborn (with overthink): the follow-up stops at max_tokens too, so every turn is a cutoff;
+- pass (with overthink): the follow-up replies "I pass." with no tool call (stop);
 - rescue (with chaos): a decision without act() is rescued by the follow-up for half the states.
+- finish: from a practice second of 4-8 (fixed per script), the first reply of a practice
+  decision calls finish_practice(), with or without act(["wait(1)"]) (by a hash of the state).
 Without overthink, stubborn or rescue a follow-up gets a reply with no tool call, as before.
 `DELAY` = (seed, lo, hi) makes every call sleep a pseudo-random time in [lo, hi] s, drawn from a
 hash of the seed and the call's input (so the same call sleeps the same in every run, but
@@ -130,6 +133,8 @@ def follow_up(role: str, messages: list[ChatMessage], tools: list[str],
     """The reply to a forced-answer follow-up (see the module doc)."""
     if "stubborn" in flags:
         return overthought()
+    if "pass" in flags:                         # the follow-up passes: no tool call, stop
+        return reply("I pass.")
     k = max(i for i, m in enumerate(messages[:-1]) if m.role == "user")   # the turn's message
     if "overthink" in flags:                    # answer as the plain script would have
         plain = tuple(f for f in flags if f != "overthink")
@@ -298,6 +303,13 @@ def script(role: str, messages: list[ChatMessage], tools: list[str],
     if tools == ["note"]:                                   # debrief
         return reply(calls=[("note", {"text": f"{role}: {NOTE}"})])
     first_line = text.split("\n")[0]
+    if "finish" in flags and "finish_practice" in tools and messages[-1].role == "user":
+        t, _ = game_second(text)
+        if t is not None and t >= 4 + _hash(role) % 5:     # each script at its own second
+            calls = [("finish_practice", {})]
+            if _hash(role + text) % 2:                        # with or without a last plan
+                calls.append(("act", {"plan": ["wait(1)"]}))
+            return reply(calls=calls)
     if "chaos" in flags and "act" in tools:
         return chaos(role, messages, tools, text)
     if "Practice" in text and "act" in tools:

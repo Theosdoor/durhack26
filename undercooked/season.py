@@ -68,13 +68,14 @@ from undercooked.engine import Game, Kitchen
 from undercooked.providers import AgentModel, agent_model, served_providers
 from undercooked.providers import no_reasoning_model
 from undercooked.replay import AgentInfo, DecisionRecord, Event, Header, Phase, Post
-from undercooked.tools import (Turn, act_tool, board_empty_text, note_tool, post_cap_error,
-                               post_tool, read_board_tool, ready_tool)
+from undercooked.tools import (Turn, act_tool, board_empty_text, finish_practice_tool, note_tool,
+                               post_cap_error, post_tool, read_board_tool, ready_tool)
 
 STORE_KEY = "undercooked"          # season summary in the sample store (read by the scorer)
 ROUND_EXTRA_GENERATIONS = 2        # generations allowed after one without act()
 FORCED_MAX_TOKENS = 400            # max_tokens of the forced-answer follow-up call (no reasoning)
 FORCED_COST_S = 1                  # game seconds a forced answer adds to its decision
+PHASE_COUNTS = ("practice", "round", "chat", "debrief")   # phases cutoffs / forced are counted in
 
 
 def _stream(seed: int, level: str | None) -> str:
@@ -119,14 +120,16 @@ class Agent:
     notepad: str | None = None
     posts: int = 0
     read_board: int = 0
-    cutoffs: int = 0
-    forced: int = 0                 # decisions that acted only on the forced-answer follow-up
-    talk_cutoffs: dict[str, int] = field(default_factory=lambda: {"chat": 0, "debrief": 0})
-    talk_forced: dict[str, int] = field(default_factory=lambda: {"chat": 0, "debrief": 0})
+    # per phase ("practice", "round", "chat", "debrief"; decisions: practice and round only):
+    # cutoffs, forced answers (answered only on the forced-answer follow-up) and decisions
+    cutoffs: dict[str, int] = field(default_factory=lambda: dict.fromkeys(PHASE_COUNTS, 0))
+    forced: dict[str, int] = field(default_factory=lambda: dict.fromkeys(PHASE_COUNTS, 0))
+    decisions: dict[str, int] = field(default_factory=lambda: {"practice": 0, "round": 0})
     inbox: list[str] = field(default_factory=list)   # put before the agent's next user message
-    decisions: int = 0              # round decisions (not practice, chat or debrief)
     compactions: int = 0
+    practice_finished: int = 0      # 1 if it ended its practice early with finish_practice()
     last_cutoff: int = 0            # seconds the previous decision's cutoff cost (0: not a cutoff)
+    last_forced: bool = False       # the previous decision was a forced answer (cost 1 s more)
 
     @property
     def letter(self) -> str:
@@ -187,8 +190,10 @@ class Force(NamedTuple):
 
 
 def cut_off(output: ModelOutput) -> bool:
-    """A chat or debrief reply that ran out of tokens before calling a tool (passing is fine)."""
-    return output.stop_reason in ("max_tokens", "model_length") and not output.message.tool_calls
+    """A chat or debrief reply with no tool call that did not end normally: any stop reason but
+    "stop" (or "tool_calls"), e.g. max_tokens, model_length, content_filter or unknown. A reply
+    with no tool call that stopped normally is a deliberate pass, which is fine."""
+    return not output.message.tool_calls and output.stop_reason not in ("stop", "tool_calls")
 
 
 @dataclass
@@ -383,11 +388,12 @@ class Season:
             "rounds": self.rounds,
             "posts": [a.posts for a in self.agents],
             "read_board": [a.read_board for a in self.agents],
-            "cutoffs": [a.cutoffs for a in self.agents],
-            "forced": [a.forced for a in self.agents],
-            **{f"{kind}_{phase}": [getattr(a, f"talk_{kind}")[phase] for a in self.agents]
-               for kind in ("cutoffs", "forced") for phase in ("chat", "debrief")},
-            "decisions": [a.decisions for a in self.agents],
+            # cutoffs, forced, decisions: rounds only; *_practice, *_chat, *_debrief: those phases
+            **{(kind if phase == "round" else f"{kind}_{phase}"):
+               [getattr(a, kind)[phase] for a in self.agents]
+               for kind in ("cutoffs", "forced", "decisions") for phase in PHASE_COUNTS
+               if phase in getattr(self.agents[0], kind)},
+            "practice_finished": [a.practice_finished for a in self.agents],
             "compactions": [a.compactions for a in self.agents],
         }
 
@@ -426,8 +432,10 @@ class Season:
         if force is not None and output is not None and force.needed(output):
             output = await self.forced_answer(a, base, start, tools, gen, force.prompt)
             gen.followed_up = True
-            gen.cutoff = force.needed(output)
-            gen.forced = not gen.cutoff
+            # forced: the follow-up called a tool and answered; anything else (no tool call,
+            # even a deliberate pass, or still no act) leaves the turn a cutoff
+            gen.forced = bool(output.message.tool_calls) and not force.needed(output)
+            gen.cutoff = not gen.forced
         return gen
 
     async def forced_answer(self, a: Agent, base: list[ChatMessage], start: int,
@@ -467,13 +475,10 @@ class Season:
         (practice and round cutoffs are logged by the play loops, as before)."""
         talk = phase in ("chat", "debrief")
         if gen.forced:
-            if talk:
-                a.talk_forced[phase] += 1
-            else:
-                a.forced += 1
+            a.forced[phase] += 1
             self.event(phase, round, t, "forced_answer", a.name)
         if talk and gen.cutoff:
-            a.talk_cutoffs[phase] += 1
+            a.cutoffs[phase] += 1
             self.event(phase, round, t, "cutoff", a.name)
 
     # ------------------------------------------------------------------ decisions
@@ -511,9 +516,13 @@ class Season:
                       read_board_tool(turn, lambda: format_posts(
                           board.read_all(a.name, rnd, upto=upto), board_empty_text()))]
         tools.append(note_tool(turn))
+        if game.phase == "practice":                # only practice can be ended early
+            tools.append(finish_practice_tool(turn))
         text = self.state_text(game, a, board)
         if a.last_cutoff:
             text = f"{prompts.cutoff_notice(a.last_cutoff)}\n\n{text}"
+        elif a.last_forced:
+            text = f"{prompts.forced_notice(FORCED_COST_S)}\n\n{text}"
         if intro:
             text = f"{intro}\n\n{text}"
         return turn, tools, text
@@ -529,17 +538,19 @@ class Season:
         """The model call(s) of a decision prepared at second t0, and when it lands."""
         async with span(f"agent-{a.name}"):
             gen = await self.model_turn(a, text, tools, 1 + ROUND_EXTRA_GENERATIONS,
-                                        lambda: turn.plan is not None,
+                                        lambda: turn.plan is not None or turn.finish,
                                         Force(prompts.forced_prompt(self.cfg, "act"),
-                                              lambda _: turn.plan is None))
-        cutoff = turn.plan is None
+                                              lambda _: turn.plan is None and not turn.finish))
+        # a decision that only ends practice (finish_practice() without act) is no cutoff
+        cutoff = turn.plan is None and not turn.finish
         d = self.cfg.decision
         words = len(turn.post.split()) if turn.post else 0
         cost = ((1 if cutoff else d.flat_s + FORCED_COST_S * gen.forced)
                 + math.ceil(words / d.post_words_per_s))
         record = gen.record(phase=game.phase, round=game.round, t=t0, agent=a.name,
                             plan=turn.kept or [], plan_sent=turn.plan or [], post=turn.post,
-                            note=turn.note, read_board=turn.read_board > 0, cutoff=cutoff)
+                            note=turn.note, read_board=turn.read_board > 0, cutoff=cutoff,
+                            finish_practice=turn.finish)
         return Pending(a, game, turn, record, t0 + cost, gen, len(a.messages))
 
     def land(self, p: Pending, board: Board | None) -> None:
@@ -566,10 +577,16 @@ class Season:
             self.event(game.phase, game.round, t, "note", a.name)
         p.record.lands_t = t
         self.log(p.record)
+        if turn.finish and game.phase == "practice":
+            # this agent's practice game ends now: no more decisions, ticks or frames
+            game.end()
+            a.practice_finished = 1
+            self.event(game.phase, game.round, t, "practice_finished", a.name)
 
     async def play(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
-                   intro: str) -> None:
-        """Run the games (one per practising agent, or the one round game) to the end."""
+                   intro: dict[str, str]) -> None:
+        """Run the games (one per practising agent, or the one round game) to the end.
+        `intro[name]` opens that agent's first decision."""
         d = self.cfg.decision
         if (d.pipeline and d.post_words_per_s >= 1 and (len(games) == 1 or board is None)
                 and len({g.duration for g, _ in games}) == 1):
@@ -578,14 +595,14 @@ class Season:
             await self._play_sequential(games, board, intro)
 
     async def _play_sequential(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
-                               intro: str) -> None:
+                               intro: dict[str, str]) -> None:
         """The reference loop: games in lockstep; the clock waits for every model call."""
         pending: dict[str, Pending] = {}
         started: set[str] = set()
         for game, agents in games:
             self.log(game.frame())                    # t = 0
             for a in agents:
-                a.last_cutoff = 0
+                a.last_cutoff, a.last_forced = 0, False
 
         def land_due() -> None:
             for name, p in list(pending.items()):
@@ -607,19 +624,19 @@ class Season:
                     self.event(game.phase, game.round, game.t, "decision_start", name)
                     starters.append((game, a))
             results = await collect(*(
-                self.decide(g, a, board, None if a.name in started else intro)
+                self.decide(g, a, board, None if a.name in started else intro.get(a.name))
                 for g, a in starters))
             for p in results:
                 a, game = p.agent, p.game
                 started.add(a.name)
-                if game.phase == "round":
-                    a.decisions += 1
+                a.decisions[game.phase] += 1
                 a.read_board += p.turn.read_board
                 self._log_side_events(game.phase, game.round, p.record.t, a, p.gen, p.turn,
                                       p.messages)
                 a.last_cutoff = p.lands_t - p.record.t if p.record.cutoff else 0
+                a.last_forced = p.record.forced
                 if p.record.cutoff:
-                    a.cutoffs += 1
+                    a.cutoffs[game.phase] += 1
                     self.event(game.phase, game.round, p.record.t, "cutoff", a.name)
                 pending[a.name] = p
             land_due()
@@ -635,7 +652,7 @@ class Season:
 
     # ------------------------------------------------------------------ pipelining
     async def _play_pipelined(self, games: list[tuple[Game, list[Agent]]], board: Board | None,
-                              intro: str) -> None:
+                              intro: dict[str, str]) -> None:
         """Same games, records and record order as `_play_sequential`, with model calls that
         overlap across game seconds. Each game runs in its own runner (`_run_game`; practice
         games share nothing, so one never waits for the other's model calls) and every kitchen
@@ -650,7 +667,7 @@ class Season:
                 with buf.at((-1, 0, g, 0, 0)):
                     self.log(game.frame())                # t = 0
                 for a in agents:
-                    a.last_cutoff = 0
+                    a.last_cutoff, a.last_forced = 0, False
             runners = [asyncio.create_task(self._run_game(g, game, board, intro, started,
                                                           buf, flights))
                        for g, (game, _) in enumerate(games)]
@@ -668,7 +685,7 @@ class Season:
             if stray:
                 await asyncio.gather(*stray, return_exceptions=True)
 
-    async def _run_game(self, g: int, game: Game, board: Board | None, intro: str,
+    async def _run_game(self, g: int, game: Game, board: Board | None, intro: dict[str, str],
                         started: set[str], buf: _LogBuffer, flights: list[_Flight]) -> None:
         """One game, second by second, as in `_play_sequential`, except that each decision's
         model call runs as a task that is awaited only when the game needs its outcome:
@@ -705,7 +722,8 @@ class Season:
                     self.event(game.phase, game.round, t, "decision_start", name)
             for name in names:
                 a = self.by_name[name]
-                turn, tools, text = self.prepare(game, a, board, None if name in started else intro)
+                turn, tools, text = self.prepare(game, a, board,
+                                                 None if name in started else intro.get(name))
                 started.add(name)
                 task = asyncio.create_task(self.think(game, a, t, turn, tools, text))
                 f = _Flight(a, g, index[name], t, task)
@@ -724,15 +742,15 @@ class Season:
             for f in sorted(fs, key=lambda f: f.key):
                 p = f.result = f.task.result()
                 a = f.agent
-                if game.phase == "round":
-                    a.decisions += 1
+                a.decisions[game.phase] += 1
                 a.read_board += p.turn.read_board
                 with buf.at(f.side_key):
                     self._log_side_events(game.phase, game.round, f.t0, a, p.gen, p.turn,
                                           p.messages)
                     a.last_cutoff = p.lands_t - p.record.t if p.record.cutoff else 0
+                    a.last_forced = p.record.forced
                     if p.record.cutoff:
-                        a.cutoffs += 1
+                        a.cutoffs[game.phase] += 1
                         self.event(game.phase, game.round, f.t0, "cutoff", a.name)
                 buf.open.discard(f.side_key)
 
@@ -745,7 +763,8 @@ class Season:
                 late = f.t0 < t
                 with buf.at((t, _LAND if late else _LAND_SAME, f.t0, g, f.i)):
                     self.land(f.result, board)
-                if restart and late and f.agent.name in game.needs_decision():
+                if (restart and late and not game.over
+                        and f.agent.name in game.needs_decision()):
                     launch([f.agent.name])
 
         while not game.over:
@@ -754,11 +773,15 @@ class Season:
             if any(f.result is None and t >= f.t0 + post_min for f in pending.values()):
                 raise RuntimeError("pipeline: a decision that could post by now is unresolved")
             land_resolved(restart=False)            # starters below pick these agents up
+            if game.over:                           # practice finished early (finish_practice)
+                break
             launch([n for n in game.needs_decision() if n not in pending])
             while due := [f for f in pending.values()
                           if f.result is None and t >= f.t0 + min_cost]:
                 await resolve(due)
                 land_resolved(restart=True)
+            if game.over:
+                break
             with buf.at((t, _TICK, g, 0, 0)):
                 for ev in game.tick():
                     self.log(ev)
@@ -783,8 +806,10 @@ class Season:
         games = [(Game(kitchen, [a.name], self.cfg, phase="practice", round=0,
                        seed=self._game_seed("practice", 0, a.name)), [a])
                  for a in self.agents]
-        await self.play(games, None, prompts.practice_start(self.cfg))
-        self.event("practice", 0, games[0][0].t, "phase_end",
+        await self.play(games, None, {a.name: prompts.practice_start(self.cfg)
+                                      for a in self.agents})
+        # each game ends at practice_s, or earlier when its agent calls finish_practice()
+        self.event("practice", 0, max(g.t for g, _ in games), "phase_end",
                    duration_s=round(time.monotonic() - clock, 1))
 
     async def round(self, r: int) -> Game:
@@ -795,7 +820,15 @@ class Season:
         intro = prompts.round_start(self.cfg, r,
                                     chat_turn_limit=self._chat_turn_limit.get(r, False))
         board = self.board if self.cfg.comms == "full" else None    # no board during rounds
-        await self.play([(game, self.agents)], board, intro)
+        intros = {a.name: intro for a in self.agents}
+        if self.cfg.comms == "planning_only":
+            # no board in the round: show the chat posts the agent has not seen (the teammate
+            # may have posted after the agent's last chat turn, e.g. while saying ready)
+            for a in self.agents:
+                new = self.board.mark_read(a.name, r)
+                if new:
+                    intros[a.name] = f"{intro}\n{prompts.unseen_chat(format_posts(new))}"
+        await self.play([(game, self.agents)], board, intros)
         self.event("round", r, game.t, "phase_end", duration_s=round(time.monotonic() - clock, 1),
                    score=game.score, served=game.served, missed=game.missed)
         return game

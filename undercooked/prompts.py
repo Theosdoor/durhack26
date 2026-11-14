@@ -25,6 +25,17 @@ def cutoff_notice(seconds: int) -> str:
     return load("messages", "cutoff_notice.notice", seconds=seconds, post=post)
 
 
+def forced_notice(seconds: int) -> str:
+    """Told at the next decision after a forced answer, which cost `seconds` more."""
+    return load("messages", "forced_notice", seconds=seconds)
+
+
+def unseen_chat(posts: str) -> str:
+    """comms planning_only: chat posts the agent had not seen when the round starts (the
+    teammate's last post can come after the agent's last chat turn)."""
+    return load("messages", "round_start.unseen_chat", posts=posts)
+
+
 def chat_turns_each(cfg: Config) -> int:
     """Most turns each agent gets in one chat (season.chat ends the chat after 2x this)."""
     return cfg.chat_max_posts + 2
@@ -91,7 +102,8 @@ def system_prompt(cfg: Config, me: str, mate: str) -> str:
     practice = ""
     if cfg.practice:
         key = "practice_intro_no_comms" if cfg.comms == "none" else "practice_intro"
-        practice = load("system", key, practice_s=cfg.practice_s) + " "
+        practice = (load("system", key, practice_s=cfg.practice_s) + " "
+                    + load("system", "practice_finish_note") + " ")
     between, posting, extras = _comms_lines(cfg)
     kw = dict(me=me, mate=mate, practice=practice, rounds=_s(cfg.rounds, "round"),
               round_s=cfg.round_s, between=between, flat=_s(d.flat_s, "second"), posting=posting,

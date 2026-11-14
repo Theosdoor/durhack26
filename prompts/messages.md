@@ -95,3 +95,10 @@ Summarise this conversation so far so that you can keep playing the game from yo
 
 ## compaction.posted
 what you and your teammate posted,
+
+## forced_notice
+Your last decision only called act(plan) after a reminder, so it took {seconds} s longer.
+
+## round_start.unseen_chat
+Chat posts you had not seen yet:
+{posts}
