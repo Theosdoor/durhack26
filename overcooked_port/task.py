@@ -2,6 +2,11 @@
 
     uv run inspect eval overcooked_port/task.py -T rounds=3 -T round_steps=60
     uv run inspect eval overcooked_port/task.py -T mixed=true      # DeepSeek + Gemma
+    uv run inspect eval overcooked_port/task.py -T layout=coordination_ring
+
+Layouts (the four classic ones, onion soup only): forced_coordination, asymmetric_advantages,
+coordination_ring, counter_circuit (= Overcooked-AI's counter_circuit_o_1order). Any other
+onion-only layout name in overcooked_ai_py/data/layouts also works.
 
 The task-level model is unused (each agent has its own pinned OpenRouter model); leave it unset.
 """
@@ -39,10 +44,16 @@ def make_task(cfg: Config, epochs: int = 1, models=None) -> Task:
                 name="overcooked_port", metadata={"config": cfg.model_dump(mode="json")})
 
 
+# the names used in the Overcooked-AI demo -> layout files (the demo's Counter Circuit is the
+# onion-only variant; the file called counter_circuit has tomatoes, which we don't support)
+LAYOUTS = {"counter_circuit": "counter_circuit_o_1order"}
+
+
 @task
 def overcooked_port(rounds: int = 3, round_steps: int = 100, epochs: int = 1, seed: int = 0,
-                    mixed: bool = False) -> Task:
+                    mixed: bool = False, layout: str = "forced_coordination") -> Task:
     agents = [DEEPSEEK, GEMMA] if mixed else [DEEPSEEK, DEEPSEEK]
     cfg = Config(rounds=rounds, round_steps=round_steps, seed=seed, agents=agents,
-                 name="forced_coordination_mixed" if mixed else "forced_coordination_deepseek")
+                 layout=LAYOUTS.get(layout, layout),
+                 name=f"{layout}_{'mixed' if mixed else 'deepseek'}")
     return make_task(cfg, epochs)
