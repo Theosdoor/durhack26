@@ -1,0 +1,143 @@
+"""Replay records: the contract between the game (writer) and the viewer/analysis (readers).
+
+During a season the runner logs every record with
+    transcript().info(record.model_dump(mode="json"), source="kitchen")
+so it lands in the Inspect .eval log. `export` (added later) turns an .eval sample back into a
+`Replay`. The viewer only ever reads `Replay` objects, so it can be built from the fixture
+tests/fixtures/replay_min.json before the engine exists.
+
+Coordinates are (x, y): x = column, y = row, origin top-left, matching levels/*.txt.
+Time `t` is whole game seconds since the start of the current phase (round or practice).
+"""
+
+from __future__ import annotations
+
+from typing import Annotated, Literal, Union
+
+from pydantic import BaseModel, Field
+
+Phase = Literal["briefing", "practice", "chat", "round", "debrief"]
+Pos = tuple[int, int]
+
+
+class AgentInfo(BaseModel):
+    name: str                      # NATO name, e.g. "Kilo"
+    letter: str                    # map letter = first letter of name
+    model: str                     # e.g. openrouter/deepseek/deepseek-v4.1-flash
+    provider: str | None = None    # pinned OpenRouter endpoint tag, e.g. "baidu/fp8"
+
+
+class Header(BaseModel):
+    kind: Literal["header"] = "header"
+    config_name: str
+    level: str
+    map: list[str]                 # level rows, start digits replaced by floor (" ")
+    agents: list[AgentInfo]
+    seed: int
+    epoch: int = 1
+    round_s: int
+    rounds: int
+
+
+class AgentState(BaseModel):
+    name: str
+    pos: Pos
+    holding: str | None = None     # "onion" | "dish" | "soup" | None
+    plan: list[str] = []           # remaining actions, as strings
+    status: Literal["acting", "deciding", "idle"] = "idle"
+
+
+class PotState(BaseModel):
+    id: str                        # "pot_1", numbered in reading order
+    pos: Pos
+    onions: int = 0
+    state: Literal["empty", "filling", "cooking", "ready"] = "empty"
+    ready_in: int | None = None    # seconds left while cooking
+
+
+class OrderState(BaseModel):
+    id: int
+    dish: str = "onion_soup"
+    created_t: int
+    due_t: int
+
+
+class Frame(BaseModel):
+    """Full kitchen snapshot, logged once per game second (after that second resolves)."""
+
+    kind: Literal["frame"] = "frame"
+    phase: Phase
+    round: int                     # 0 for practice
+    t: int
+    agents: list[AgentState]       # in practice: just the one agent playing
+    pots: list[PotState]
+    counters: dict[str, str]       # "x,y" -> item, only non-empty counters
+    orders: list[OrderState]       # open orders
+    score: int
+    served: int = 0                # orders served so far this round
+    missed: int = 0                # orders expired so far this round
+
+
+class Event(BaseModel):
+    """Something that happened. `type` values:
+    pickup, putdown, add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
+    bump (blocked by another agent), order_new, order_missed, decision_start, decision_land,
+    cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end."""
+
+    kind: Literal["event"] = "event"
+    phase: Phase
+    round: int
+    t: int
+    type: str
+    agent: str | None = None
+    data: dict = {}
+
+
+class Post(BaseModel):
+    """A message on the shared board."""
+
+    kind: Literal["post"] = "post"
+    phase: Phase
+    round: int
+    t: int
+    agent: str
+    text: str
+
+
+class DecisionRecord(BaseModel):
+    """One model decision by one agent (a decision may include reading the board)."""
+
+    kind: Literal["decision"] = "decision"
+    phase: Phase
+    round: int
+    t: int                         # game time the decision started
+    lands_t: int | None = None     # game time it took effect (None outside rounds)
+    agent: str
+    reasoning: str | None = None   # model's reasoning text, if the provider returns it
+    text: str | None = None        # model's visible text, if any
+    plan: list[str] = []
+    post: str | None = None
+    note: str | None = None
+    read_board: bool = False
+    ready: bool = False            # chat phase: agent called ready()
+    cutoff: bool = False           # reply had no act() in a round
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    reasoning_tokens: int | None = None
+    served_by: str | None = None   # provider OpenRouter reports for this call
+
+
+Record = Annotated[Union[Header, Frame, Event, Post, DecisionRecord], Field(discriminator="kind")]
+
+
+class Replay(BaseModel):
+    header: Header
+    records: list[Record]          # in log order (frames, events, posts, decisions interleaved)
+
+    def frames(self, phase: Phase | None = None, round: int | None = None) -> list[Frame]:
+        return [
+            r for r in self.records
+            if isinstance(r, Frame)
+            and (phase is None or r.phase == phase)
+            and (round is None or r.round == round)
+        ]

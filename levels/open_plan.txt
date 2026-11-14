@@ -1,0 +1,5 @@
+XXPXPXX
+O     D
+X 1   X
+O   2 S
+XXXXXXX
