@@ -44,6 +44,7 @@ def test_app_runs_and_scrubs(monkeypatch):
 def test_app_chat_and_debrief(monkeypatch):
     at = make_app(monkeypatch).run()
     assert not at.exception
+    at.sidebar.selectbox[1].select("chat before round 1").run()   # the default is now round 1
     assert len(at.chat_message) >= 4
     at.sidebar.selectbox[1].select("debrief after round 1").run()
     assert not at.exception

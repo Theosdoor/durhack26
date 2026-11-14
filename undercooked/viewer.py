@@ -225,7 +225,9 @@ def main() -> None:
     epoch = st.sidebar.selectbox("Season (epoch)", [r.header.epoch for r in replays])
     rep = next(r for r in replays if r.header.epoch == epoch)
     phases = rep.phases()
-    label = st.sidebar.selectbox("Phase", [phase_label(*p) for p in phases])
+    # Open on the first round (briefing has nothing to draw); fall back to the first phase.
+    first_round = next((i for i, (ph, _) in enumerate(phases) if ph == "round"), 0)
+    label = st.sidebar.selectbox("Phase", [phase_label(*p) for p in phases], index=first_round)
     phase, rnd = phases[[phase_label(*p) for p in phases].index(label)]
     names = [a.name for a in rep.header.agents]
     agents = st.sidebar.multiselect("Agents", names, default=names) or names
