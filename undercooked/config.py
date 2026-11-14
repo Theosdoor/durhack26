@@ -38,6 +38,7 @@ class Decision(_Strict):
     reasoning_tokens: int = 1000    # GenerateConfig.reasoning_tokens
     max_tokens: int = 4000          # GenerateConfig.max_tokens: hard cap; DeepSeek on Baidu overshoots reasoning_tokens
     pipeline: bool = True           # overlap model calls across game seconds (same outcomes; season.py)
+    reasoning: Literal["on", "off"] = "on"   # "off": every call asks for no reasoning (providers.py)
 
 
 class Providers(_Strict):
@@ -67,6 +68,12 @@ class Config(_Strict):
     seed: int = 0
     names: Literal["nato_random"] = "nato_random"
     board: Literal["pull", "push"] = "pull"
+    # who can talk when: "full" = planning chat + board in rounds; "planning_only" = planning chat
+    # only (no board in practice or rounds); "none" = no chat and no board at all
+    comms: Literal["full", "planning_only", "none"] = "full"
+    # "full" = a debrief turn after each round; "score_only" = no debrief turn: the round's result
+    # opens the agent's next message (note() still works in practice and rounds)
+    debrief: Literal["full", "score_only"] = "full"
     compact_at_tokens: int = 32000
     providers: Providers = Field(default_factory=Providers)
     agents: list[AgentSpec]

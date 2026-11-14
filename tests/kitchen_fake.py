@@ -10,10 +10,17 @@ Flavours, added to the model name with "+" (e.g. `kitchenfake/cook+chaos+tagged`
 - chaos: decisions vary with a hash of the state text: posts of 1-25 words (1-3 s), cutoffs
   with and without a post, notes, rejected plans, waits of 1-4 s, so landing times vary;
 - tagged: the served provider is "Cloud-<agent name>" (from the system prompt), not FakeCloud.
+- overthink: every turn's first reply (practice and round decisions, chat, debrief) is all
+  reasoning and stops at max_tokens with no tool call; the forced-answer follow-up then answers
+  as the plain script would have;
+- stubborn (with overthink): the follow-up stops at max_tokens too, so every turn is a cutoff;
+- rescue (with chaos): a decision without act() is rescued by the follow-up for half the states.
+Without overthink, stubborn or rescue a follow-up gets a reply with no tool call, as before.
 `DELAY` = (seed, lo, hi) makes every call sleep a pseudo-random time in [lo, hi] s, drawn from a
 hash of the seed and the call's input (so the same call sleeps the same in every run, but
 completion order differs from start order). `CALLS` records the wall-clock intervals (`Call`)
-of the practice and round decision calls when `RECORD` is on.
+of the practice and round decision calls when `RECORD` is on. `REQUESTS`, when a list, gets a
+`Request` per call: what the model was asked and with which reasoning settings.
 """
 
 from __future__ import annotations
@@ -30,6 +37,7 @@ from inspect_ai.model import (
     ChatCompletionChoice,
     ChatMessage,
     ChatMessageAssistant,
+    ContentReasoning,
     GenerateConfig,
     ModelAPI,
     ModelOutput,
@@ -63,12 +71,72 @@ class Call(NamedTuple):
 CALLS: list[Call] = []
 
 
+class Request(NamedTuple):
+    """One generate call as the fake API received it."""
+
+    model: str                     # e.g. "cook+overthink"
+    reasoning_enabled: bool | None  # the model arg (None: not given)
+    reasoning_tokens: int | None   # from the merged GenerateConfig
+    max_tokens: int | None
+    tools: list[str]
+    tool_text: str                 # the offered tools' descriptions, as JSON
+    system: str
+    last_user: str
+
+
+REQUESTS: list[Request] | None = None
+OVERTHOUGHT = "Hmm. Let me weigh every option once more, step by step"
+
+
+def forced_prompts() -> set[str]:
+    """Every user message of a forced-answer follow-up."""
+    from undercooked import prompts
+    from undercooked.config import Config
+
+    out = set()
+    for reasoning in ("on", "off"):
+        cfg = Config.model_validate({"name": "x", "level": "x", "agents": [],
+                                     "decision": {"reasoning": reasoning}})
+        out |= {prompts.forced_prompt(cfg, k) for k in prompts.FORCED_ASKS}
+    return out
+
+
+FORCED = forced_prompts()
+
+
 def reply(content: str = "", calls: list[tuple[str, dict[str, Any]]] = ()) -> ModelOutput:
     tool_calls = [ToolCall(id=f"call_{next(_ids)}", function=f, arguments=a) for f, a in calls]
     msg = ChatMessageAssistant(content=content, tool_calls=tool_calls or None,
                                model="kitchenfake", source="generate")
     return ModelOutput(model="kitchenfake", choices=[ChatCompletionChoice(
         message=msg, stop_reason="tool_calls" if calls else "stop")])
+
+
+def overthought() -> ModelOutput:
+    """A reply that thought until max_tokens: reasoning only, no text, no tool call."""
+    msg = ChatMessageAssistant(content=[ContentReasoning(reasoning=OVERTHOUGHT)],
+                               model="kitchenfake", source="generate")
+    return ModelOutput(model="kitchenfake", choices=[ChatCompletionChoice(
+        message=msg, stop_reason="max_tokens")])
+
+
+def follow_up(role: str, messages: list[ChatMessage], tools: list[str],
+              flags: tuple[str, ...]) -> ModelOutput:
+    """The reply to a forced-answer follow-up (see the module doc)."""
+    if "stubborn" in flags:
+        return overthought()
+    k = max(i for i, m in enumerate(messages[:-1]) if m.role == "user")   # the turn's message
+    if "overthink" in flags:                    # answer as the plain script would have
+        plain = tuple(f for f in flags if f != "overthink")
+        return script(role, messages[:k + 1], tools, plain)
+    state = messages[k].text
+    if "rescue" in flags and "act" in tools and _hash(state) % 2 == 0:
+        if "Practice" in state:
+            plan = [f"wait({1 + _hash(state) // 2 % 3})"]
+        else:
+            plan = cook_plan(state) if role == "cook" else passer_plan(state)
+        return reply(calls=[("act", {"plan": plan})])
+    return reply("I still need to think.")
 
 
 def last_user(messages: list[ChatMessage]) -> str:
@@ -196,6 +264,10 @@ def script(role: str, messages: list[ChatMessage], tools: list[str],
     if not tools:                                           # compaction summary request
         return reply("Summary: I am a cook; we pass onions and a dish over counter (2,1).")
     text = last_user(messages)
+    if text in FORCED:
+        return follow_up(role, messages, tools, flags)
+    if "overthink" in flags and messages[-1].role == "user":
+        return overthought()
     if "ready" in tools:                                    # chat turn
         if role == "cook":
             if "Posts left: 2" in text:
@@ -235,6 +307,7 @@ class KitchenFake(ModelAPI):
     def __init__(self, model_name: str, base_url: str | None = None, api_key: str | None = None,
                  config: GenerateConfig = GenerateConfig(), **model_args: Any) -> None:
         super().__init__(model_name, base_url, api_key, [], config)
+        self.model_args = model_args
 
     async def count_text_tokens(self, text: str) -> int:   # no tiktoken: stays offline
         return len(text) // 4 + 1
@@ -245,6 +318,12 @@ class KitchenFake(ModelAPI):
         assert tool_choice == "auto" or not tools, tool_choice
         role, *flags = self.model_name.split("+")
         names = [t.name for t in tools]
+        if REQUESTS is not None:
+            REQUESTS.append(Request(
+                self.model_name, self.model_args.get("reasoning_enabled"), config.reasoning_tokens,
+                config.max_tokens, names, "\n".join(t.model_dump_json() for t in tools),
+                input[0].text if input else "",
+                last_user(input) if any(m.role == "user" for m in input) else ""))
         start = time.monotonic()
         delay = 0.0
         if DELAY is not None:
@@ -261,8 +340,9 @@ class KitchenFake(ModelAPI):
         self.on_response(response)          # as OpenAI-compatible APIs do with the raw response
         if delay:
             await asyncio.sleep(delay / 2)  # other calls get their responses in between
-        if RECORD and "act" in names:
-            text = last_user(input)
+        if RECORD and "act" in names:      # a follow-up counts with its decision's state
+            text = next(m.text for m in reversed(input)
+                        if m.role == "user" and m.text not in FORCED)
             t, phase = game_second(text)
             CALLS.append(Call(agent_name(input) or "?", phase, t,
                               start, time.monotonic()))

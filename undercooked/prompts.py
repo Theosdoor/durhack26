@@ -36,25 +36,24 @@ def system_prompt(cfg: Config, me: str, mate: str) -> str:
                       "call read_board() to read them.")
     else:
         board_read = "During a round, new posts are shown to you with your state."
+    no_board = "" if cfg.comms == "none" else "no board, and "
     practice = (f"First you practise alone in a small practice kitchen for {cfg.practice_s} s "
-                f"(no board, and the score does not count). " if cfg.practice else "")
-    return f"""\
+                f"({no_board}the score does not count). " if cfg.practice else "")
+    between, posting, extras = _comms_lines(cfg)
+    return _comms_sections(cfg, f"""\
 You are {me}, one of two cooks in a kitchen game. Your teammate is {mate}.
 
 {rules_text(cfg)}
 THE SEASON
 {practice}Then you and {mate} play {_s(cfg.rounds, 'round')} together in the same kitchen. Each \
 round lasts {cfg.round_s} s and starts afresh (empty pots, new orders, everyone back at the start). \
-Before each round there is a chat on the board; after each round there is a debrief where you \
-see the round's score.
+{between}
 
 DECIDING
 During practice and rounds, whenever you have no plan (at the start, or when your plan is done \
 or has failed) you decide: call act(plan) with your next plan. Every decision must end with \
 act(plan). While you decide you stand still, and deciding costs game time: {_s(d.flat_s, 'second')} \
-per decision, plus 1 s for every {d.post_words_per_s} words you post (rounded up). Your plan, post \
-and note take effect when your decision lands. In a decision you may also call post(message), \
-read_board() and note(text).
+per decision{posting}. {extras}{thinking_budget(cfg)}
 
 THE BOARD
 A message board shared by you and {mate}. post(message) puts a message of at most \
@@ -70,19 +69,23 @@ kept for the whole season. note(text) replaces it.
 
 GOAL
 {GOAL}
-"""
+""")
 
 
 def season_intro(cfg: Config) -> str:
     parts = ["The season starts now."]
     if cfg.practice:
         parts.append("First: practice.")
+    elif cfg.comms == "none":
+        parts.append("First: round 1.")
     else:
         parts.append("First: the chat before round 1.")
     return " ".join(parts)
 
 
 def practice_start(cfg: Config) -> str:
+    if cfg.comms == "none":
+        return f"Practice: you are alone in the practice kitchen for {cfg.practice_s} s."
     return (f"Practice: you are alone in the practice kitchen for {cfg.practice_s} s. "
             f"The board is not available.")
 
@@ -148,3 +151,94 @@ def debrief(cfg: Config, round: int, score: int, served: int, missed: int,
     lines.append(f"Your notepad: {pad}")
     lines.append("You may call note(text) to rewrite your notepad, or reply without a tool call.")
     return "\n".join(lines)
+
+
+# ------------------------------------------------------------- experimental conditions
+# Thinking budget (cfg.decision.reasoning) and who can talk when (cfg.comms). Kept apart from
+# the text above so that the full-communication prompt reads as it always has.
+
+# The forced-answer follow-up (season.Season.forced_answer): what the turn still needs to do
+FORCED_ASKS = {
+    "act": "Call act now with your plan.",
+    "chat": "Post your message and/or call ready() now, or pass.",
+    "debrief": "Update your notepad with note() now, or pass.",
+}
+FORCED_WHY = "Your thinking budget is used up."
+# reasoning off: no thinking budget to speak of
+FORCED_WHY_NO_REASONING = {"act": "Your reply did not call act.",
+                           "chat": "Your reply was cut off.", "debrief": "Your reply was cut off."}
+
+
+def thinking_budget(cfg: Config) -> str:
+    """The sentence that tells the agent its reasoning budget (nothing when reasoning is off)."""
+    if cfg.decision.reasoning == "off":
+        return ""
+    return (f" You have about {cfg.decision.reasoning_tokens} tokens to think before each "
+            f"decision; decide quickly.")
+
+
+def forced_prompt(cfg: Config, kind: str) -> str:
+    """The user message of the forced-answer follow-up call; kind is act, chat or debrief."""
+    why = FORCED_WHY if cfg.decision.reasoning == "on" else FORCED_WHY_NO_REASONING[kind]
+    return f"{why} {FORCED_ASKS[kind]}"
+
+
+def round_result(cfg: Config, round: int, score: int, served: int, missed: int) -> str:
+    """debrief "score_only": the round's result, put before the agent's next message."""
+    return (f"Round {round} of {cfg.rounds} is over. Team score: {score} ({_s(served, 'order')} "
+            f"served, {missed} missed).")
+
+
+def _comms_lines(cfg: Config) -> tuple[str, str, str]:
+    """System prompt sentences that depend on cfg.comms: what happens between rounds, what a post
+    costs, and what a decision may do besides act."""
+    d = cfg.decision
+    after = ("after each round there is a debrief where you see the round's score"
+             if cfg.debrief == "full" else "after each round you are told the round's score")
+    if cfg.comms == "none":
+        between = f"{after[0].upper()}{after[1:]}."
+    else:
+        between = f"Before each round there is a chat on the board; {after}."
+    if cfg.comms == "full":
+        posting = f", plus 1 s for every {d.post_words_per_s} words you post (rounded up)"
+        extras = ("Your plan, post and note take effect when your decision lands. In a decision "
+                  "you may also call post(message), read_board() and note(text).")
+    else:
+        posting = ""
+        extras = ("Your plan and note take effect when your decision lands. In a decision you "
+                  "may also call note(text).")
+    return between, posting, extras
+
+
+PLANNING_ONLY_RULE = (
+    f"You can exchange messages with your teammate only in the chat before each round: "
+    f"post(message) puts a message of at most {MAX_POST_CHARS} characters on a board you share. "
+    f"There is no board during practice or rounds.")
+
+
+def _comms_sections(cfg: Config, prompt: str) -> str:
+    """The system prompt's THE BOARD section for cfg.comms. full: as written. planning_only: a
+    THE CHAT section, whose first line (the board during rounds) becomes PLANNING_ONLY_RULE and
+    whose chat rules (every later line) stay as written. none: no section at all."""
+    if cfg.comms == "full":
+        return prompt
+    start, end = "\nTHE BOARD\n", "\n\nYOUR NOTEPAD\n"
+    if start not in prompt or end not in prompt.split(start, 1)[1]:
+        raise ValueError("system prompt: THE BOARD section not found")
+    head, rest = prompt.split(start, 1)
+    board, tail = rest.split(end, 1)
+    if cfg.comms == "none":
+        return f"{head}{end[1:]}{tail}"
+    chat_rules = board.split("\n", 1)[1] if "\n" in board else ""
+    section = "\n".join(x for x in (PLANNING_ONLY_RULE, chat_rules) if x)
+    return f"{head}\nTHE CHAT\n{section}{end}{tail}"
+
+
+def compaction_prompt(cfg: Config) -> str:
+    """COMPACTION_PROMPT, without posts when the agents cannot message each other at all."""
+    if cfg.comms != "none":
+        return COMPACTION_PROMPT
+    posted = "what you and your teammate posted, "
+    if posted not in COMPACTION_PROMPT:
+        raise ValueError("COMPACTION_PROMPT no longer mentions posts: update compaction_prompt")
+    return COMPACTION_PROMPT.replace(posted, "")
