@@ -18,7 +18,7 @@ from undercooked.promptfiles import PROMPTS_DIR, PromptError, load, placeholders
 from undercooked.prompts import push_board_text
 from undercooked.tools import board_empty_text, post_cap_error
 
-FILES = sorted(p.stem for p in PROMPTS_DIR.glob("*.md") if p.stem != "README")
+FILES = sorted(p.stem for p in PROMPTS_DIR.glob("*.md") if p.stem not in ("README", "EXAMPLE", "EXAMPLE.plain"))
 
 
 def test_rendered_prompts_match_golden_file():
