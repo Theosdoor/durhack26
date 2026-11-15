@@ -232,3 +232,21 @@ def test_default_bins_false_trash_is_unknown_to_the_parser():
     k = Kitchen.load("cramped_room")
     with pytest.raises(ParseError):
         parse_action("interact(bin)", k)
+
+
+def test_bin_words_unknown_without_bins_as_on_main():
+    """bins: false must parse exactly as before bins existed (review finding on PR #6)."""
+    import pytest
+    from undercooked.engine.actions import ParseError, parse_action
+    from undercooked.engine.kitchen import Kitchen
+    k = Kitchen.load("split_room", bins=False)
+    for text in ("throw(4,3)", "toss(onion_crate)", "discard(pot_1)"):
+        with pytest.raises(ParseError, match="unknown action"):
+            parse_action(text, k)
+    for text in ("interact(bin)", "interact(trash)", "interact(bin_2)"):
+        with pytest.raises(ParseError, match="unknown target"):
+            parse_action(text, k)
+    with pytest.raises(ParseError, match="hatch or counter"):
+        parse_action("interact(2,1)", k)
+    kb = Kitchen.load("split_room", bins=True)
+    assert parse_action("throw(bin)", kb).kind == "interact"

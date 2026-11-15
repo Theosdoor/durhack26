@@ -56,6 +56,18 @@ _KIND_ALIASES = {
     "counter": ["counter", "counters", "countertop", "counter_top", "table"],
 }
 KIND_OF_ALIAS = {a: k for k, aliases in _KIND_ALIASES.items() for a in aliases}
+_BIN_VERBS = {"discard", "throw", "throwaway", "toss"}
+
+
+def _has_bins(kitchen: Kitchen) -> bool:
+    return bool(kitchen.of_kind("bin"))
+
+
+def _kind_of(word: str, kitchen: Kitchen) -> str | None:
+    """The object kind an alias names. Without bins (config bins: false) the bin words are
+    unknown, exactly as before bins existed, so old results reproduce."""
+    kind = KIND_OF_ALIAS.get(_norm(word))
+    return None if kind == "bin" and not _has_bins(kitchen) else kind
 
 
 @dataclass
@@ -149,7 +161,7 @@ def parse_action(text: str, kitchen: Kitchen) -> Action:
     verb_key = re.sub(r"[\s_\-]", "", verb_word)
     if verb_key in _DIR_WORDS and not arg:
         return Action("step", raw, direction=_DIR_WORDS[verb_key])
-    verb = _VERBS.get(verb_key)
+    verb = None if verb_key in _BIN_VERBS and not _has_bins(kitchen) else _VERBS.get(verb_key)
     if verb is None:
         # e.g. "onion_crate_1" alone: treat a bare target as interact(target).
         try:
@@ -192,14 +204,14 @@ def _target_action(verb: str, raw: str, arg: str, kitchen: Kitchen) -> Action:
     m = re.fullmatch(r"([a-z][a-z_ \-]*?)[\s_\-]*(?:at)?\s*[(\[]\s*(\d+)\s*[,_ ]\s*(\d+)\s*[)\]]", a) \
         or re.fullmatch(r"([a-z][a-z_ \-]*?)[\s_\-]+(\d+)[\s_\-,]+(\d+)", a)
     if m:
-        kind = KIND_OF_ALIAS.get(_norm(m.group(1)))
+        kind = _kind_of(m.group(1), kitchen)
         if kind is None:
             raise ParseError(f"unknown target {arg!r} in {raw!r}")
         return _pos_action(verb, raw, (int(m.group(2)), int(m.group(3))), kind, kitchen)
     # pot_1 / pot 1 / pot1 / pot #1 / onion crate 2
     m = re.fullmatch(r"([a-z][a-z_ \-]*?)[\s_\-#]*(\d+)", a)
     if m:
-        kind = KIND_OF_ALIAS.get(_norm(m.group(1)))
+        kind = _kind_of(m.group(1), kitchen)
         if kind is None:
             raise ParseError(f"unknown target {arg!r} in {raw!r}; {_ids_hint(kitchen)}")
         if kind == "counter":
@@ -209,7 +221,7 @@ def _target_action(verb: str, raw: str, arg: str, kitchen: Kitchen) -> Action:
             have = ", ".join(o.id for o in kitchen.of_kind(kind)) or "none"
             raise ParseError(f"{oid} does not exist (this kitchen has: {have})")
         return Action(verb, raw, target=oid)
-    kind = KIND_OF_ALIAS.get(_norm(a))
+    kind = _kind_of(a, kitchen)
     if kind is None:
         raise ParseError(f"unknown target {arg!r} in {raw!r}; {_ids_hint(kitchen)}")
     if kind == "counter":
@@ -229,8 +241,9 @@ def _pos_action(verb: str, raw: str, pos: Pos, kind: str | None, kitchen: Kitche
         if kind is not None:
             raise ParseError(f"there is no {kind} at ({x},{y}); it is floor")
         if verb == "interact":
+            things = "crate, rack, hatch, bin or counter" if _has_bins(kitchen) else "crate, rack, hatch or counter"
             raise ParseError(f"({x},{y}) is floor; interact needs an object such as a pot, "
-                             f"crate, rack, hatch, bin or counter (use move_to to walk there)")
+                             f"{things} (use move_to to walk there)")
         return Action("move_to", raw, pos=pos)
     if kind is not None and obj.kind != kind:
         raise ParseError(f"({x},{y}) is {obj.id}, not a {kind}")
