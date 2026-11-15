@@ -197,7 +197,7 @@ function renderHome() {
   app.querySelectorAll(".seg button").forEach((el) => el.addEventListener("click", () => { f[el.dataset.k] = el.dataset.v; renderHome(); }));
   $("#reset").addEventListener("click", () => { Object.assign(f, { team: "", rules: "", n: "", level: "", pair: "", voiced: "", sort: "score-desc" }); renderHome(); });
   renderGrid();
-  loadHighlights().then(() => { renderReel(); renderGrid(); });
+  loadHighlights().then(() => { if (!$("#grid")) return; renderReel(); renderGrid(); });   // the visitor may already have left the list
 }
 
 function predictedMean(r) {
