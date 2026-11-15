@@ -55,12 +55,19 @@ class Providers(_Strict):
 
 
 class AgentSpec(_Strict):
-    model: str                          # e.g. openrouter/deepseek/deepseek-v4.1-flash
+    model: str                          # e.g. openrouter/deepseek/deepseek-v4.1-flash, or google/gemini-2.5-flash
     provider: str | None = None         # OpenRouter endpoint tag, e.g. "baidu/fp8"; None = auto-pick
     # False for endpoints that refuse to turn reasoning off ("Reasoning is mandatory", e.g.
     # z-ai/glm-5.3-flash@morph/fp8): its forced-answer follow-up keeps reasoning on (max_tokens
     # providers.MANDATORY_MAX_TOKENS), and decision.reasoning "off" leaves its reasoning on
     reasoning_off: bool = True
+
+    @model_validator(mode="after")
+    def _no_provider_for_google(self) -> "AgentSpec":
+        if self.model.startswith("google/") and self.provider:
+            raise ValueError(f"{self.model}: provider pins are OpenRouter endpoints; a google/ "
+                             f"model (Gemini API) has none")
+        return self
 
     @classmethod
     def parse(cls, text: str) -> "AgentSpec":

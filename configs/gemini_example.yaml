@@ -1,0 +1,19 @@
+# Two Gemini agents (Google's Gemini API) on one level.
+# Setup (once):
+#   1. put GOOGLE_API_KEY=... in .env  (key from https://aistudio.google.com/apikey)
+#   2. uv sync --extra gemini          (installs google-genai; the default install does not)
+# Run:
+#   uv run undercooked run configs/gemini_example.yaml
+#   uv run undercooked run configs/split_room.yaml --model google/gemini-2.5-flash   # self-play, any config
+# No new key? Use OpenRouter instead: model: openrouter/google/gemini-2.5-flash (OPENROUTER_API_KEY)
+# Every option not set here is the default (configs/template.yaml).
+name: gemini_example
+level: split_room
+epochs: 2                 # 2 agents: epochs 2 puts each in each start position once
+agents:
+  # google/<model> has no provider pin (that is an OpenRouter endpoint) and no "!reasoning" need
+  # for flash: reasoning "off" sets thinking_budget 0. Thinking-only models (gemini-2.5-pro,
+  # gemini 3) cannot turn thinking off: write google/gemini-2.5-pro!reasoning for those.
+  - {model: google/gemini-2.5-flash}
+  - {model: google/gemini-2.5-flash}
+# decision.reasoning_tokens (default 1000) is the Gemini thinking budget per call.

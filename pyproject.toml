@@ -13,6 +13,12 @@ dependencies = [
     "streamlit>=1.67.0",
 ]
 
+[project.optional-dependencies]
+# Gemini API models (google/<model>): `uv sync --extra gemini`, GOOGLE_API_KEY in .env
+gemini = [
+    "google-genai>=1.0.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=9.2.0",

@@ -3,8 +3,9 @@
 For `openrouter/...` models every request is pinned to one endpoint (no fallbacks, data
 collection denied, and the endpoint must support every parameter we send). If the config leaves
 `provider` empty, we list the model's endpoints and take the cheapest with good-enough
-quantisation that supports tools and tool_choice. Other model names (e.g. `mockllm/model` in
-tests) go straight to `get_model`.
+quantisation that supports tools and tool_choice. `google/<model>` (Gemini via the Gemini API) uses
+none of that: no pinning, no `reasoning_enabled` model arg, reasoning off is `reasoning_tokens=0`
+(see `is_google`). Other model names (e.g. `mockllm/model` in tests) go straight to `get_model`.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from inspect_ai.model import GenerateConfig, Model, get_model
 from undercooked.config import AgentSpec, Config
 
 OPENROUTER = "openrouter/"
+GOOGLE = "google/"      # Inspect's native Google provider (GOOGLE_API_KEY, `uv sync --extra gemini`)
 ENDPOINTS_URL = "https://openrouter.ai/api/v1/models/{model}/endpoints"
 QUANTS = ["fp8", "bf16", "fp16", "fp32"]          # in increasing precision
 REQUIRED_PARAMS = ("tools", "tool_choice")
@@ -110,7 +112,18 @@ def served_providers() -> Iterator[list[str]]:
         _served_box.reset(token)
 
 
-def generate_config(cfg: Config) -> GenerateConfig:
+def is_google(model: str) -> bool:
+    """A native Google (Gemini API) model name, e.g. google/gemini-2.5-flash. Not
+    openrouter/google/..., which is an OpenRouter model like any other."""
+    return model.startswith(GOOGLE)
+
+
+def generate_config(cfg: Config, model: str = "") -> GenerateConfig:
+    if is_google(model):
+        # Inspect's Google provider has no "enabled" switch: reasoning_tokens=0 sets
+        # thinking_budget=0 (models that cannot turn thinking off warn and keep it on)
+        if cfg.decision.reasoning == "off":
+            return GenerateConfig(max_tokens=cfg.decision.max_tokens, reasoning_tokens=0)
     if cfg.decision.reasoning == "off":            # no reasoning budget next to enabled: false
         return GenerateConfig(max_tokens=cfg.decision.max_tokens)
     return GenerateConfig(reasoning_tokens=cfg.decision.reasoning_tokens,
@@ -133,7 +146,10 @@ def reasoning_off(cfg: Config, spec: AgentSpec) -> bool:
 
 
 def reasoning_args(cfg: Config, spec: AgentSpec | None = None) -> dict[str, Any]:
-    """Model args for the agents' main model: none when reasoning is on."""
+    """Model args for the agents' main model: none when reasoning is on (or for Google models,
+    whose reasoning is switched off in the GenerateConfig instead)."""
+    if spec is not None and is_google(spec.model):
+        return {}
     off = cfg.decision.reasoning == "off" and (spec is None or spec.reasoning_off)
     return dict(NO_REASONING) if off else {}
 
@@ -170,7 +186,8 @@ def _pinned(spec: AgentSpec, pin: str | None, config: GenerateConfig, **args: An
 
 
 def reasoning_on_model(spec: AgentSpec, pin: str | None) -> Model:
-    """The agent's endpoint with reasoning on and max_tokens MANDATORY_MAX_TOKENS."""
+    """The agent's endpoint with reasoning on and max_tokens MANDATORY_MAX_TOKENS (for a Google
+    model: thinking budget MANDATORY_REASONING_TOKENS)."""
     return _pinned(spec, pin, GenerateConfig(max_tokens=MANDATORY_MAX_TOKENS,
                                              reasoning_tokens=MANDATORY_REASONING_TOKENS))
 
@@ -212,6 +229,8 @@ def no_reasoning_model(am: AgentModel, max_tokens: int) -> Model:
     memoizes, so this is cheap to repeat."""
     if not am.spec.reasoning_off:
         return reasoning_on_model(am.spec, am.provider)
+    if is_google(am.spec.model):
+        return _pinned(am.spec, None, GenerateConfig(max_tokens=max_tokens, reasoning_tokens=0))
     model = _pinned(am.spec, am.provider, GenerateConfig(max_tokens=max_tokens), **NO_REASONING)
     return with_reasoning_fallback(model, am.spec, am.provider)
 
@@ -226,7 +245,7 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
     GET), so `endpoints` is None; otherwise the endpoint list is fetched, kept in `endpoints`
     (logged by the season solver) and the cheapest eligible endpoint is pinned."""
     off = reasoning_off(cfg, spec)
-    config = generate_config(cfg) if off or cfg.decision.reasoning == "on" else \
+    config = generate_config(cfg, spec.model) if off or cfg.decision.reasoning == "on" else \
         GenerateConfig(reasoning_tokens=cfg.decision.reasoning_tokens,
                        max_tokens=cfg.decision.max_tokens)    # off asked, but mandatory
     args = reasoning_args(cfg, spec)
@@ -234,6 +253,8 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
     def wrap(model: Model, pin: str | None) -> Model:
         return with_reasoning_fallback(model, spec, pin) if off else model
 
+    if is_google(spec.model):      # no endpoint pin, no "Reasoning is mandatory" fallback
+        return AgentModel(track_served_provider(get_model(spec.model, config=config)), spec, None)
     if not spec.model.startswith(OPENROUTER):
         model = wrap(track_served_provider(get_model(spec.model, config=config, **args)),
                      spec.provider)
