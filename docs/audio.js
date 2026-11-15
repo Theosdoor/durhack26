@@ -3,7 +3,8 @@
 
    Three toggles, remembered in localStorage:
    - music (default off): an original café-musette waltz (3/4): musette accordion in A minor,
-     then a Neapolitan mandolin-tremolo half in C major; plays only while a replay is playing;
+     then a Neapolitan mandolin-tremolo half in C major; plays only while a replay is playing,
+     at its own tempo whatever the replay speed, with a volume slider (also remembered);
    - voices (default off): plays the mp3 the manifest lists for a board post when that post
      appears during playback; does nothing when there is no manifest or no entry;
    - sfx (default on): short sounds for game events during playback, rate-limited.
@@ -53,8 +54,12 @@
     set(k, v) { try { localStorage.setItem("uc-audio-" + k, v ? "1" : "0"); } catch { /* private mode */ } },
   };
   const on = { music: store.get("music", false), voices: store.get("voices", false), sfx: store.get("sfx", true) };
+  // music volume, 0..1 on the slider (squared, so the low end is fine-grained); 0.6 is the default
+  const MUSIC_MAX = 0.5;
+  let musicVol = (() => { try { const v = parseFloat(localStorage.getItem("uc-audio-musicvol")); return v >= 0 && v <= 1 ? v : 0.6; } catch { return 0.6; } })();
+  const musicGain = () => MUSIC_MAX * musicVol * musicVol;
   const LOG = /[?&]sfxlog\b/.test(location.search);
-  window.__sfxLog = [];
+  window.__sfxLog = []; window.__musicLog = [];
   let ctx = null, master = null, sfxBus = null, musicBus = null;
   let inReplay = false, playing = false;   // music plays only while a replay is open AND playing
 
@@ -66,7 +71,7 @@
         ctx = new AC();
         master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
         sfxBus = ctx.createGain(); sfxBus.gain.value = 0.35; sfxBus.connect(master);
-        musicBus = ctx.createGain(); musicBus.gain.value = 0.10; musicBus.connect(master);
+        musicBus = ctx.createGain(); musicBus.gain.value = musicGain(); musicBus.connect(master);
       } catch { ctx = null; return null; }
     }
     if (ctx.state === "suspended") ctx.resume().catch(() => {});
@@ -201,20 +206,34 @@
     if (NAPOLI(bar) && (e === 2 || e === 4)) noise(t, 0.09, { gain: 0.07, filter: 7000, q: 2, type: "bandpass", bus: musicBus });   // tambourine
     if (!NAPOLI(bar) && e === 0) noise(t, 0.04, { gain: 0.04, filter: 3000, type: "highpass", bus: musicBus });   // brush
   }
+  // The waltz keeps its own clock (the audio context's), whatever the replay speed. Playback stops and
+  // restarts at every phase change, so stopping waits a moment (a restart cancels it), and a restart
+  // within a bar of a stop picks up the old beat grid instead of laying a second one over the notes
+  // already scheduled.
+  let stopTimer = null;
   function startMusic() {
+    if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
     const c = ensureCtx();
     if (!c || musicTimer) return;
-    nextStep = c.currentTime + 0.1;
+    if (!(nextStep > c.currentTime && nextStep < c.currentTime + 1)) nextStep = c.currentTime + 0.1;
+    musicBus.gain.cancelScheduledValues(c.currentTime); musicBus.gain.setValueAtTime(musicGain(), c.currentTime);
     musicTimer = setInterval(() => {
       if (c.state !== "running") return;
-      while (nextStep < c.currentTime + 0.2) { scheduleStep(step++, nextStep); nextStep += EIGHTH; }
+      while (nextStep < c.currentTime + 0.2) { if (LOG) window.__musicLog.push(nextStep); scheduleStep(step++, nextStep); nextStep += EIGHTH; }
     }, 40);
     if (LOG) console.log("[sfx] music start");
   }
-  function stopMusic() {
-    if (musicTimer) clearInterval(musicTimer);
-    musicTimer = null;
-    if (LOG) console.log("[sfx] music stop");
+  function stopMusic(now = false) {
+    if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
+    if (!musicTimer) return;
+    const halt = () => {
+      stopTimer = null; clearInterval(musicTimer); musicTimer = null;
+      // notes are scheduled whole and a little ahead: fade the bus so nothing rings on after a stop
+      const t = ctx.currentTime;
+      musicBus.gain.cancelScheduledValues(t); musicBus.gain.setValueAtTime(musicBus.gain.value, t); musicBus.gain.linearRampToValueAtTime(0, t + 0.08);
+      if (LOG) console.log("[sfx] music stop");
+    };
+    if (now) halt(); else stopTimer = setTimeout(halt, 500);
   }
 
   /* ---------------------------------------------------------- voices (manifest only) */
@@ -404,15 +423,22 @@
   const tip = (k) => `${LABEL[k]}: ${on[k] ? "on" : "off"}${HELP[k] || ""}`;
   function controlsHTML() {
     return `<div class="sound" role="group" aria-label="Sound">${Object.keys(LABEL).map((k) =>
-      `<button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${tip(k)}">${svgIcon(k, on[k])}<span>${LABEL[k]}</span></button>`).join("")}</div>`;
+      `<button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${tip(k)}">${svgIcon(k, on[k])}<span>${LABEL[k]}</span></button>` +
+      (k === "music" ? `<input type="range" class="vol" id="music-vol" min="0" max="1" step="0.05" value="${musicVol}" aria-label="Music volume" title="Music volume">` : "")).join("")}</div>`;
   }
   function bind(root) {
+    const vol = root.querySelector("#music-vol");
+    if (vol) vol.addEventListener("input", () => {
+      musicVol = Math.max(0, Math.min(1, Number(vol.value)));
+      try { localStorage.setItem("uc-audio-musicvol", String(musicVol)); } catch { /* private mode */ }
+      if (musicBus && musicTimer) musicBus.gain.setTargetAtTime(musicGain(), ctx.currentTime, 0.05);
+    });
     root.querySelectorAll("button[data-snd]").forEach((b) => b.addEventListener("click", () => {
       const k = b.dataset.snd;
       on[k] = !on[k];
       store.set(k, on[k]);
       ensureCtx();
-      if (k === "music") { if (musicWanted()) startMusic(); else stopMusic(); }
+      if (k === "music") { if (musicWanted()) startMusic(); else stopMusic(true); }
       if (k === "voices" && on.voices) loadManifest();
       if (k === "voices" && !on.voices) { if (voice) voice.pause(); ttsCancel(); }
       b.setAttribute("aria-pressed", String(on[k]));
@@ -423,8 +449,10 @@
 
   function musicWanted() { return on.music && inReplay && playing; }
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
-  function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); } syncMusic(); }
+  function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); stopMusic(true); } syncMusic(); }
   function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
-  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
+  // a user's pause stops the music at once; setPlaying(false) alone waits, as phase changes restart playback
+  const pauseMusic = () => stopMusic(true);
+  const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();

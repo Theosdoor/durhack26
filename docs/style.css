@@ -57,7 +57,7 @@ details > summary { cursor: pointer; color: var(--muted); font-size: .88em; user
 }
 .brand { font-weight: 800; font-size: 1.15rem; text-decoration: none; color: var(--ink); display: flex; align-items: center; gap: 8px; }
 .brand .sub { font-weight: 500; color: var(--muted); }
-.logo { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3c26b, #d9913f 55%, #a85f24); border: 2px solid #3a2616; display: inline-block; }
+.logo { width: 30px; height: 30px; flex: none; display: block; }
 .foot { text-align: center; color: var(--muted); font-size: .8rem; padding: 24px 12px 30px; }
 main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 
@@ -217,6 +217,7 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 .sound button { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; padding: 4px 8px; color: var(--muted); }
 .sound button[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: var(--panel); }
 .sound button svg { flex: none; }
+.sound .vol { width: 72px; accent-color: var(--accent); align-self: center; margin: 0 6px 0 0; }
 @media (max-width: 560px) { .sound button { padding: 4px 6px; font-size: .78rem; } }
 
 /* highlight reel */
@@ -287,3 +288,4 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 .tabs a:hover { color: var(--ink); }
 .tabs a[aria-current="page"] { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); }
 @media (max-width: 640px) { .tabs { margin-left: 8px; } .tabs a { padding: 6px 8px; } .brand .sub { display: none; } }
+@media (max-width: 520px) { .top { padding-left: 8px; padding-right: 8px; } .brand .name { display: none; } .tabs { margin-left: 4px; gap: 2px; } .tabs a { padding: 6px 6px; } }

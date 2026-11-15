@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- an original little chef: toque, face, moustache; dark outlines so it reads on light and dark tabs -->
+  <g stroke="#3a2614" stroke-width="3" stroke-linejoin="round">
+    <path d="M17 30c-6-1-9-7-6-12s9-6 12-3c1-6 6-9 11-8s8 5 8 8c3-3 9-2 11 2s0 10-6 12v6H17z" fill="#fff"/>
+    <rect x="17" y="33" width="31" height="7" rx="2" fill="#f1ece4"/>
+    <circle cx="32.5" cy="48" r="12" fill="#f6c99b"/>
+  </g>
+  <circle cx="28" cy="46" r="2" fill="#3a2614"/>
+  <circle cx="37" cy="46" r="2" fill="#3a2614"/>
+  <path d="M25 52c3 2 6 1 7.5-1c1.5 2 4.5 3 7.5 1c-2 3-5.5 3.5-7.5 1.5c-2 2-5.5 1.5-7.5-1.5z" fill="#3a2614" stroke="#3a2614" stroke-width="1.5" stroke-linejoin="round"/>
+  <circle cx="24" cy="51" r="2.2" fill="#f08a6b" opacity=".6"/>
+  <circle cx="41" cy="51" r="2.2" fill="#f08a6b" opacity=".6"/>
+</svg>
