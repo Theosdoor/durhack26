@@ -14,9 +14,9 @@
 \iclrfinalcopy
 
 \title{Undercooked: Emergent Coordination and\\Hierarchy among LLM Agents in a Kitchen}
-\author{Jack Keen\thanks{Equal contribution.} \\ Independent \And
-Miliani Fraser-Fletcher\footnotemark[1] \\ Durham University \And
-Theo Farrell\footnotemark[1] \\ Durham University}
+\author{Jack Keen\thanks{Equal contribution.} \And
+Miliani Fraser-Fletcher\footnotemark[1] \And
+Theo Farrell\footnotemark[1]}
 
 \begin{document}
 \maketitle
@@ -27,7 +27,7 @@ Multi-agent LLM systems are increasingly deployed without assigned roles, yet ho
 \end{abstract}
 
 \section{Introduction}
-LLM agents increasingly work in teams: coding swarms, research pipelines and assistants that hand work to each other. When no one assigns roles, the team's structure is whatever emerges from the agents' messages, and failures of that structure (duplicated work, deadlock, one agent silently taking control) are a safety concern in their own right \citep{hammond2025multiagent}. \todo{one sentence on the HF swarm incident that motivated this.}
+LLM agents increasingly work in teams: coding swarms, research pipelines and assistants that hand work to each other. When no one assigns roles, the team's structure is whatever emerges from the agents' messages, and failures of that structure (duplicated work, deadlock, one agent silently taking control) are a safety concern in their own right \citep{hammond2025multiagent}. In a recent incident, about 1{,}200 agents meant to be isolated found a shared message board and organised themselves; some 700 joined an attack on Hugging Face \citep{metr2026hf}.
 
 Overcooked-AI \citep{carroll2019utility} is a standard testbed for coordination, and recent work evaluates LLMs on it through text interfaces \citep{agashe2023llmcoordination, zhang2023proagent}, typically with full rules, a fixed partner and score as the outcome. We ask instead \emph{how groups of LLM agents organise themselves when nothing about roles is specified, and how that changes with what they are told, who they are and how many there are.}
 
@@ -73,7 +73,7 @@ Five open-weight models on pinned OpenRouter endpoints: DeepSeek V4.1 Flash, GLM
 \label{fig:nagents}
 \end{figure}
 
-\textbf{Larger teams score less and each member does less.} On the three layouts where all sizes ran, DeepSeek teams score 262 / 227 / 229 with 2 / 3 / 4 agents under full instructions and 224 / 193 / 204 under bare (Figure~\ref{fig:nagents}); per-layout SEs reach 37 points, so the drop is consistent but its size uncertain. On the narrow \emph{coordination ring}, three agents score 87 against 193 for two. The share of round time an agent spends moving or interacting falls from 45\% (2 agents) to 28\% (3) and 26\% (4), while words posted per agent rise from 138 to 304 to 416. Bare instructions match or beat full ones in only 5 of 28 model$\times$layout$\times$team-size cells (DeepSeek with 3 agents on \emph{cramped} $+13$, \emph{ring} $+7$ and \emph{asymmetric} $0$, with 4 agents on \emph{asymmetric} $+13$; GLM pairs on \emph{cramped} $+7$), each by less than one soup per round and within one standard error of the difference. These cells sit near a layout's ceiling (\emph{asymmetric}) or are capped by a single pot or a narrow corridor, where knowing the rules leaves little to gain, so we read them as noise around a ceiling rather than an advantage of bare instructions.
+\textbf{Larger teams score less and each member does less.} On the three layouts where all sizes ran, DeepSeek teams score 262 / 227 / 229 with 2 / 3 / 4 agents under full instructions and 224 / 193 / 204 under bare (Figure~\ref{fig:nagents}); per-layout SEs reach 37 points, so the drop is consistent but its size uncertain. On the narrow \emph{coordination ring}, three agents score 87 against 193 for two. The share of round time an agent spends moving or interacting falls from 45\% (2 agents) to 28\% (3) and 26\% (4), while words posted per agent rise from 138 to 304 to 416. Bare instructions match or beat full ones in only 5 of 28 model$\times$layout$\times$team-size cells, each by under one soup per round and within one SE; they sit near a layout's ceiling or are capped by one pot or a narrow corridor, so we read them as noise, not an advantage of bare instructions (Appendix~\ref{app:more}).
 
 \textbf{Leadership: single leaders in pairs, shared in larger teams.} Table~\ref{tab:hier} gives the judges' team labels. One agent is judged to lead in 29--45\% of two-agent seasons, but in at most 4 of 30 three-agent and none of 18 four-agent seasons, which all of both judges call shared leadership. Instruction level barely changes this (single leader with full / bare rules: GLM 36\% / 38\%, Gemma 21\% / 25\%). The judges agree moderately (team hierarchy Cohen's $\kappa=0.63$; agent role $\kappa=0.58$; bossiness Spearman $\rho=0.71$). Pairs make a ``leader'' easier to call, so the size effect partly reflects the label.
 
@@ -102,15 +102,15 @@ We read about 50 seasons closely; the counts below are computed by script over a
 
 \textbf{First chat.} Roles are set in the first exchange. In 85\% of round-1 chats in pairs ($n=165$; chance 50\%) the seeded first speaker sends the most directive messages, and the second speaker usually just accepts (``Sounds good! I'll grab onions from crate\_1.''). The layout shapes the split: territorial on \emph{asymmetric} (``I'll take the LEFT side''), feeder/plater on \emph{cramped}, a relay across the wall counters on \emph{split}. Since the first speaker changes between rounds, the leadership the judges see is largely a first-mover effect, not a stable trait of an agent.
 
-\textbf{Rounds.} Teams repair failures through the chat. On \emph{split}, the typical failure is a deadlock at the shared wall counters: rounds scoring 0 fell from 9 of 48 seasons in round 1 to 4 in round 2 and 2 in round 3, after agents agreed counter protocols (``Round 2 rules to avoid the R1 deadlock: (3,2) is SOUP-ONLY, never put onions there.''). Larger teams block each other more and post more during play (``DEADLOCK: I'm ON (3,1) holding a dish.''). These deadlocks were avoidable: any counter next to the floor can hold an item, but the state text lists only the three shared counters plus occupied ones, and agents used almost nothing else (Appendix~\ref{app:caveats}).
+\textbf{Rounds.} Teams repair failures through the chat. On \emph{split}, the typical failure is a deadlock at the shared wall counters: rounds scoring 0 fell from 9 of 48 seasons in round 1 to 4 in round 2 and 2 in round 3, after agents agreed counter protocols (``Round 2 rules to avoid the R1 deadlock: (3,2) is SOUP-ONLY, never put onions there.''). Larger teams block each other more and post more during play (``DEADLOCK: I'm ON (3,1) holding a dish.''). These deadlocks were avoidable: any counter next to the floor can hold an item, but the state text lists only the shared ones (Appendix~\ref{app:caveats}).
 
 \textbf{Notes, reflections and model signatures.} DeepSeek writes long protocol-style notes in nearly every private turn (``Golf = ONION CHEF: fill pot 3 onions nonstop''); Gemma and Muse rarely write notes, and briefly. Open-rules agents still reason about points (``I didn't chase a risky 4th soup because a mistimed plating failure costs 20 pts''). Talkativeness is a model signature: in two-agent bare self-play, DeepSeek posts 375 words per agent-season, GLM 326, Qwen 177 and Gemma 83.
 
 \section{Discussion and limitations}\label{sec:limits}
-Undercooked makes the coordination of role-free LLM teams observable at low cost: the study cost \$35 and about three hours of wall time. For current open-weight models, explicit knowledge matters more than team size, and adding agents to a tightly coupled task mostly adds talk and dissolves single leadership into shared negotiation. Limitations: three seasons per cell gives wide error bars, and team size was varied for one model only; the open condition still shows the score; bare agents can learn the recipe from error messages by design, and some bring it with them: the game is close to Overcooked, which models have likely seen in training, and 91\% of bare-rules DeepSeek agents and 88\% of GLM agents name Overcooked in their reasoning, mostly in practice (Appendix~\ref{app:caveats}), so \emph{bare} measures play with a familiar genre, not learning from scratch; one mixed pair ran with unbalanced seats (Appendix~\ref{app:caveats}); the state text listed only shared counters, which made \emph{split} deadlocks more likely (Appendix~\ref{app:caveats}); role labels are LLM judgements validated only by inter-judge agreement; and simulated time removes real-time pressure.
+Undercooked makes the coordination of role-free LLM teams observable at low cost: the study cost \$35 and about three hours of wall time. For current open-weight models, explicit knowledge matters more than team size, and adding agents to a tightly coupled task mostly adds talk and dissolves single leadership into shared negotiation. Limitations: three seasons per cell gives wide error bars, and team size was varied for one model only; the open condition still shows the score; bare agents can learn the recipe from error messages by design, and some bring it with them: the game is close to Overcooked, which models have likely seen in training, and 91\% of bare-rules DeepSeek agents and 88\% of GLM agents name Overcooked in their reasoning, mostly in practice, so \emph{bare} measures play with a familiar genre, not learning from scratch; one mixed pair ran with unbalanced seats; the state text listed only shared counters, which made \emph{split} deadlocks more likely (all in Appendix~\ref{app:caveats}); role labels are LLM judgements validated only by inter-judge agreement; and simulated time removes real-time pressure.
 
 \section{Conclusion}
-We release Undercooked, an Inspect-native environment for studying how LLM agent teams organise themselves, and a first 213-season study. Code, configs and all logs: \url{https://github.com/Theosdoor/durhack26}, \todo{release URL}.
+We release Undercooked, an Inspect-native environment for studying how LLM agent teams organise themselves, and a first 213-season study. Code, configs and all logs are on GitHub: \url{https://github.com/Theosdoor/durhack26}.
 
 \subsubsection*{Acknowledgements}
 This work was started as part of DurHack 2026 at Durham University. We thank the organisers for providing food and the space.
@@ -379,6 +379,8 @@ An adversarial code review of the commit used for the runs found no defect affec
 
 
 \section{Additional results}\label{app:more}
+\textbf{Cells where bare instructions match or beat full ones} (bare minus full team score): DeepSeek with 3 agents on \emph{cramped} $+13.3$ (bare 240, 240, 240; full 260, 220, 200), \emph{ring} $+6.7$ and \emph{asymmetric} $0$; DeepSeek with 4 agents on \emph{asymmetric} $+13.3$; GLM pairs on \emph{cramped} $+6.7$. Each is under one soup per round and within one standard error of the difference. \emph{Asymmetric} is near its ceiling for every condition; \emph{cramped} has a single pot and \emph{ring} a one-tile corridor, so extra agents or extra knowledge add little.
+
 \begin{center}\small
 \begin{tabular}{llrrr}
 \toprule
