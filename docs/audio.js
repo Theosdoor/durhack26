@@ -1,7 +1,8 @@
 /* Undercooked replay site: sound. Everything is synthesized with the Web Audio API (no audio
    files, no network) except optional voice clips listed in audio/manifest.json.
 
-   Three toggles, remembered in localStorage:
+   A Sound menu with a level slider and a mute button for each of these three (a slider at 0 is
+   off; mute keeps the level for unmuting), remembered in localStorage (uc-audio-<k>, uc-audio-<k>vol):
    - music (default off): an original café-musette waltz (3/4): musette accordion in A minor,
      then a Neapolitan mandolin-tremolo half in C major; plays only while a replay is playing,
      at its own tempo whatever the replay speed, with a volume slider (also remembered);
@@ -54,10 +55,20 @@
     set(k, v) { try { localStorage.setItem("uc-audio-" + k, v ? "1" : "0"); } catch { /* private mode */ } },
   };
   const on = { music: store.get("music", false), voices: store.get("voices", false), sfx: store.get("sfx", true) };
-  // music volume, 0..1 on the slider (squared, so the low end is fine-grained); 0.6 is the default
-  const MUSIC_MAX = 0.5;
-  let musicVol = (() => { try { const v = parseFloat(localStorage.getItem("uc-audio-musicvol")); return v >= 0 && v <= 1 ? v : 0.6; } catch { return 0.6; } })();
-  const musicGain = () => MUSIC_MAX * musicVol * musicVol;
+  // levels, 0..1 on the sliders (squared, so the low end is fine-grained). The defaults give the
+  // old fixed volumes: music 0.18, effects 0.35 (bus gains), voices 0.9 (media element volume).
+  const LVL_DEFAULT = { music: 0.6, voices: 0.95, sfx: 0.6 };
+  const readLvl = (k) => { try { const v = parseFloat(localStorage.getItem(`uc-audio-${k}vol`)); return v > 0 && v <= 1 ? v : LVL_DEFAULT[k]; } catch { return LVL_DEFAULT[k]; } };
+  const lvl = { music: readLvl("music"), voices: readLvl("voices"), sfx: readLvl("sfx") };
+  // a level saved as 0 by the earlier music-only slider meant "off"
+  for (const k of Object.keys(lvl)) { try { if (localStorage.getItem(`uc-audio-${k}vol`) === "0") on[k] = false; } catch { /* private mode */ } }
+  const musicGain = () => 0.5 * lvl.music ** 2;
+  const sfxGain = () => 0.97 * lvl.sfx ** 2;
+  // voice volume for a source whose old fixed volume was `base` (clips 0.9, highlight clips 0.95,
+  // browser speech 1), scaled so the default level reproduces it. Highlights narrate even with Voices
+  // off (they are an explicit "play this"), but muting during one silences it until it ends.
+  let hlMuted = false;
+  const voiceVol = (base) => (hlMuted ? 0 : Math.min(1, base * (lvl.voices / LVL_DEFAULT.voices) ** 2));
   const LOG = /[?&]sfxlog\b/.test(location.search);
   window.__sfxLog = []; window.__musicLog = [];
   let ctx = null, master = null, sfxBus = null, musicBus = null;
@@ -70,7 +81,7 @@
       try {
         ctx = new AC();
         master = ctx.createGain(); master.gain.value = 0.9; master.connect(ctx.destination);
-        sfxBus = ctx.createGain(); sfxBus.gain.value = 0.35; sfxBus.connect(master);
+        sfxBus = ctx.createGain(); sfxBus.gain.value = sfxGain(); sfxBus.connect(master);
         musicBus = ctx.createGain(); musicBus.gain.value = musicGain(); musicBus.connect(master);
       } catch { ctx = null; return null; }
     }
@@ -264,7 +275,7 @@
     const src = m?.posts?.[season.id]?.[key];
     if (LOG) console.log(`[sfx] voice ${key} ${src || "(none)"}`);
     if (!src) return;
-    try { if (voice) voice.pause(); voice = new Audio(src); voice.volume = 0.9; await voice.play(); } catch { /* blocked or missing */ }
+    try { if (voice) voice.pause(); voice = new Audio(src); voice.volBase = 0.9; voice.volume = voiceVol(0.9); await voice.play(); } catch { /* blocked or missing */ }
   }
 
   /* ---------------------------------------------------------- browser voices (speechSynthesis) */
@@ -343,7 +354,7 @@
       const u = new SpeechSynthesisUtterance(text);
       const v = voiceFor(item.season, seat);
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-GB";
-      u.pitch = SEAT_PITCH[seat % SEAT_PITCH.length]; u.rate = SEAT_RATE[seat % SEAT_RATE.length]; u.volume = 1;
+      u.pitch = SEAT_PITCH[seat % SEAT_PITCH.length]; u.rate = SEAT_RATE[seat % SEAT_RATE.length]; u.volume = voiceVol(1);
       u.onend = finish; u.onerror = finish;
       ttsDog = setTimeout(finish, est);
       synth.speak(u);
@@ -376,7 +387,7 @@
       const to = setTimeout(fin, 90000);
       spkTo = to;
       a.addEventListener("ended", fin); a.addEventListener("error", fin);
-      a.volume = 0.95; voice = a; spkFin = fin;
+      a.volBase = 0.95; a.volume = voiceVol(0.95); voice = a; spkFin = fin;
       if (LOG) { console.log(`[sfx] speak ${src}`); window.__sfxLog.push({ name: "speak", src }); }
       a.play().catch(fin);
     });
@@ -391,7 +402,7 @@
     if (voice && spkFin) { const f = spkFin; spkTo = setTimeout(f, 90000); voice.play().catch(f); }
   }
   function stopSpeak() { ttsCancel(); const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
-  function setHighlight(v) { hlMode = !!v; if (!v) stopSpeak(); }
+  function setHighlight(v) { hlMode = !!v; hlMuted = false; if (!v) stopSpeak(); }
 
   addEventListener("pagehide", () => { if (synth) { try { synth.cancel(); } catch { /* gone */ } } });
 
@@ -419,33 +430,82 @@
     return `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/>${wave}</svg>`;
   }
   const LABEL = { music: "Music", voices: "Voices", sfx: "Effects" };
-  const HELP = { voices: " (ElevenLabs voices on narrated seasons; every other season is read aloud by your browser's own, more robotic, voice)" };
-  const tip = (k) => `${LABEL[k]}: ${on[k] ? "on" : "off"}${HELP[k] || ""}`;
+  const HELP = { voices: "ElevenLabs voices on narrated seasons; other seasons use your browser's own (more robotic) voice." };
+  const shown = (k) => (on[k] ? lvl[k] : 0);
+  const anyOn = () => Object.keys(LABEL).some((k) => on[k]);
+  const muteTip = (k) => `${on[k] ? "Mute" : "Unmute"} ${LABEL[k].toLowerCase()}`;
   function controlsHTML() {
-    return `<div class="sound" role="group" aria-label="Sound">${Object.keys(LABEL).map((k) =>
-      `<button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${tip(k)}">${svgIcon(k, on[k])}<span>${LABEL[k]}</span></button>` +
-      (k === "music" ? `<input type="range" class="vol" id="music-vol" min="0" max="1" step="0.05" value="${musicVol}" aria-label="Music volume" title="Music volume">` : "")).join("")}</div>`;
+    const rows = Object.keys(LABEL).map((k) =>
+      `<div class="snd-row"><button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${muteTip(k)}" aria-label="${muteTip(k)}">${svgIcon(k, on[k])}</button>` +
+      `<label for="vol-${k}">${LABEL[k]}</label>` +
+      `<input type="range" class="vol" id="vol-${k}" data-vol="${k}" min="0" max="1" step="0.05" value="${shown(k)}" aria-label="${LABEL[k]} volume"></div>` +
+      (HELP[k] ? `<p class="snd-help">${HELP[k]}</p>` : "")).join("");
+    return `<div class="sound"><button type="button" class="ghost snd-menu" aria-expanded="false" aria-controls="sound-pop" title="Sound levels">${svgIcon("all", anyOn())}<span>Sound</span><span aria-hidden="true">&#9662;</span></button>` +
+      `<div class="sound-pop" id="sound-pop" role="group" aria-label="Sound levels" hidden>${rows}</div></div>`;
+  }
+  // a channel turned on or off, or its level changed: apply it now
+  function applyChannel(k, wasOn) {
+    ensureCtx();
+    store.set(k, on[k]);
+    try { localStorage.setItem(`uc-audio-${k}vol`, String(lvl[k])); } catch { /* private mode */ }
+    const t = ctx ? ctx.currentTime : 0;
+    if (k === "music") { if (musicBus && musicTimer) musicBus.gain.setTargetAtTime(musicGain(), t, 0.05); if (on.music !== wasOn) { if (musicWanted()) startMusic(); else stopMusic(true); } }
+    if (k === "sfx" && sfxBus) sfxBus.gain.setTargetAtTime(sfxGain(), t, 0.05);
+    if (k === "voices") {
+      if (hlMode) hlMuted = !on.voices && (wasOn || hlMuted);   // muting during a highlight silences it
+      if (voice) voice.volume = voiceVol(voice.volBase || 0.9);
+      if (on.voices && !wasOn) loadManifest();
+      if (!on.voices && wasOn && !hlMode) { if (voice) voice.pause(); ttsCancel(); }
+    }
+  }
+  function refresh(root) {
+    for (const k of Object.keys(LABEL)) {
+      const b = root.querySelector(`button[data-snd="${k}"]`), r = root.querySelector(`#vol-${k}`);
+      if (b) { b.setAttribute("aria-pressed", String(on[k])); b.title = muteTip(k); b.setAttribute("aria-label", muteTip(k)); b.innerHTML = svgIcon(k, on[k]); }
+      if (r && Number(r.value) !== shown(k)) r.value = shown(k);
+    }
+    const m = root.querySelector(".snd-menu");
+    if (m) m.innerHTML = `${svgIcon("all", anyOn())}<span>Sound</span><span aria-hidden="true">&#9662;</span>`;
   }
   function bind(root) {
-    const vol = root.querySelector("#music-vol");
-    if (vol) vol.addEventListener("input", () => {
-      musicVol = Math.max(0, Math.min(1, Number(vol.value)));
-      try { localStorage.setItem("uc-audio-musicvol", String(musicVol)); } catch { /* private mode */ }
-      if (musicBus && musicTimer) musicBus.gain.setTargetAtTime(musicGain(), ctx.currentTime, 0.05);
+    const menu = root.querySelector(".snd-menu"), pop = root.querySelector("#sound-pop");
+    if (menu && pop) menu.addEventListener("click", () => {
+      pop.hidden = !pop.hidden;
+      menu.setAttribute("aria-expanded", String(!pop.hidden));
+      if (!pop.hidden) {   // keep it on screen on narrow phones
+        pop.style.left = "";
+        const over = pop.getBoundingClientRect().right - (document.documentElement.clientWidth - 8);
+        if (over > 0) pop.style.left = `${-over}px`;
+      }
     });
+    root.querySelectorAll("input[data-vol]").forEach((r) => r.addEventListener("input", () => {
+      const k = r.dataset.vol, v = Math.max(0, Math.min(1, Number(r.value))), wasOn = on[k];
+      if (v > 0) { lvl[k] = v; on[k] = true; } else on[k] = false;   // 0 is off; the last level is kept for unmuting
+      applyChannel(k, wasOn);
+      refresh(root);
+    }));
     root.querySelectorAll("button[data-snd]").forEach((b) => b.addEventListener("click", () => {
-      const k = b.dataset.snd;
+      const k = b.dataset.snd, wasOn = on[k];
       on[k] = !on[k];
-      store.set(k, on[k]);
-      ensureCtx();
-      if (k === "music") { if (musicWanted()) startMusic(); else stopMusic(true); }
-      if (k === "voices" && on.voices) loadManifest();
-      if (k === "voices" && !on.voices) { if (voice) voice.pause(); ttsCancel(); }
-      b.setAttribute("aria-pressed", String(on[k]));
-      b.title = tip(k);
-      b.innerHTML = `${svgIcon(k, on[k])}<span>${LABEL[k]}</span>`;
+      applyChannel(k, wasOn);
+      refresh(root);
     }));
   }
+  // close the Sound menu on a click outside it or on Escape (checked on the event path, not contains():
+  // a clicked icon may already have been redrawn and detached)
+  document.addEventListener("click", (e) => {
+    for (const s of document.querySelectorAll(".sound")) {
+      const pop = s.querySelector(".sound-pop");
+      if (pop && !pop.hidden && !e.composedPath().includes(s)) { pop.hidden = true; s.querySelector(".snd-menu")?.setAttribute("aria-expanded", "false"); }
+    }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    for (const s of document.querySelectorAll(".sound")) {
+      const pop = s.querySelector(".sound-pop");
+      if (pop && !pop.hidden) { pop.hidden = true; const m = s.querySelector(".snd-menu"); m?.setAttribute("aria-expanded", "false"); m?.focus(); }
+    }
+  });
 
   function musicWanted() { return on.music && inReplay && playing; }
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
