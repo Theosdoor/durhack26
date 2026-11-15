@@ -34,22 +34,25 @@ def kw(cfg) -> dict:
 
 @pytest.mark.parametrize("mode", MODES)
 @pytest.mark.parametrize("comms", ["full", "none"])
-def test_system_prompt_per_mode(mode, comms):
-    cfg = config(rules=mode, comms=comms)
+@pytest.mark.parametrize("scoring", ["soups", "orders"])
+def test_system_prompt_per_mode(mode, comms, scoring):
+    cfg = config(rules=mode, comms=comms, scoring=scoring)
     text = system_prompt(cfg, "Kilo", "Tango")
-    full = system_prompt(config(comms=comms), "Kilo", "Tango")
+    full = system_prompt(config(comms=comms, scoring=scoring), "Kilo", "Tango")
     for key in KEPT:
         assert load("system", key, **kw(cfg)) in text, key
-    moving = load("system", "kitchen_rules", **kw(cfg)).split("\n\n")
-    assert moving[0] in text                                   # time, walking, interacting
+    moving = load("system", "kitchen_rules", **kw(cfg))
+    recipe = load("system", "recipe", **kw(cfg))
+    assert moving in text                                   # time, walking, interacting
     # identity ... season, deciding: the same text before and after the rules
     assert text.split("HOW THE KITCHEN WORKS")[0] == full.split("HOW THE KITCHEN WORKS")[0]
     assert text.split("PLANS")[1].split("\n\n", 1)[1] == full.split("PLANS")[1].split("\n\n", 1)[1]
     if mode == "full":
-        assert text == full and "INTERACT TABLE" in text and moving[1] in text
+        assert text == full and "INTERACT TABLE" in text and recipe in text
         return
-    assert "INTERACT TABLE" not in text and moving[1] not in text and moving[2] not in text
-    assert load("system", f"rules_{mode}") in text
+    assert "INTERACT TABLE" not in text and recipe not in text
+    legacy = "rules_recipe_soups" if (mode, scoring) == ("recipe", "soups") else f"rules_{mode}"
+    assert load("system", legacy) in text
     rules = text.split("THE KITCHEN\n", 1)[1].split("\n\n")[0]
     if mode == "recipe":
         assert "onion soup" in rules and "dish" in rules
@@ -58,20 +61,21 @@ def test_system_prompt_per_mode(mode, comms):
         assert ("Practice is a good time" in rules) == (mode == "minimal_hint")
 
 
+@pytest.mark.parametrize("scoring", ["soups", "orders"])
 @pytest.mark.parametrize("mode", ["minimal", "recipe"])
-def test_no_recipe_in_messages(tmp_path, mode):
+def test_no_recipe_in_messages(tmp_path, mode, scoring):
     """A season under rules other than full: no order rules in the chat, no recipe in the act
     example; under minimal the orders in the state name no dish."""
     fake_requests: list[fake.Request] = []
     mp = pytest.MonkeyPatch()
     mp.setattr(fake, "REQUESTS", fake_requests)
     try:
-        log, [rep] = run_season(config(rules=mode, round_s=10), tmp_path)
+        log, [rep] = run_season(config(rules=mode, round_s=10, scoring=scoring), tmp_path)
     finally:
         mp.undo()
     assert rep.header.rules == mode
     assert log.samples[0].metadata["condition"]["rules"] == mode
-    rules_line = orders_rules(config(rules=mode, round_s=10))
+    rules_line = orders_rules(config(rules=mode, round_s=10, scoring=scoring))
     for name in names_of(rep):
         for u in users(log, name):
             assert rules_line not in u and "Orders: the first arrives" not in u

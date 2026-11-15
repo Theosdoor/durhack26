@@ -171,9 +171,10 @@ def season_full(tmp_path_factory):
 def test_full_condition_header_and_metadata(season_full):
     log, rep = season_full
     h = rep.header
-    assert (h.reasoning, h.comms, h.debrief) == ("on", "full", "full")
+    assert (h.reasoning, h.comms, h.debrief) == ("on", "full", "private")   # "full" is an alias
     assert log.samples[0].metadata["condition"] == {"reasoning": "on", "comms": "full",
-                                                     "debrief": "full", "rules": "full"}
+                                                     "debrief": "private", "rules": "full",
+                                                     "scoring": "soups", "reflection": True}
     assert h.rules == "full"
     v = log.samples[0].scores["season_score"].value
     assert v["forced_agent0"] == v["forced_agent1"] == 0
@@ -225,7 +226,7 @@ def test_comms_none(tmp_path, requests):
     log, [rep] = run_season(cfg, tmp_path)
     cook, passer = names_of(rep)
     assert rep.phases() == [("briefing", 0), ("practice", 0), ("round", 1), ("debrief", 1),
-                            ("round", 2), ("debrief", 2)]
+                            ("round", 2), ("debrief", 2), ("reflection", 2)]
     assert not rep.select(DecisionRecord, "chat") and not rep.select(Post)
     assert not any(e.phase == "chat" for e in rep.select(Event))
     assert all(set(r.tools) <= {"act", "note", "finish_practice"} for r in requests)
@@ -285,9 +286,10 @@ def score_lines(cfg: Config, rep: Replay) -> list[str]:
                                  e.data["missed"]) for e in ends]
 
 
+@pytest.mark.parametrize("reflection", [True, False])
 @pytest.mark.parametrize("comms", ["full", "none"])
-def test_debrief_score_only(tmp_path, requests, comms):
-    cfg = config(debrief="score_only", comms=comms, rounds=2, round_s=15)
+def test_debrief_score_only(tmp_path, requests, comms, reflection):
+    cfg = config(debrief="score_only", comms=comms, rounds=2, round_s=15, reflection=reflection)
     log, [rep] = run_season(cfg, tmp_path)
     assert not any(r.tools == ["note"] for r in requests)          # no debrief calls
     assert not rep.select(DecisionRecord, "debrief")
@@ -303,7 +305,10 @@ def test_debrief_score_only(tmp_path, requests, comms):
         assert nxt.startswith(lines[0])
         assert ("Chat before round 2" in nxt) == (comms == "full")
         assert ("Round 2 of 2 starts now." in nxt) == (comms == "none")
-        assert us[-1] == lines[1]                     # season end: in the conversation, no call
+        if reflection:     # season end: the last result opens the reflection message
+            assert us[-1].startswith(lines[1] + "\n\nThe season is over.")
+        else:              # season end: in the conversation, no call
+            assert us[-1] == lines[1]
     system = requests[0].system
     assert "after each round you are told the round's score" in system.lower()
     assert "debrief" not in system

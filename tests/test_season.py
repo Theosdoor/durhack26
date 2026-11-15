@@ -87,7 +87,7 @@ def test_export_and_header(season):
 def test_phases_in_order(season):
     _, rep = season
     assert rep.phases() == [("briefing", 0), ("practice", 0), ("chat", 1), ("round", 1),
-                            ("debrief", 1)]
+                            ("debrief", 1), ("reflection", 1)]
     for phase, rnd in rep.phases():
         types = [e.type for e in rep.select(Event, phase, rnd)]
         assert types[0] == "phase_start" and types[-1] == "phase_end"
@@ -276,7 +276,8 @@ def test_flat_cost_push_board_and_cli_run(tmp_path):
     log_path = res.output.strip().splitlines()[-1]
     [rep] = load_replay(log_path)
     cook, passer = names_of(rep)
-    assert rep.phases() == [("briefing", 0), ("chat", 1), ("round", 1), ("debrief", 1)]
+    assert rep.phases() == [("briefing", 0), ("chat", 1), ("round", 1), ("debrief", 1),
+                            ("reflection", 1)]
     assert rep.header.practice_s is None and rep.header.cook_s == 2
     first = {d.agent: d for d in reversed(rep.select(DecisionRecord, "round", 1))}
     assert first[passer].t == 0 and first[passer].lands_t == 2              # flat_s

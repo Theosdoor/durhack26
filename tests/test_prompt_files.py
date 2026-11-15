@@ -62,8 +62,8 @@ def test_every_file_and_section_is_used_and_every_placeholder_is_provided():
 
 
 def test_missing_placeholder_raises_a_clear_error_naming_the_file():
-    with pytest.raises(PromptError, match=r"prompts/system\.md \[kitchen_rules\].*\{cook_s\}"):
-        load("system", "kitchen_rules")
+    with pytest.raises(PromptError, match=r"prompts/system\.md \[recipe\].*\{cook_s\}"):
+        load("system", "recipe")
     with pytest.raises(PromptError, match=r"prompts/tools\.md \[act\.rejected\].*\{error\}"):
         load("tools", "act.rejected")
     with pytest.raises(PromptError, match="no section"):
@@ -91,4 +91,4 @@ def test_compaction_prompt_keeps_inspects_literal_placeholder():
     for comms in ("full", "planning_only", "none"):
         text = prompts.compaction_prompt(cfg(comms=comms))
         assert text.endswith("At most 400 words.{addendums}")
-        assert ("what you and your teammate posted" in text) == (comms != "none")
+        assert ("what your team posted" in text) == (comms != "none")

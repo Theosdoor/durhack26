@@ -32,13 +32,18 @@ def rows(level: str) -> list[str]:
     return (LEVELS_DIR / f"{level}.txt").read_text().rstrip("\n").split("\n")
 
 
+def base_rows(level: str) -> list[str]:
+    """The layout with the extra start spots (digits 3 and 4, added for N-agent runs) as floor."""
+    return [r.replace("3", " ").replace("4", " ") for r in rows(level)]
+
+
 @pytest.mark.parametrize("level", list(OVERCOOKED_AI))
 def test_overcooked_ai_layouts_are_verbatim(level):
-    assert rows(level) == OVERCOOKED_AI[level]
+    assert base_rows(level) == OVERCOOKED_AI[level]
 
 
 def test_split_room_layout():
-    assert rows("split_room") == SPLIT_ROOM
+    assert base_rows("split_room") == SPLIT_ROOM
     k = Kitchen.load("split_room")
     left, right = k.room_of[k.starts[2]], k.room_of[k.starts[1]]
     assert left != right and len(set(k.room_of.values())) == 2
@@ -55,7 +60,7 @@ def test_split_room_layout():
 @pytest.mark.parametrize("level", LEVELS)
 def test_every_level_parses_with_two_seats(level):
     k = Kitchen.load(level)
-    assert set(k.starts) == {1, 2}
+    assert {1, 2} <= set(k.starts) <= {1, 2, 3, 4}      # seats 3 and 4 only where the level has them
     assert all(k.is_floor(p) for p in k.starts.values())
     # ids: numbered in reading order per kind, counters by position
     for kind in ("onion_crate", "dish_rack", "pot", "hatch"):

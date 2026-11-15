@@ -37,14 +37,17 @@ Examples: 3 rounds of 180 s, 60 s practice, 6 posts per chat, Kilo with teammate
 
 | Section | Used when | Placeholders |
 |---|---|---|
-| `identity` | always, first line | `{me}` Kilo, `{mate}` Tango |
-| `kitchen_rules`, `map_key`, `actions`, `interact_table`, `plans` | always (joined as the rules) | `{cook_s}` 20, `{every_s}` 30, `{max_open}` 3, `{due_s}` 60, `{reward}` 20, `{penalty}` 10, `{max_plan_len}` 5, `{wait_min}` 1, `{wait_max}` 10, `{blocked_limit}` 3 (the ones each uses are visible in its text) |
-| `season` | always | `{practice}` (practice sentence + space, or empty), `{mate}`, `{rounds}` "3 rounds", `{round_s}` 180, `{between}` (a `between_*` snippet) |
+| `identity` | rules full/recipe/minimal*, bare, open: always the first line | `{me}` Kilo, `{cooks}` "two" (a word up to nine), `{team}` (`identity.one_mate` or `identity.many_mates`) |
+| `identity.one_mate`, `identity.many_mates` | inside `identity`: one other agent / several | `{names}` "Tango" or "Tango, Lima and Golf" |
+| `kitchen_rules`, `recipe`, `scoring.orders` / `scoring.soups`, `map_key`, `actions`, `interact_table`, `plans` | rules full (joined as the rules; `scoring.*` by config `scoring`; for the other rules values see the last section) | `{hatch_soup}` (`hatch_soup.orders` or `hatch_soup.soups`, in `interact_table`), `{cook_s}` 20, `{every_s}` 30, `{max_open}` 3, `{due_s}` 60, `{reward}` 20, `{penalty}` 10, `{max_plan_len}` 5, `{wait_min}` 1, `{wait_max}` 10, `{blocked_limit}` 3 (the ones each uses are visible in its text) |
+| `season` | always | `{practice}` (practice sentence + space, or empty), `{us}` "you and Tango" ("you, Tango and Lima"), `{rounds}` "3 rounds", `{round_s}` 180, `{afresh}` (`afresh.orders` or `afresh.soups`), `{between}` (a `between_*` snippet) |
+| `hatch_soup.orders`, `hatch_soup.soups` | inside `interact_table`, by config `scoring` | `{reward}` (soups only) |
+| `afresh.orders`, `afresh.soups` | inside `season`, by config `scoring` | none |
 | `deciding` | always | `{flat}` "2 seconds", `{posting}` (`posting_full` or empty), `{extras}` (`extras_*`), `{thinking_budget}` (space + `thinking_budget`, or empty) |
 | (board or chat section) | from `communication.md`, between `deciding` and `notepad`; none for comms: none | |
 | `notepad`, `goal` | always | none |
 | `practice_intro`, `practice_intro_no_comms` | practice on (the latter when comms: none) | `{practice_s}` 60 |
-| `between_chat_debrief`, `between_chat_score_only`, `between_no_chat_debrief`, `between_no_chat_score_only` | comms and debrief conditions | none |
+| `between_chat_private`, `between_chat_score_only`, `between_no_chat_private`, `between_no_chat_score_only` | comms and debrief conditions | none |
 | `posting_full`, `extras_full`, `extras_no_post` | comms: full / other | `{post_words_per_s}` 10 (`posting_full` only) |
 | `board_read_pull`, `board_read_push` | comms: full, by the board setting | none |
 | `thinking_budget` | reasoning: on | `{reasoning_tokens}` 1000 |
@@ -53,7 +56,7 @@ Examples: 3 rounds of 180 s, 60 s practice, 6 posts per chat, Kilo with teammate
 
 | Section | Used when | Placeholders |
 |---|---|---|
-| `comms.full` | system prompt, comms: full ("THE BOARD") | `{mate}`, `{max_post_chars}` 200, `{board_read}`, `{chat_rules}` |
+| `comms.full` | system prompt, comms: full ("THE BOARD") | `{us}`, `{max_post_chars}` 200, `{board_read}`, `{chat_rules}` |
 | `comms.planning_only` | system prompt, comms: planning_only ("THE CHAT") | `{planning_only_rule}`, `{chat_rules}` |
 | `comms.none` | system prompt, comms: none; deliberately empty (text here would appear in that place) | none |
 | `planning_only_rule` | inside `comms.planning_only` | `{max_post_chars}` |
@@ -74,16 +77,22 @@ Examples: 3 rounds of 180 s, 60 s practice, 6 posts per chat, Kilo with teammate
 | `kitchen_overview.start_you` / `.start_mate` | chat overview, under the map | `{name}`, `{letter}`, `{x}`, `{y}` |
 | `kitchen_overview.objects`, `.counters` | chat overview | `{objects}`, `{counters}` |
 | `kitchen_overview.object_item`, `.counter_item` | list items of the above | `{id}` pot_1, `{x}`, `{y}` |
-| `orders_rules` | chat, first turn | `{every_s}`, `{max_open}`, `{due_s}`, `{reward}`, `{penalty}`, `{round_s}` |
+| `orders_rules` | chat, first turn, only with rules full and scoring orders | `{every_s}`, `{max_open}`, `{due_s}`, `{reward}`, `{penalty}`, `{round_s}` |
 | `round_start.base`, `.turn_limit` | first decision of each round (`turn_limit` if the chat hit its cap) | `{round}`, `{rounds}`; `{turns}` "8 turns" |
 | `cutoff_notice.notice`, `.post` | before the state after a reply that did not call act | `{seconds}` 4, `{post}` (space + `.post`, or empty); `{post_s}` 3 |
 | `forced_why.*` | reason line of a forced-answer prompt (thinking budget used up, or reasoning off) | none |
 | `forced.act` / `.chat` / `.debrief` | request of the forced-answer prompt | none |
-| `round_result` | debrief: score_only, before the next message | `{round}`, `{rounds}`, `{score}`, `{served}` "2 orders", `{missed}` |
-| `debrief.result` | debrief: full | `{round}`, `{rounds}`, `{score}`, `{served}`, `{missed}` |
+| `round_result` | debrief: score_only, before the next message | `{round}`, `{rounds}`, `{score}`, `{result}` (`result.soups` "2 soups served" or `result.orders` "2 orders served, 1 missed") |
+| `result.soups`, `result.orders` | inside `round_result` / `debrief.result`, by config `scoring` | `{served}` "2 soups"; `{served}`, `{missed}` |
+| `debrief.result` | debrief: private (the default; "full" is an alias), after each round including the last | `{round}`, `{rounds}`, `{score}`, `{result}` |
 | `debrief.scores_so_far`, `.score_item` | from round 2 | `{scores}` "round 1: 20, round 2: 30"; `{n}`, `{score}` |
 | `debrief.notepad`, `.notepad_empty`, `.instruction` | debrief | `{notepad}` |
-| `compaction.prompt`, `.posted` | Inspect's summarising prompt (`.posted` omitted when comms: none) | `{posted}`, `{addendums}`: Inspect fills `{addendums}` itself, keep it exactly, at the end |
+| `debrief.next_chat`, `.next_round`, `.last` | last line of the private turn (chat before the next round / next round / after the last round) | `{round}` (the next round) |
+| `reflection.intro` | after the last round (config `reflection`, default on): one free-text reply per agent, no tools | `{scores}` "round 1: 20, round 2: 30", `{total}` 50 |
+| `reflection.questions` | after `reflection.intro`; question 5 asks for `PREDICTED_SCORE: <points>` on the last line, which `prompts.predicted_score` parses | none |
+| `reflection.open_question` | after the questions, rules: open only | none |
+| `compaction.prompt`, `.posted` | Inspect's summarising prompt (`.posted` omitted when comms: none) | `{posted}`, `{results}` (`compaction.results_soups` "scores, soups served" or `compaction.results_orders`), `{addendums}`: Inspect fills `{addendums}` itself, keep it exactly, at the end |
+| `compaction.results_soups`, `.results_orders` | inside `compaction.prompt`, by config `scoring` | none |
 
 ## `state.md`: the state at every decision
 
@@ -135,3 +144,17 @@ Appended at the end of their files (the tables above are unchanged; this list co
 | `state.md` | `order_item_minimal` | rules minimal / minimal_hint: the order line names no dish | `{due_t}` |
 
 With `rules` other than full, the chat's first turn leaves out `orders_rules`.
+
+## Sections added for scoring, bare/open rules, the private turn, the reflection and N agents
+
+| File | Section | Used when | Placeholders |
+|---|---|---|---|
+| `system.md` | `rules_recipe_soups` | rules recipe with scoring soups (`rules_recipe` mentions orders) | none |
+| `system.md` | `bare.goal`, `bare.season_chat_full`, `bare.season_planning_only`, `bare.season_no_chat` | rules bare (and `bare.season_*` for open too): the whole prompt is `identity`, the goal line, one season line | `{rounds}` "3 rounds" |
+| `system.md` | `open.invitation` | rules open: replaces the goal (no score is mentioned) | `{names}` |
+| `tools.md` | `act.description_bare` | rules bare / open: the action syntax only | `{max_len}` |
+| `messages.md` | `reflection.*`, `debrief.next_*`, `debrief.last`, `result.*`, `compaction.results_*` | see the `messages.md` table above | |
+
+With more than two agents the teammate wording becomes the team: `{us}` ("you, Tango and Lima"),
+`{names}`, `{cooks}`. The `{mate}` placeholder no longer exists. `state.md` has no order line
+when scoring is soups (the `orders*` sections are used only with scoring orders).

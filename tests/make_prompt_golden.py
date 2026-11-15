@@ -37,11 +37,11 @@ def cfg(**kw: Any) -> Config:
 
 def _grid() -> list[tuple[str, Config]]:
     out = []
-    for comms, reasoning, debrief, practice in itertools.product(
-            ("full", "planning_only", "none"), ("on", "off"), ("full", "score_only"),
-            (True, False)):
-        out.append((f"{comms}|{reasoning}|{debrief}|practice={practice}",
-                    cfg(comms=comms, debrief=debrief, practice=practice,
+    for comms, reasoning, debrief, practice, scoring in itertools.product(
+            ("full", "planning_only", "none"), ("on", "off"), ("private", "score_only"),
+            (True, False), ("soups", "orders")):
+        out.append((f"{comms}|{reasoning}|{debrief}|practice={practice}|{scoring}",
+                    cfg(comms=comms, debrief=debrief, practice=practice, scoring=scoring,
                         decision={"reasoning": reasoning})))
     out.append(("push", cfg(board="push")))
     out.append(("one_round_one_post", cfg(rounds=1, chat_max_posts=1, practice_s=30,
@@ -49,9 +49,13 @@ def _grid() -> list[tuple[str, Config]]:
     out.append(("odd_numbers", cfg(rounds=2, chat_max_posts=2, cook_s=15, max_plan_len=3,
                                    orders={"every_s": 20, "due_s": 50, "max_open": 2,
                                            "reward": 30, "penalty": 5})))
-    for rules in ("recipe", "minimal", "minimal_hint"):
-        out.append((f"rules={rules}", cfg(rules=rules)))
-        out.append((f"rules={rules}|none", cfg(rules=rules, comms="none")))
+    for rules, scoring in itertools.product(("recipe", "minimal", "minimal_hint"),
+                                            ("soups", "orders")):
+        out.append((f"rules={rules}|{scoring}", cfg(rules=rules, scoring=scoring)))
+        out.append((f"rules={rules}|{scoring}|none", cfg(rules=rules, scoring=scoring,
+                                                         comms="none")))
+    for rules, comms in itertools.product(("bare", "open"), ("full", "planning_only", "none")):
+        out.append((f"rules={rules}|{comms}", cfg(rules=rules, comms=comms)))
     return out
 
 
@@ -92,6 +96,8 @@ def _tool_texts() -> dict[str, Any]:
         p = post_tool(t, cap_error=lambda: "you have used all 2 posts for this chat",
                       lands_later=lands_later)
         out[k + ".cap"] = _call(p, "hi")
+    out["act.desc.bare"] = _desc(act_tool(Turn(), lambda p: None, 5, rules="bare"))
+    out["act.desc.open"] = _desc(act_tool(Turn(), lambda p: None, 5, rules="open"))
     out["act.desc.no_recipe"] = _desc(act_tool(Turn(), lambda p: None, 5, rules="minimal"))
     t = Turn()
     r = read_board_tool(t, lambda: "BOARD")
@@ -129,15 +135,42 @@ def _state_texts() -> dict[str, Any]:
             out[f"{board_mode}|{comms}|{phase}|{label}"] = s.state_text(g, a, b)
         a.notepad = None
         out[f"{board_mode}|{comms}|{phase}|nonotepad"] = s.state_text(g, a, None)
-    c = cfg()
+    for scoring in ("soups", "orders"):
+        c = cfg(scoring=scoring)
+        g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], c, phase="round", round=1)
+        out[f"engine.{scoring}"] = g.state_text("Kilo", unread_posts=0, notepad="n",
+                                                last_plan_result="none yet")
+    # held items and every pot state, with and without orders (self-contained: no other test
+    # has to have loaded these sections first)
+    for scoring in ("soups", "orders"):
+        g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], cfg(scoring=scoring),
+                 phase="round", round=1)
+        for item in ("onion", "dish", "soup"):
+            g.agent("Kilo").holding = item
+            out[f"engine.{scoring}.holding_{item}"] = g.state_text(
+                "Kilo", unread_posts=0, notepad=None, last_plan_result="none yet")
+        pot = g.pots["pot_1"]
+        pot.onions, pot.ready_in, pot.ready = 2, None, False
+        out[f"engine.{scoring}.pot_onions"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+                                                         last_plan_result="none yet")
+        pot.onions, pot.ready_in = 3, 7
+        out[f"engine.{scoring}.pot_cooking"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+                                                          last_plan_result="none yet")
+        pot.ready_in, pot.ready = None, True
+        out[f"engine.{scoring}.pot_ready"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+                                                        last_plan_result="none yet")
+        g.orders.clear()
+        out[f"engine.{scoring}.no_orders"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+                                                        last_plan_result="none yet")
+    c = cfg(scoring="orders")
     g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], c, phase="round", round=1)
     for n in (0, 1, 2):
         out[f"engine.unread{n}"] = g.state_text("Kilo", unread_posts=n, notepad="n",
                                                 last_plan_result="failed: blocked by Tango.")
-    for rules in ("recipe", "minimal"):
-        g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], cfg(rules=rules),
-                 phase="round", round=1)
-        out[f"engine.rules={rules}"] = g.state_text("Kilo", unread_posts=0, notepad=None,
+    for rules, scoring in itertools.product(("recipe", "minimal"), ("soups", "orders")):
+        g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"],
+                 cfg(rules=rules, scoring=scoring), phase="round", round=1)
+        out[f"engine.rules={rules}|{scoring}"] = g.state_text("Kilo", unread_posts=0, notepad=None,
                                                     last_plan_result="none yet")
     return out
 
@@ -167,6 +200,11 @@ def render_all() -> dict[str, Any]:
                         prompts.debrief(c, 3, -10, 0, 1, [20, 30, -10], "")]
         g = Game(Kitchen.load(c.level), ["Kilo", "Tango"], c)
         o["kitchen_overview"] = prompts.kitchen_overview(g, "Kilo")
+        g = Game(Kitchen.load("cramped_room"), ["Kilo", "Tango", "Lima"], c)
+        o["kitchen_overview_n3"] = prompts.kitchen_overview(g, "Kilo")
+        o["reflection"] = prompts.reflection(c, [20, 30, -10])
+        o["system_n3"] = prompts.system_prompt(c, "Kilo", ["Tango", "Lima"])
+        o["system_n4"] = prompts.system_prompt(c, "Kilo", ["Tango", "Lima", "Golf"])
         o["chat_turn"] = [
             prompts.chat_turn(c, 1, first_turn=True, overview="OVERVIEW", new_posts=None,
                               posts_left=6, ready=False, notepad=None),
@@ -185,6 +223,9 @@ def render_all() -> dict[str, Any]:
     out["constants"] = {"GOAL": prompts.GOAL, "COMPACTION_PROMPT": prompts.COMPACTION_PROMPT,
                         "PLANNING_ONLY_RULE": prompts.PLANNING_ONLY_RULE,
                         "FORCED_ASKS": prompts.FORCED_ASKS}
+    out["reflection_open"] = prompts.reflection(cfg(rules="open"), [20, 30, -10])
+    out["predicted_score"] = [prompts.predicted_score(t) for t in (
+        "x\nPREDICTED_SCORE: 120", "PREDICTED_SCORE: -5.5 then\nPREDICTED_SCORE 40", "none", None)]
     out["tools"] = _tool_texts()
     out["state_text"] = _state_texts()
     return out

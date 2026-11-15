@@ -129,8 +129,8 @@ def test_pipeline_matches_sequential(tmp_path, monkeypatch, calls):
     for seed, flat_s, board, compact_at in CASES:
         case = f"seed={seed} flat_s={flat_s} board={board}"
         monkeypatch.setattr(fake, "DELAY", (seed, 0.0, 0.03))
-        cfg = config(seed=seed, board=board, compact_at_tokens=compact_at,
-                     decision={"flat_s": flat_s, "post_words_per_s": 10})
+        cfg = config(seed=seed, board=board, compact_at_tokens=compact_at, scoring="orders",
+                     decision={"flat_s": flat_s, "post_words_per_s": 10})   # orders: "reason" lands
         out = {}
         for on in (False, True):
             fake.CALLS.clear()

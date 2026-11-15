@@ -49,13 +49,14 @@ def models_label(models: Sequence[str]) -> str:
 
 def condition_key(rep: Replay) -> tuple:
     h = rep.header
-    return (h.rules, h.comms, h.debrief, h.reasoning, tuple(a.model for a in h.agents))
+    debrief = "score_only" if h.debrief == "score_only" else "private"   # "full" = "private"
+    return (h.rules, h.comms, debrief, h.reasoning, tuple(a.model for a in h.agents))
 
 
 def condition_label(key: tuple) -> str:
     rules, comms, debrief, reasoning, models = key
     parts = [RULES_LABEL.get(rules, rules), COMMS_LABEL.get(comms, comms)]
-    if debrief != "full":
+    if debrief == "score_only":
         parts.append("score-only debrief")
     if reasoning != "on":
         parts.append("no reasoning")

@@ -25,7 +25,7 @@ VIEWER = Path(__file__).parent.parent / "undercooked" / "viewer.py"
 
 
 def multi(**kw) -> Config:
-    base = dict(levels=LEVELS, epochs=2, rounds=1, round_s=10, practice=False,
+    base = dict(levels=LEVELS, epochs=2, rounds=1, round_s=10, practice=False, scoring="orders",
                 level_overrides={"split_room": {"orders": {"every_s": 4}, "round_s": 8}})
     return config(**{**base, **kw})
 

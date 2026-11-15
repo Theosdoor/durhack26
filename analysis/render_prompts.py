@@ -534,15 +534,15 @@ TRIGGERS: dict[str, str] = {
     "messages.md › forced.chat": "forced answer after a chat reply cut off at max_tokens",
     "messages.md › forced.debrief": "forced answer after a debrief reply cut off at max_tokens",
     "messages.md › round_result": "debrief: score_only (opens the next message)",
-    "messages.md › debrief.scores_so_far": "debrief: full, from round 2 on",
-    "messages.md › debrief.score_item": "debrief: full, from round 2 on",
-    "messages.md › debrief.notepad": "debrief: full, agent has a notepad",
-    "messages.md › debrief.notepad_empty": "debrief: full, agent has no notepad",
+    "messages.md › debrief.scores_so_far": "debrief: private, from round 2 on",
+    "messages.md › debrief.score_item": "debrief: private, from round 2 on or reflection",
+    "messages.md › debrief.notepad": "debrief: private, agent has a notepad",
+    "messages.md › debrief.notepad_empty": "debrief: private, agent has no notepad",
     "messages.md › compaction.posted": "compaction when comms is not none",
     "messages.md › compaction.prompt": "when the conversation passes compact_at_tokens",
     "state.md › push_new_posts": "board: push, decision with new teammate posts",
     "state.md › push_none": "board: push, decision with no new posts",
-    "state.md › orders_none": "a decision when no order is open",
+    "state.md › orders_none": "scoring: orders, a decision when no order is open",
     "state.md › board_unread": "board: pull, comms full, unread teammate posts",
     "state.md › board_none": "board: pull, comms full, nothing unread",
     "state.md › notepad": "a decision when the agent has a notepad",
@@ -569,15 +569,17 @@ TRIGGERS: dict[str, str] = {
     "system.md › rules_recipe": "rules: recipe (replaces the recipe, orders and interact table)",
     "system.md › rules_minimal": "rules: minimal (replaces the recipe, orders and interact table)",
     "system.md › rules_minimal_hint": "rules: minimal_hint (minimal plus a nudge to experiment)",
+    "state.md › orders": "scoring: orders, a decision with open orders",
+    "state.md › order_item": "scoring: orders, rules full or recipe",
     "messages.md › round_start.unseen_chat": "comms: planning_only, chat posts the agent has not seen yet",
     "state.md › order_item_minimal": "rules not full: an order line that names no dish",
     "tools.md › finish_practice.result": "practice: an agent calls finish_practice()",
     "tools.md › act.description_no_recipe": "rules not full: act's example plan without the recipe",
     "system.md › practice_intro": "practice: on, comms not none",
     "system.md › practice_intro_no_comms": "practice: on, comms: none",
-    "system.md › between_chat_debrief": "comms not none, debrief: full",
+    "system.md › between_chat_private": "comms not none, debrief: private (the default)",
     "system.md › between_chat_score_only": "comms not none, debrief: score_only",
-    "system.md › between_no_chat_debrief": "comms: none, debrief: full",
+    "system.md › between_no_chat_private": "comms: none, debrief: private (the default)",
     "system.md › between_no_chat_score_only": "comms: none, debrief: score_only",
     "system.md › posting_full": "comms: full",
     "system.md › extras_full": "comms: full",
@@ -585,6 +587,22 @@ TRIGGERS: dict[str, str] = {
     "system.md › board_read_pull": "comms: full, board: pull",
     "system.md › board_read_push": "comms: full, board: push",
     "system.md › thinking_budget": "reasoning: on",
+    "messages.md › orders_rules": "scoring: orders, rules full, first chat turn",
+    "messages.md › debrief.next_round": "debrief: private, comms: none (not the last round)",
+    "system.md › identity.many_mates": "3 or more agents (n_agents or several agents)",
+    "system.md › scoring.orders": "scoring: orders (rules full)",
+    "system.md › hatch_soup.orders": "scoring: orders (rules full, inside interact_table)",
+    "system.md › afresh.orders": "scoring: orders (inside season)",
+    "system.md › rules_recipe_soups": "rules: recipe with scoring: soups",
+    "system.md › bare.season_chat_full": "rules: bare or open, comms: full",
+    "system.md › bare.season_planning_only": "rules: bare or open, comms: planning_only",
+    "system.md › bare.season_no_chat": "rules: bare or open, comms: none",
+    "system.md › bare.goal": "rules: bare",
+    "system.md › open.invitation": "rules: open (replaces the goal)",
+    "messages.md › result.orders": "scoring: orders (round and debrief result lines)",
+    "messages.md › compaction.results_orders": "scoring: orders, compaction prompt",
+    "messages.md › reflection.open_question": "rules: open, after the last round (reflection)",
+    "tools.md › act.description_bare": "rules: bare or open (act: action syntax only)",
 }
 
 
@@ -616,7 +634,7 @@ def render_unused(markers: set[str], rec: Recorder) -> list[str]:
 # ----------------------------------------------------------------------------- the file
 HEADER = (
     "This file is generated by `analysis/render_prompts.py`: it runs one short offline season "
-    "(fake models, no network; practice on, 2 rounds, comms full, debrief full, compaction at "
+    "(fake models, no network; practice on, 2 rounds, comms full, debrief private, compaction at "
     "{compact} tokens) and prints, in order, every message in the conversation of {name} "
     "(the first agent in the config), plus the tool descriptions. {marks} A few turns are "
     "scripted (a cutoff, a rejected plan, forced answers, a refused post, odd tool calls) so that "
