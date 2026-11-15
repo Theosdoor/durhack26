@@ -1,0 +1,55 @@
+# Keeps the site's paper (docs/paper.pdf, the Paper tab) in step with the Overleaf project.
+# Hourly and on demand (Actions tab -> "Paper from Overleaf" -> Run workflow): if Overleaf has a
+# new commit, compile it with tectonic and commit the PDF to main, which redeploys GitHub Pages.
+# Needs the repo secret OVERLEAF_GIT_TOKEN (Overleaf -> Account settings -> Git integration).
+name: Paper from Overleaf
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: paper-from-overleaf
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Fetch the Overleaf project
+        env:
+          TOKEN: ${{ secrets.OVERLEAF_GIT_TOKEN }}
+        run: |
+          test -n "$TOKEN" || { echo "OVERLEAF_GIT_TOKEN secret is not set"; exit 1; }
+          AUTH=$(printf 'git:%s' "$TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH"
+          git -c credential.helper= -c http.extraHeader="Authorization: Basic $AUTH" \
+            clone -q --depth 1 https://git.overleaf.com/6af99d928e5e3d2a04d28789 "$RUNNER_TEMP/overleaf"
+          SHA=$(git -C "$RUNNER_TEMP/overleaf" rev-parse HEAD)
+          echo "SHA=$SHA" >> "$GITHUB_ENV"
+          if [ "$(cat docs/paper.sha 2>/dev/null)" = "$SHA" ]; then
+            echo "Paper already at Overleaf $SHA"; echo "UP_TO_DATE=1" >> "$GITHUB_ENV"
+          fi
+      - name: Compile with tectonic
+        if: env.UP_TO_DATE != '1'
+        run: |
+          cd "$RUNNER_TEMP"
+          curl --proto '=https' --tlsv1.2 -fsSL https://drop-sh.fullyjustified.net | sh
+          cd overleaf && "$RUNNER_TEMP/tectonic" main.tex
+      - name: Commit the PDF and redeploy Pages
+        if: env.UP_TO_DATE != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp "$RUNNER_TEMP/overleaf/main.pdf" docs/paper.pdf
+          echo "$SHA" > docs/paper.sha
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/paper.pdf docs/paper.sha
+          git commit -m "Paper PDF from Overleaf ${SHA:0:7}"
+          git push origin HEAD:main
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "Pages build request failed (it may start on its own)"
