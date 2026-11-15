@@ -38,7 +38,7 @@ for ax, lvl in zip(axes, MAPS):
         ax.bar(x + (k - 0.5) * 0.38, [v[0] for v in vals], 0.38, yerr=[v[1] for v in vals],
                color=col, label=rules, error_kw={"lw": 0.6, "capsize": 1.5})
     ax.set_title(SHORT[lvl])
-    ax.set_xticks(x, [t.split("×")[0] for t in teams], rotation=60)
+    ax.set_xticks(x, [t.split("×")[0] for t in teams], rotation=90)
 axes[0].set_ylabel("team score (3 rounds)")
 axes[0].legend(frameon=False, loc="upper left")
 fig.tight_layout(pad=0.3)
