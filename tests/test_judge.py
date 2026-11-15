@@ -106,3 +106,12 @@ def test_table_stats():
     assert jt.spearman([1, 1, 2], [1, 2, 2]) == pytest.approx(0.5)
     assert jt.kappa(["a", "b", "a", "b"], ["a", "b", "a", "b"]) == pytest.approx(1)
     assert jt.kappa(["a", "a", "b", "b"], ["a", "b", "a", "b"]) == pytest.approx(0)
+
+
+def test_scale_rejects_nan_and_inf_as_parse_errors():
+    import pytest
+    from analysis.judge import JudgeParseError, _scale
+    for bad in ("nan", "inf", "-inf", float("nan")):
+        with pytest.raises(JudgeParseError):
+            _scale(bad, "bossiness")
+    assert _scale("3", "bossiness") == 3

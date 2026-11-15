@@ -164,6 +164,8 @@ def _scale(v: Any, what: str) -> int:
         x = float(v)
     except ValueError:
         raise JudgeParseError(f"{what}: not a number: {v!r}") from None
+    if x != x or x in (float("inf"), float("-inf")):   # nan / inf: int() would raise, not a parse error
+        raise JudgeParseError(f"{what}: not a number: {v!r}")
     if x != int(x) or not 1 <= x <= 5:
         raise JudgeParseError(f"{what}: outside 1-5: {v!r}")
     return int(x)
