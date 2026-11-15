@@ -270,7 +270,8 @@ def summarise(df: pd.DataFrame, by: list[str], value: str) -> pd.DataFrame:
 
 # ---------------------------------------------------------------- figures
 
-COLORS = ["#4c9be8", "#e69f00", "#2ca58d", "#d6604d", "#9a7bd1", "#c9a227", "#7f7f7f"]
+COLORS = ["#4c9be8", "#e69f00", "#2ca58d", "#d6604d", "#9a7bd1", "#c9a227", "#7f7f7f",
+          "#e377c2", "#17becf", "#8c564b", "#bcbd22", "#2f6f9f"]
 RULES_COLOR = {"full": "#4c9be8", "bare": "#e69f00", "open": "#2ca58d"}
 GRID = "rgba(128,128,128,0.28)"
 
@@ -362,8 +363,11 @@ def fig_b(season: pd.DataFrame):
 def fig_c(season: pd.DataFrame):
     go = _go()
     from plotly.subplots import make_subplots
-    title = ("(c) Learning curve: team score per round by rules, per number of agents "
+    title = ("(c) Learning curve: round score / that map's mean round score over all 2-agent "
+             "full-rules seasons<br>(1.0 = that baseline), by rules, per number of agents "
              "(mean over seasons; hover = n; error bars = SE)")
+    if not season.empty:
+        season = normalise_rounds(season)
     rc = [c for c in season.columns if re.fullmatch(r"round_\d+", c)]
     if season.empty or not rc:
         return _empty(title)
@@ -381,11 +385,11 @@ def fig_c(season: pd.DataFrame):
                 error_y=dict(type="data", array=[0 if math.isnan(s[1]) else s[1] for s in stats],
                              color="rgba(128,128,128,0.7)"),
                 customdata=[s[2] for s in stats],
-                hovertemplate=f"{rules} ({n} agents)<br>round %{{x}}: %{{y:.2f}} (n=%{{customdata}})<extra></extra>"),
+                hovertemplate=f"{rules} ({n} agents)<br>round %{{x}}: %{{y:.2f}}x (n=%{{customdata}})<extra></extra>"),
                 1, ci)
     _base_layout(fig, title)
     fig.update_xaxes(title_text="round", dtick=1)
-    fig.update_yaxes(title_text="team score in round", col=1)
+    fig.update_yaxes(title_text="round score / map baseline", col=1)
     return fig
 
 
@@ -497,12 +501,57 @@ def fig_g(season: pd.DataFrame):
         color_map=RULES_COLOR, color_order=RULES_ORDER)
 
 
-def headline_tables(season: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    two = season[season.n_agents == 2]
-    t1 = summarise(two, ["team", "rules"], "team_total") if len(two) else pd.DataFrame()
-    ds = season[season.team.str.startswith("DeepSeek×")]
-    t2 = summarise(ds, ["n_agents", "rules"], "team_total") if len(ds) else pd.DataFrame()
-    return t1, t2
+def matched_table(df: pd.DataFrame, within: list[str], cond: str, value: str = "team_total"):
+    """For each group in `within`, compare the values of `cond`: only the maps where EVERY
+    condition present in the group has data are pooled (seasons pooled over those maps). Returns
+    (table, [(group, maps)]) so the caller can state the maps."""
+    rows, maps_used = [], []
+    for key, g in df.groupby(within, sort=True):
+        key = key if isinstance(key, tuple) else (key,)
+        conds = sorted(g[cond].unique(), key=lambda c: (RULES_ORDER.index(c) if c in RULES_ORDER else 9, c))
+        maps = sorted(set.intersection(*[set(g[g[cond] == c].level) for c in conds]))
+        maps_used.append((" / ".join(map(str, key)), maps, len(set(g.level))))
+        for c in conds:
+            m, se, n = mean_se(g[(g[cond] == c) & g.level.isin(maps)][value])
+            rows.append({**dict(zip(within, key)), cond: c, "mean": m, "se": se, "n": n,
+                         "maps": len(maps)})
+    return pd.DataFrame(rows, columns=[*within, cond, "mean", "se", "n", "maps"]), maps_used
+
+
+def per_map_table(season: pd.DataFrame) -> pd.DataFrame:
+    if season.empty:
+        return pd.DataFrame()
+    return summarise(season, ["team", "level", "rules", "n_agents"], "team_total")
+
+
+def paired_full_minus_bare(season: pd.DataFrame) -> pd.DataFrame:
+    """Per team: on every map with both full and bare seasons, mean(full) - mean(bare); then the
+    mean of those per-map differences over maps, with SE over maps (NaN for one map)."""
+    rows = []
+    for team, g in season.groupby("team", sort=True):
+        pm = g.groupby(["level", "rules"]).team_total.mean().unstack("rules")
+        if "full" not in pm or "bare" not in pm:
+            continue
+        d = (pm["full"] - pm["bare"]).dropna()
+        if d.empty:
+            continue
+        m, se, n = mean_se(d)
+        rows.append({"team": team, "mean full-bare": m, "se (over maps)": se, "maps": n,
+                     "which maps": ", ".join(d.index),
+                     "per-map diff": ", ".join(f"{v:+.0f}" for v in d)})
+    return pd.DataFrame(rows)
+
+
+def normalise_rounds(season: pd.DataFrame) -> pd.DataFrame:
+    """round_k divided by the mean round score of that map's 2-agent full-rules seasons (all
+    rounds pooled); maps without such a baseline are dropped."""
+    rc = [c for c in season.columns if re.fullmatch(r"round_\d+", c)]
+    base_rows = season[(season.n_agents == 2) & (season.rules == "full")]
+    base = base_rows.groupby("level")[rc].apply(lambda g: float(np.nanmean(g.to_numpy(dtype=float))))
+    out = season[season.level.isin(base.index)].copy()
+    for c in rc:
+        out[c] = out[c] / out.level.map(base)
+    return out
 
 
 CSS = """
@@ -531,13 +580,27 @@ def _table_html(df: pd.DataFrame) -> str:
     return d.to_html(index=False, border=0)
 
 
+def _plain_html(df: pd.DataFrame, nd: int = 1) -> str:
+    if df.empty:
+        return "<p class='note'>no data yet</p>"
+    return df.to_html(index=False, border=0, float_format=lambda v: f"{v:.{nd}f}", na_rep="-")
+
+
 def build_report(seasons: list[Season], agent: pd.DataFrame, season: pd.DataFrame,
                  skipped: list[str]) -> str:
     import plotly
     figs = [fig_a(season), fig_b(season), fig_c(season), fig_d(agent), fig_e(seasons),
             fig_f(agent), fig_g(season)]
     version = plotly.offline.get_plotlyjs_version()
-    t1, t2 = headline_tables(season)
+    two = season[season.n_agents == 2]
+    ds = season[season.team.str.startswith("DeepSeek×")]
+    t1, m1 = matched_table(two, ["team"], "rules") if len(two) else (pd.DataFrame(), [])
+    t2, m2 = matched_table(ds, ["rules"], "n_agents") if len(ds) else (pd.DataFrame(), [])
+    t3, t4 = paired_full_minus_bare(season), per_map_table(season)
+
+    def cap(ms):
+        return "; ".join(f"{k}: {', '.join(m) or 'no map with all conditions'} (of {tot} maps)"
+                         for k, m, tot in ms)
     parts = [f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>Undercooked analysis</title>"
              f"<meta name='color-scheme' content='light dark'><style>{CSS}</style>"
              f"<script src='https://cdn.plot.ly/plotly-{version}.min.js' charset='utf-8'></script></head><body>",
@@ -546,8 +609,16 @@ def build_report(seasons: list[Season], agent: pd.DataFrame, season: pd.DataFram
              f"{len(skipped)} logs skipped (not finished): {html.escape(', '.join(skipped) or 'none')}. "
              "Error bars are standard errors over seasons; cells with one season show no bar. "
              "The directive rate is a lexical proxy (see analysis/metrics.py).</p>",
-             "<h2>Mean team total, 2 agents, by team and rules</h2>", _table_html(t1),
-             "<h2>Mean team total, DeepSeek self-play, by number of agents and rules</h2>", _table_html(t2)]
+             "<h2>Headline: full minus bare, within map</h2>",
+             "<p class='note'>Per team: on each map with both conditions, mean(full) - mean(bare); "
+             "then mean and SE over those maps.</p>", _plain_html(t3, 1),
+             "<h2>Mean team total by rules, 2 agents (matched maps)</h2>",
+             f"<p class='note'>Pooled only over maps where every rules condition of that team has data. "
+             f"{html.escape(cap(m1))}</p>", _table_html(t1),
+             "<h2>Mean team total by number of agents, DeepSeek self-play (matched maps)</h2>",
+             f"<p class='note'>Per rules, pooled only over maps where every n_agents has data. "
+             f"{html.escape(cap(m2))}</p>", _table_html(t2),
+             "<h2>Per map: team x map x rules x n_agents</h2>", _table_html(t4)]
     for i, fig in enumerate(figs):
         parts.append("<div class='fig'>" + fig.to_html(full_html=False, include_plotlyjs=False,
                                                       div_id=f"fig{i}", config={"displaylogo": False}) + "</div>")

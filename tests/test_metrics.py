@@ -92,3 +92,31 @@ def test_mean_se_and_unequal_epochs():
                        "v": [1.0, 2.0, 3.0, 4.0, 6.0]})
     agg = metrics.summarise(df, ["team", "rules"], "v").set_index("team")
     assert agg.n.to_dict() == {"A+B": 3, "A+C": 2}
+
+
+def _seasons():
+    rows = []
+    for lv, f, b in (("m1", 100, 80), ("m1", 120, 100), ("m2", 200, 190), ("m3", 400, 400)):
+        rows.append(dict(team="A×2", level=lv, rules="full", n_agents=2, team_total=f))
+        if lv != "m3":
+            rows.append(dict(team="A×2", level=lv, rules="bare", n_agents=2, team_total=b))
+    rows.append(dict(team="A×2", level="m1", rules="open", n_agents=2, team_total=500))
+    for r in rows:
+        r.update(round_1=r["team_total"] / 3, round_2=r["team_total"] / 3, round_3=r["team_total"] / 3)
+    return pd.DataFrame(rows)
+
+
+def test_matched_and_paired_tables_ignore_unmatched_maps():
+    df = _seasons()
+    t, maps = metrics.matched_table(df, ["team"], "rules")
+    assert maps[0][1] == ["m1"]                       # only m1 has full, bare and open
+    assert t.set_index("rules").n.to_dict() == {"full": 2, "bare": 2, "open": 1}
+    p = metrics.paired_full_minus_bare(df).iloc[0]
+    assert p["maps"] == 2 and p["mean full-bare"] == pytest.approx((20 + 10) / 2)  # m1: 110-90, m2: 10
+    assert p["se (over maps)"] == pytest.approx(5.0)
+
+
+def test_normalise_rounds_by_map_baseline():
+    out = metrics.normalise_rounds(_seasons())
+    m3 = out[out.level == "m3"]
+    assert m3.round_1.tolist() == pytest.approx([1.0])   # its own map baseline
