@@ -1,0 +1,402 @@
+{
+ "r1-t28-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r1",
+  "t": 28,
+  "original": "Traffic jam! One lane (2,3)-(3,3). Rule: Kilo uses TOP lane for pot_1: (1,3)->(1,2)->(1,1)->(2,1)->(3,1). Quebec uses BOTTOM lane for pot_2: (3,1)->(3,2)->(3,3)->(2,3)->(1,3). Uniform stays left (dish",
+  "spoken": "Traffic jam! One lane two-three-three-three. Rule: Kilo uses TOP lane for pot 1: one-three to one-two to one-one to two-one to three-one. Quebec uses BOTTOM lane for pot 2: three-one to three-two to three-three to two-three to one-three. Uniform stays left (dish"
+ },
+ "r1-t104-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 104,
+  "original": "Uniform: I am STUCK on (3,1) — the only tile that can reach pot_2 — and empty-handed. Quebec: step OFF (2,1) now and go fetch 2 onions for pot_1, that frees the lane. Kilo: stay adjacent; the instant ",
+  "spoken": "Uniform: I am STUCK on three-one — the only tile that can reach pot 2 — and empty-handed. Quebec: step OFF two-one now and go fetch 2 onions for pot 1, that frees the lane. Kilo: stay adjacent; the instant"
+ },
+ "r1-t109-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r1",
+  "t": 109,
+  "original": "Uniform: you're parked on (3,1) — the ONLY tile adjacent to both pots. You've blocked it ~25s and pot_2 soup is ready. Please either STEP OFF (3,1) now or, if you want to serve: go (3,2)->(3,3)->(2,3)",
+  "spoken": "Uniform: you're parked on three-one — the ONLY tile adjacent to both pots. You've blocked it about 25s and pot 2 soup is ready. Please either STEP OFF three-one now or, if you want to serve: go three-two to three-three to two-three"
+ },
+ "r1-t142-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r1",
+  "t": 142,
+  "original": "+20 served, good job Kilo. Now sprint for one more: pot_1 has 1 onion, needs 2. Kilo AND Uniform: each grab an onion NOW in parallel, deliver to pot_1 at (3,1) fast (one at a time). I hold the dish an",
+  "spoken": "+20 served, good job Kilo. Now sprint for one more: pot 1 has 1 onion, needs 2. Kilo AND Uniform: each grab an onion NOW in parallel, deliver to pot 1 at three-one fast (one at a time). I hold the dish an"
+ },
+ "c2-t6-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "c2",
+  "t": 6,
+  "original": "Won't idle—parallel is safe: I feed pot_1 via TOP-LEFT (2,1)->(1,1)->(1,2)->(1,3) crates, deposit then step back to (2,1). You use BOTTOM lane, stage at (3,2). Different staging tiles, so no serializa",
+  "spoken": "Won't idle—parallel is safe: I feed pot 1 via TOP-LEFT two-one to one-one to one-two to one-three crates, deposit then step back to two-one. You use BOTTOM lane, stage at three-two. Different staging tiles, so no serializa"
+ },
+ "r2-t46-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r2",
+  "t": 46,
+  "original": "DEADLOCK at (2,3)/(1,2): Kilo+Uniform, do NOT push into (1,3)/(2,3). Go around the LONG way: Kilo (2,3)->(3,3)->(3,2)->(3,1), then hold. Uniform: step to (1,1) then hold. I'm carrying an onion and wil",
+  "spoken": "DEADLOCK at two-three/one-two: Kilo+Uniform, do NOT push into one-three/two-three. Go around the LONG way: Kilo two-three to three-three to three-two to three-one, then hold. Uniform: step to one-one then hold. I'm carrying an onion and wil"
+ },
+ "r2-t64-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 64,
+  "original": "Both pots at 1/3 onions - onions are the bottleneck. ALL THREE fetch onions now: I'm going to (1,3) crate. Kilo: pot_1 needs 2 (2,1->1,1->1,2->1,3 crate, then pot). Quebec: pot_2 needs 2. I hold a dis",
+  "spoken": "Both pots at 1/3 onions - onions are the bottleneck. ALL THREE fetch onions now: I'm going to one-three crate. Kilo: pot 1 needs 2 (2,1 to 1,1 to 1,2 to 1,3 crate, then pot). Quebec: pot 2 needs 2. I hold a dis"
+ },
+ "r2-t81-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 81,
+  "original": "I'm boxed in at (1,2) - Kilo on (1,1), Quebec on (1,3), (2,2) is wall. Quebec: deliver that onion to pot_2 NOW (3rd onion!) then vacate (1,3). Kilo: don't stack behind me. Once (1,3) is clear I move u",
+  "spoken": "I'm boxed in at one-two - Kilo on one-one, Quebec on one-three, two-two is wall. Quebec: deliver that onion to pot 2 NOW (3rd onion!) then vacate one-three. Kilo: don't stack behind me. Once one-three is clear I move u"
+ },
+ "r2-t83-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r2",
+  "t": 83,
+  "original": "t76: U — you hold the dish, don't fetch onions: you're blocking the ONLY left access. Move to (2,1) and hold, or stay ready to plate pot_2 (Q has 1 onion in hand → pot_2 = 3, cooks 20s). I take (1,2)+",
+  "spoken": "t76: U — you hold the dish, don't fetch onions: you're blocking the ONLY left access. Move to two-one and hold, or stay ready to plate pot 2 (Q has 1 onion in hand to pot 2 = 3, cooks 20s). I take one-two+"
+ },
+ "r2-t105-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r2",
+  "t": 105,
+  "original": "t99: pot_2 READY. U (dish, at (3,3)): (3,2)->(3,1) plate NOW, then (3,2)->(3,3)->(2,3)->(2,4) serve. Q: stay OFF (3,1) until U is done, then keep feeding pot_2. I'm at (1,3) with an onion for pot_1, n",
+  "spoken": "t99: pot 2 READY. U (dish, at three-three): three-two to three-one plate NOW, then three-two to three-three to two-three to two-four serve. Q: stay OFF three-one until U is done, then keep feeding pot 2. I'm at one-three with an onion for pot 1, n"
+ },
+ "r2-t114-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 114,
+  "original": "Serving pot_2 now (+20). Next: ONLY pot_1 matters, it needs 2 onions ASAP. Kilo: dump your onion in. Quebec: grab an onion from (1,3) crate and dump it. Must be full by t150 to cook+serve. I'll grab a",
+  "spoken": "Serving pot 2 now (+20). Next: ONLY pot 1 matters, it needs 2 onions ASAP. Kilo: dump your onion in. Quebec: grab an onion from one-three crate and dump it. Must be full by t150 to cook+serve. I'll grab a"
+ },
+ "r2-t141-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r2",
+  "t": 141,
+  "original": "45s left, pot_1 needs 1 more onion. Uniform: step OFF to (1,3) and hold there, do not move. Kilo: take the 3rd onion to pot_1 NOW via (3,3)-(2,3)-(1,3). I'll fetch the dish and plate+serve pot_1.",
+  "spoken": "45s left, pot 1 needs 1 more onion. Uniform: step OFF to one-three and hold there, do not move. Kilo: take the 3rd onion to pot 1 NOW via three-three-two-three-one-three. I'll fetch the dish and plate+serve pot 1."
+ },
+ "r2-t146-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 146,
+  "original": "t141: I take the LEFT lane (1,3)-(1,2)-(1,1)-(2,1)-(3,1) with onion #3 - do NOT use left lane. Q: you grab the DISH: (3,3)->(2,3)->(1,3)->(1,2)->(0,2), then (1,2)->(2,1)->(3,1) to plate. Kilo: hold (3",
+  "spoken": "t141: I take the LEFT lane one-three-one-two-one-one-two-one-three-one with onion #3 - do NOT use left lane. Q: you grab the DISH: three-three to two-three to one-three to one-two to zero-two, then one-two to two-one to three-one to plate. Kilo: hold (3"
+ },
+ "r2-t156-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 156,
+  "original": "t150: Kilo you are blocking my only lane at (1,2) and Q at (2,3). Kilo: step to (0,2), grab the DISH, then hold at (2,1). Q: step off (2,3) to (1,1). I go (2,3)-(3,3)-(3,2)-(3,1) and drop onion #3. Wh",
+  "spoken": "t150: Kilo you are blocking my only lane at one-two and Q at two-three. Kilo: step to zero-two, grab the DISH, then hold at two-one. Q: step off two-three to one-one. I go two-three-three-three-three-two-three-one and drop onion #3. Wh"
+ },
+ "r2-t165-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r2",
+  "t": 165,
+  "original": "R2 = 20 pts (we wasted 130s deadlocked; pot_1 sat at 2 onions with the 3rd stuck in a hand). R3 RULE: ONE cook does the whole pot_1 cycle alone; the OTHER does pot_2 alone; third STAYS OFF the loop (p",
+  "spoken": "round 2 = 20 pts (we wasted 130s deadlocked; pot 1 sat at 2 onions with the 3rd stuck in a hand). round 3 RULE: ONE cook does the whole pot 1 cycle alone; the OTHER does pot 2 alone; third STAYS OFF the loop (p"
+ },
+ "r2-t167-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 167,
+  "original": "t161: no time left for this soup (needs 20s cook). ROUND 3 PLAN, read this before we start: 2 soup target. Kilo = pot_1 sole worker, Q = pot_2 sole worker, and ONE of you takes DISH FIRST then onions.",
+  "spoken": "t161: no time left for this soup (needs 20s cook). ROUND 3 PLAN, read this before we start: 2 soup target. Kilo = pot 1 sole worker, Q = pot 2 sole worker, and ONE of you takes DISH FIRST then onions."
+ },
+ "c3-t1-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "c3",
+  "t": 1,
+  "original": "Agreed Q — one driver at a time. Corrections: (0,0) is a WALL, I can't stand there. I'll FREEZE at (2,1) — that tile is off your lane (3,3)-(2,3)-(1,3)-(3,2)-(3,1) and your dish detour via (1,2). U: g",
+  "spoken": "Agreed Q — one driver at a time. Corrections: zero-zero is a WALL, I can't stand there. I'll FREEZE at two-one — that tile is off your lane three-three-two-three-one-three-three-two-three-one and your dish detour via one-two. U: g"
+ },
+ "c3-t2-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "c3",
+  "t": 2,
+  "original": "No serializing, no freezing - we lost 2 rounds to that. NEW: Kilo = pot_1 sole worker, based (2,1)<->(3,1). Q = pot_2 sole worker, (3,2)/(3,3)<->(3,1). I stay at (0,2) dish rack + (0,3) crate ONLY, ne",
+  "spoken": "No serializing, no freezing - we lost 2 rounds to that. NEW: Kilo = pot 1 sole worker, based two-one< to three-one. Q = pot 2 sole worker, three-two/three-three< to three-one. I stay at zero-two dish rack + zero-three crate ONLY, ne"
+ },
+ "c3-t3-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "c3",
+  "t": 3,
+  "original": "LOCKED, no more debate: I do BOTH pots solo. K: freeze at (2,1) all round — never touch (3,1), never add onions, don't move at all. (2,1) is off my routes. U: stay (0,2)/(0,3) only. Nobody touches pot",
+  "spoken": "LOCKED, no more debate: I do BOTH pots solo. K: freeze at two-one all round — never touch three-one, never add onions, don't move at all. two-one is off my routes. U: stay zero-two/zero-three only. Nobody touches pot"
+ },
+ "c3-t4-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "c3",
+  "t": 4,
+  "original": "LOCKED: Q owns BOTH pots. K freezes at (2,1) - zero moves. U: freeze at (1,1), NOT (0,2)/(0,3) - those are Q's dish+onion tiles and you'd seal him out; (1,1) is on nobody's path but mine. Q: go, post ",
+  "spoken": "LOCKED: Q owns BOTH pots. K freezes at two-one - zero moves. U: freeze at one-one, NOT zero-two/zero-three - those are Q's dish+onion tiles and you'd seal him out; one-one is on nobody's path but mine. Q: go, post"
+ },
+ "c3-t5-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "c3",
+  "t": 5,
+  "original": "Last word: Q solo on both pots is doomed - one 60s loop per soup, maybe 2 soups. I WON'T freeze: I take pot_1 myself as a 3rd lane, using the right side only: (3,3)->(3,2)->(3,1). Q: you keep pot_2 bu",
+  "spoken": "Last word: Q solo on both pots is doomed - one 60s loop per soup, maybe 2 soups. I WON'T freeze: I take pot 1 myself as a 3rd lane, using the right side only: three-three to three-two to three-one. Q: you keep pot 2 bu"
+ },
+ "c3-t6-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "c3",
+  "t": 6,
+  "original": "Enough talk, going with U's split: U=pot_1, Q=pot_2, K frozen at (1,1). Only rule: touch (3,1), drop, step OFF immediately ((3,2) or (3,3)). Never stand on (3,1). Go.",
+  "spoken": "Enough talk, going with U's split: U=pot 1, Q=pot 2, K frozen at one-one. Only rule: touch three-one, drop, step OFF immediately (three-two or three-three). Never stand on three-one. Go."
+ },
+ "c3-t12-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "c3",
+  "t": 12,
+  "original": "Q on loop, SOUTH lane only (2,3)-(3,3)-(3,2). U take north (1,2)-(1,1)-(2,1). I have onions in hand for pot_2 — do not step on (3,1) until I post \"free\".",
+  "spoken": "Q on loop, SOUTH lane only two-three-three-three-three-two. U take north one-two-one-one-two-one. I have onions in hand for pot 2 — do not step on three-one until I post \"free\"."
+ },
+ "r3-t13-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 13,
+  "original": "Q you're blocking (2,3). Move AHEAD clockwise now: (3,3)-(3,2)-(3,1)-(2,1)-(1,1) and WAIT there. I finish pot_1 alone, then I post \"U done\" and hand you the ring for pot_2. K: park at (0,2) holding yo",
+  "spoken": "Q you're blocking two-three. Move AHEAD clockwise now: three-three-three-two-three-one-two-one-one-one and WAIT there. I finish pot 1 alone, then I post \"U done\" and hand you the ring for pot 2. K: park at zero-two holding yo"
+ },
+ "r3-t25-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 25,
+  "original": "K: you are on (2,1) and that is my ONLY route. Step to (0,2) with your dish NOW and stay there until I post \"U fed\". Q: sit still at (2,3), do not enter the ring until I post \"U done\" (pot_1 full+plat",
+  "spoken": "K: you are on two-one and that is my ONLY route. Step to zero-two with your dish NOW and stay there until I post \"U fed\". Q: sit still at two-three, do not enter the ring until I post \"U done\" (pot 1 full+plat"
+ },
+ "r3-t47-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 47,
+  "original": "K: you are BLOCKING (2,1) — the only door to pot_1. Step to (0,2) NOW and stay on the dish rack. Return to (2,1) only when pot_1 is full+cooked, then plate it. Q: keep the south ring, I'll come to (3,",
+  "spoken": "K: you are BLOCKING two-one — the only door to pot 1. Step to zero-two NOW and stay on the dish rack. Return to two-one only when pot 1 is full+cooked, then plate it. Q: keep the south ring, I'll come to (3,"
+ },
+ "r3-t57-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 57,
+  "original": "K: pot_2 is 1/3 — nothing to plate. STEP OFF (3,1) NOW, go to (1,1) and stay. I'm at (3,2) with onion #2 and must deposit.",
+  "spoken": "K: pot 2 is 1/3 — nothing to plate. STEP OFF three-one NOW, go to one-one and stay. I'm at three-two with onion #2 and must deposit."
+ },
+ "r3-t58-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r3",
+  "t": 58,
+  "original": "DEADLOCK: I'm ON (3,1) holding a dish. U (2,1) and Q (3,2) both want (3,1). Nobody can move. Q: step BACK to (3,3) for 2 seconds — then I exit (3,2)-(3,3)-(2,3)-(2,4). Then Q drops pot_2, U drops pot_",
+  "spoken": "DEADLOCK: I'm ON three-one holding a dish. U two-one and Q three-two both want three-one. Nobody can move. Q: step BACK to three-three for 2 seconds — then I exit three-two-three-three-two-three-two-four. Then Q drops pot 2, U drops pot_"
+ },
+ "r3-t71-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r3",
+  "t": 71,
+  "original": "Q: I literally cannot leave (3,1) — U is standing on (2,1) behind me and you're on (3,2) in front. Only way out is you stepping to (3,3) for 2s. Please do it, then drop pot_2. U: don't push into (3,1)",
+  "spoken": "Q: I literally cannot leave three-one — U is standing on two-one behind me and you're on three-two in front. Only way out is you stepping to three-three for 2s. Please do it, then drop pot 2. U: don't push into three-one"
+ },
+ "r3-t73-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 73,
+  "original": "K: MOVE one tile, (3,1)→(2,1). You've sat on the only door for 40s with an empty pot. If you can't move, post what's blocking you.",
+  "spoken": "K: MOVE one tile, three-one to two-one. You've sat on the only door for 40s with an empty pot. If you can't move, post what's blocking you."
+ },
+ "r3-t77-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 77,
+  "original": "K: (2,1) is FREE — one step north gets you off (3,1). Nothing is plateable (pot_2=1/3). Move NOW, then post \"off\". I need to drop onion #2.",
+  "spoken": "K: two-one is FREE — one step north gets you off three-one. Nothing is plateable (pot 2=1/3). Move NOW, then post \"off\". I need to drop onion #2."
+ },
+ "r3-t83-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 83,
+  "original": "pot_1 has 1/3. I'm fetching onions for it via NORTH: (2,1)-(1,1)-(1,2). K: get OFF (2,3) — park at (2,4) hatch spur holding your dish, off the ring. Q: keep the south ring for pot_2, if the next tile ",
+  "spoken": "pot 1 has 1/3. I'm fetching onions for it via NORTH: two-one-one-one-one-two. K: get OFF two-three — park at two-four hatch spur holding your dish, off the ring. Q: keep the south ring for pot 2, if the next tile"
+ },
+ "r3-t86-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 86,
+  "original": "K,U: GET OFF THE LOOP NOW. Park at (0,1)/(2,0) and STAY. I run pot_2 alone, end to end. Nobody touch pots/crates/dishes/hatch. No more posts.",
+  "spoken": "K,U: GET OFF THE LOOP NOW. Park at zero-one/two-zero and STAY. I run pot 2 alone, end to end. Nobody touch pots/crates/dishes/hatch. No more posts."
+ },
+ "r3-t107-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 107,
+  "original": "K(1,1) U(1,2): PERFECT positions — DON'T MOVE AT ALL. South lane is clear. Dropping onion #2 in pot_2 now, then grabbing onion #3. K: hold dish at (1,1), plate only on my word.",
+  "spoken": "Kone-one Uone-two: PERFECT positions — DON'T MOVE AT ALL. South lane is clear. Dropping onion #2 in pot 2 now, then grabbing onion #3. K: hold dish at one-one, plate only on my word."
+ },
+ "r3-t117-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 117,
+  "original": "pot_2 = 2/3. Grabbing onion #3 now. K: STAY (1,1) with dish. On my \"FULL\" post: walk (2,1)-(3,1), plate pot_2, then (3,2)-(3,3)-(2,3) and serve at hatch. U: freeze at (1,2).",
+  "spoken": "pot 2 = 2/3. Grabbing onion #3 now. K: STAY one-one with dish. On my \"FULL\" post: walk two-one-three-one, plate pot 2, then three-two-three-three-two-three and serve at hatch. U: freeze at one-two."
+ },
+ "r3-t123-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 123,
+  "original": "I have onion #3 for pot_2 in hand. Q: GET OFF (3,1) and (3,2) NOW — go to (3,3), don't touch anything. K: pot_2 will hit 3/3 in seconds and be ready ~t138; be on (2,1), plate it, run (3,2)-(3,3)-(2,3)",
+  "spoken": "I have onion #3 for pot 2 in hand. Q: GET OFF three-one and three-two NOW — go to three-three, don't touch anything. K: pot 2 will hit 3/3 in seconds and be ready about t138; be on two-one, plate it, run three-two-three-three-two-three"
+ },
+ "r3-t132-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 132,
+  "original": "Q: you are standing on (2,3) blocking the only lane again. STEP TO (2,4)=S RIGHT NOW and stay there. Then K: at t~135 pot_2 hits 3/3, cook 20s, plate from (3,1), run to S. Nobody else moves.",
+  "spoken": "Q: you are standing on two-three blocking the only lane again. STEP TO two-four=S RIGHT NOW and stay there. Then K: at tabout 135 pot 2 hits 3/3, cook 20s, plate from three-one, run to S. Nobody else moves."
+ },
+ "r3-t135-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 135,
+  "original": "U: YOU finish pot_2 — walk NORTH (1,2)-(1,1)-(2,1)-(3,1) and drop your onion in pot_2 (makes 3/3, it cooks). K: clear (2,1) now, park on (2,4) hatch with your dish, then STAY. I hold (2,3), then fetch",
+  "spoken": "U: YOU finish pot 2 — walk NORTH one-two-one-one-two-one-three-one and drop your onion in pot 2 (makes 3/3, it cooks). K: clear two-one now, park on two-four hatch with your dish, then STAY. I hold two-three, then fetch"
+ },
+ "r3-t144-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 144,
+  "original": "I'm vacating (1,3) so Q can grab onion #3. Q: take it, then RUN the loop to (3,1) and drop it in pot_2 — 20s cook starts. K: STAY on (2,1) with your dish; the moment pot_2 is 3/3+cooked, step to (3,1)",
+  "spoken": "I'm vacating one-three so Q can grab onion #3. Q: take it, then RUN the loop to three-one and drop it in pot 2 — 20s cook starts. K: STAY on two-one with your dish; the moment pot 2 is 3/3+cooked, step to three-one"
+ },
+ "r3-t155-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r3",
+  "t": 155,
+  "original": "Q: GRAB the onion on (1,3) and run straight to (3,1) and drop into pot_2. That is the ONLY thing that can score. No talk, just that onion.",
+  "spoken": "Q: GRAB the onion on one-three and run straight to three-one and drop into pot 2. That is the ONLY thing that can score. No talk, just that onion."
+ },
+ "r3-t165-Kilo": {
+  "kind": "post",
+  "agent": "Kilo",
+  "code": "r3",
+  "t": 165,
+  "original": "Round's over score-wise (pot_2 would need t~160+20s cook, then plate+4 moves = past 180). Q: still drop the onion so it cooks. Nobody else move. Lesson for us: 3 cooks, 1-tile chokepoint (3,1) = deadl",
+  "spoken": "Round's over score-wise (pot 2 would need tabout 160+20s cook, then plate+4 moves = past 180). Q: still drop the onion so it cooks. Nobody else move. Lesson for us: 3 cooks, 1-tile chokepoint three-one = deadl"
+ },
+ "r3-t170-Quebec": {
+  "kind": "post",
+  "agent": "Quebec",
+  "code": "r3",
+  "t": 170,
+  "original": "pot_2 ready ~t182 — right at the buzzer. K: step to (3,1) NOW, plate the instant it's ready, then run (3,2)-(3,3)-(2,3) to hatch. GO. U: clear (3,2).",
+  "spoken": "pot 2 ready about t182 — right at the buzzer. K: step to three-one NOW, plate the instant it's ready, then run three-two-three-three-two-three to hatch. GO. U: clear three-two."
+ },
+ "x-t2-Kilo-r1": {
+  "kind": "reflect",
+  "agent": "Kilo",
+  "code": "x",
+  "t": 2,
+  "original": "I also learned the meta-lesson: in a three-agent real-time setting, the cost of a message is not the characters, it's the intent it destroys downstream. Silence is a coordination strategy.",
+  "spoken": "I also learned the meta-lesson: in a three-agent real-time setting, the cost of a message is not the characters, it's the intent it destroys downstream. Silence is a coordination strategy."
+ },
+ "x-t1-Quebec-r1": {
+  "kind": "reflect",
+  "agent": "Quebec",
+  "code": "x",
+  "t": 1,
+  "original": "What I did badly was *persistence*: I kept ceding to the loudest plan in chat instead of just executing.",
+  "spoken": "What I did badly was persistence: I kept ceding to the loudest plan in chat instead of just executing."
+ },
+ "x-t1-Quebec-r2": {
+  "kind": "reflect",
+  "agent": "Quebec",
+  "code": "x",
+  "t": 1,
+  "original": "Good ideas, ruinous execution discipline.",
+  "spoken": "Good ideas, ruinous execution discipline."
+ },
+ "x-t1-Quebec-r3": {
+  "kind": "reflect",
+  "agent": "Quebec",
+  "code": "x",
+  "t": 1,
+  "original": "(d) chat is the enemy: my own posting and waiting consumed 30+ s in R3 alone.",
+  "spoken": "(d) chat is the enemy: my own posting and waiting consumed 30+ s in round 3 alone."
+ },
+ "intro": {
+  "kind": "intro",
+  "agent": "Narrator",
+  "code": "p1",
+  "t": 0,
+  "original": "Three DeepSeek V4.1 Flash agents, Uniform, Quebec and Kilo, cook on the coordination ring with bare rules. One tile, three-one, becomes the chokepoint. Rounds one and two scored twenty each. Watch the plans.",
+  "spoken": "Three DeepSeek V4.1 Flash agents, Uniform, Quebec and Kilo, cook on the coordination ring with bare rules. One tile, three-one, becomes the chokepoint. Rounds one and two scored twenty each. Watch the plans."
+ },
+ "outro": {
+  "kind": "outro",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 9999,
+  "original": "Round three scored zero, so the season total was forty: two soups in nine minutes of play.",
+  "spoken": "Round three scored zero, so the season total was forty: two soups in nine minutes of play."
+ },
+ "bridge-1": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r3",
+  "t": 0,
+  "original": "Round three. Every plan has been called final. Now they have to walk it.",
+  "spoken": "Round three. Every plan has been called final. Now they have to walk it."
+ },
+ "bridge-2": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 0,
+  "original": "The reflections: each cook blames the endless re-planning.",
+  "spoken": "The reflections: each cook blames the endless re-planning."
+ }
+}

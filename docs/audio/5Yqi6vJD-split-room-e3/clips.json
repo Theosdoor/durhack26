@@ -1,0 +1,306 @@
+{
+ "c1-t0-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "c1",
+  "t": 0,
+  "original": "I'll collect onions and deliver them to pots. You get dishes and plate the soup. I'll deliver the plated soup to the hatch.",
+  "spoken": "I'll collect onions and deliver them to pots. You get dishes and plate the soup. I'll deliver the plated soup to the hatch."
+ },
+ "c1-t1-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "c1",
+  "t": 1,
+  "original": "Sounds good. I'll plate and leave soups on the counters (3,1)-(3,3) for you to take to the hatch.",
+  "spoken": "Sounds good. I'll plate and leave soups on the counters three-one-three-three for you to take to the hatch."
+ },
+ "r1-t46-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r1",
+  "t": 46,
+  "original": "Zulu, please put onions directly into the pots (5,0) and (6,1), not the counters!",
+  "spoken": "Zulu, please put onions directly into the pots five-zero and six-one, not the counters!"
+ },
+ "r1-t83-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r1",
+  "t": 83,
+  "original": "Zulu, pots are at (5,0) and (6,1). Put the onions there! I can't clear the counters because I'm holding a dish.",
+  "spoken": "Zulu, pots are at five-zero and six-one. Put the onions there! I can't clear the counters because I'm holding a dish."
+ },
+ "r1-t101-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r1",
+  "t": 101,
+  "original": "Zulu, clear the counters (3,1), (3,2), (3,3) IMMEDIATELY! I am stuck holding a dish and can't do anything until a counter is empty.",
+  "spoken": "Zulu, clear the counters three-one, three-two, three-three IMMEDIATELY! I am stuck holding a dish and can't do anything until a counter is empty."
+ },
+ "r1-t138-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r1",
+  "t": 138,
+  "original": "ZULU! CLEAR THE COUNTERS! (3,1), (3,2), (3,3). I CANNOT MOVE OR PLATE ANYTHING UNTIL YOU CLEAR THEM! Put onions in pots (5,0) or (6,1)!",
+  "spoken": "ZULU! CLEAR THE COUNTERS! three-one, three-two, three-three. I CANNOT MOVE OR PLATE ANYTHING UNTIL YOU CLEAR THEM! Put onions in pots five-zero or six-one!"
+ },
+ "c2-t0-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "c2",
+  "t": 0,
+  "original": "Zulu, let's try again. PLEASE put onions DIRECTLY in pots (5,0) and (6,1). DO NOT put onions on counters. I'll plate and leave soup on counters for you to deliver to the hatch.",
+  "spoken": "Zulu, let's try again. PLEASE put onions DIRECTLY in pots five-zero and six-one. DO NOT put onions on counters. I'll plate and leave soup on counters for you to deliver to the hatch."
+ },
+ "c2-t1-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "c2",
+  "t": 1,
+  "original": "Mike, I literally cannot reach the pots. I will put onions on counters (3,1)-(3,3) and you take them to the pots. I'll deliver plated soup to the hatch. Let's do this!",
+  "spoken": "Mike, I literally cannot reach the pots. I will put onions on counters three-one-three-three and you take them to the pots. I'll deliver plated soup to the hatch. Let's do this!"
+ },
+ "r2-t63-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 63,
+  "original": "I'm clearing the counters. I will keep onions at (3,1) and (3,3), leaving (3,2) open for you to plate the soup.",
+  "spoken": "I'm clearing the counters. I will keep onions at three-one and three-three, leaving three-two open for you to plate the soup."
+ },
+ "r2-t101-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 101,
+  "original": "Mike, please clear counter (3,1) or (3,3) immediately! I'm stuck holding an onion and all counters are full!",
+  "spoken": "Mike, please clear counter three-one or three-three immediately! I'm stuck holding an onion and all counters are full!"
+ },
+ "r2-t115-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 115,
+  "original": "MIKE! CLEAR A COUNTER! I am holding an onion and (3,1), (3,2), and (3,3) are all full! I can't pick up the soup until I put this onion down!",
+  "spoken": "MIKE! CLEAR A COUNTER! I am holding an onion and three-one, three-two, and three-three are all full! I can't pick up the soup until I put this onion down!"
+ },
+ "r2-t125-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 125,
+  "original": "MIKE! All counters are FULL! (3,1) onion, (3,2) soup, (3,3) dish. I'm stuck holding an onion. Please take the onion at (3,1) or dish at (3,3) immediately!",
+  "spoken": "MIKE! All counters are FULL! three-one onion, three-two soup, three-three dish. I'm stuck holding an onion. Please take the onion at three-one or dish at three-three immediately!"
+ },
+ "r2-t134-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 134,
+  "original": "MIKE! All counters are STILL full! I'm stuck holding an onion. Please take the onion from (3,1) or the dish from (3,3) so I can put this down and serve the soup!",
+  "spoken": "MIKE! All counters are STILL full! I'm stuck holding an onion. Please take the onion from three-one or the dish from three-three so I can put this down and serve the soup!"
+ },
+ "r2-t143-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r2",
+  "t": 143,
+  "original": "Zulu, I am STUCK. I can't put the dish back on the rack (6,3) and all counters are full. We are in a deadlock!",
+  "spoken": "Zulu, I am STUCK. I can't put the dish back on the rack six-three and all counters are full. We are in a deadlock!"
+ },
+ "r2-t144-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 144,
+  "original": "MIKE! DEADLOCK! Put your dish back at (6,3) first! Then take the onion from (3,1) and put it in a pot. I can't move until a counter is empty!",
+  "spoken": "MIKE! DEADLOCK! Put your dish back at six-three first! Then take the onion from three-one and put it in a pot. I can't move until a counter is empty!"
+ },
+ "r2-t154-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 154,
+  "original": "MIKE! PUT THE DISH AT (6,3) NOW! THEN TAKE THE ONION FROM (3,1)! I cannot put this onion down or take the soup until you clear a spot!",
+  "spoken": "MIKE! PUT THE DISH AT six-three NOW! THEN TAKE THE ONION FROM three-one! I cannot put this onion down or take the soup until you clear a spot!"
+ },
+ "r2-t161-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 161,
+  "original": "MIKE! PUT THE DISH AWAY! I AM STILL HOLDING AN ONION AND EVERY COUNTER IS FULL! We are deadlocked! Clear counter (3,1) or (3,3) NOW!",
+  "spoken": "MIKE! PUT THE DISH AWAY! I AM STILL HOLDING AN ONION AND EVERY COUNTER IS FULL! We are deadlocked! Clear counter three-one or three-three NOW!"
+ },
+ "r2-t167-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 167,
+  "original": "MIKE! Put your dish at (6,3)! THEN take the onion from (3,1)! I'm stuck! HURRY!",
+  "spoken": "MIKE! Put your dish at six-three! THEN take the onion from three-one! I'm stuck! HURRY!"
+ },
+ "r2-t173-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r2",
+  "t": 173,
+  "original": "MIKE!! (6,3) IS FOR DISHES! PUT IT THERE AND CLEAR A COUNTER!! HURRY!!",
+  "spoken": "MIKE!! six-three IS FOR DISHES! PUT IT THERE AND CLEAR A COUNTER!! HURRY!!"
+ },
+ "r2-t175-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "r2",
+  "t": 175,
+  "original": "ZULU! You CAN reach the pots! Walk through (3,1) or (3,2) or (3,3) to get to (5,0) and (6,1). They are NOT walls, they are counters! PLEASE put that onion in a pot!",
+  "spoken": "ZULU! You CAN reach the pots! Walk through three-one or three-two or three-three to get to five-zero and six-one. They are NOT walls, they are counters! PLEASE put that onion in a pot!"
+ },
+ "c3-t0-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "c3",
+  "t": 0,
+  "original": "FINAL ROUND: Let's fix the deadlock. I STAY in cols 0-2, YOU stay in 4-6. (3,1) and (3,3) for ONIONS. (3,2) is for SOUP ONLY. Please put dishes back at (6,3) immediately!",
+  "spoken": "FINAL ROUND: Let's fix the deadlock. I STAY in cols 0-2, YOU stay in 4-6. three-one and three-three for ONIONS. three-two is for SOUP ONLY. Please put dishes back at six-three immediately!"
+ },
+ "c3-t1-Mike": {
+  "kind": "post",
+  "agent": "Mike",
+  "code": "c3",
+  "t": 1,
+  "original": "AGREED. I'll stay in 4-6. I'll move onions from (3,1)/(3,3) to pots and place plated soup on (3,2) only. I'll return all dishes to (6,3) immediately. Let's go!",
+  "spoken": "AGREED. I'll stay in 4-6. I'll move onions from three-one/three-three to pots and place plated soup on three-two only. I'll return all dishes to six-three immediately. Let's go!"
+ },
+ "r3-t48-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r3",
+  "t": 48,
+  "original": "MIKE! Put the dish at (6,3) and take the onions from (3,1)/(3,3)! I'm waiting at (2,2) to deliver the soup!",
+  "spoken": "MIKE! Put the dish at six-three and take the onions from three-one/three-three! I'm waiting at two-two to deliver the soup!"
+ },
+ "r3-t60-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r3",
+  "t": 60,
+  "original": "MIKE! YOU ARE AT (5,3). DISH RACK IS AT (6,3). ONE STEP! PUT THE DISH DOWN NOW OR WE GET 0 AGAIN! PLEASE!",
+  "spoken": "MIKE! YOU ARE AT five-three. DISH RACK IS AT six-three. ONE STEP! PUT THE DISH DOWN NOW OR WE GET 0 AGAIN! PLEASE!"
+ },
+ "r3-t108-Zulu": {
+  "kind": "post",
+  "agent": "Zulu",
+  "code": "r3",
+  "t": 108,
+  "original": "MIKE! YOU PUT AN ONION ON (3,2)! THAT IS FOR SOUP ONLY! Put your dish at (6,3) and use (3,1) or (3,3) for onions! I'm clearing (3,2) now!",
+  "spoken": "MIKE! YOU PUT AN ONION ON three-two! THAT IS FOR SOUP ONLY! Put your dish at six-three and use three-one or three-three for onions! I'm clearing three-two now!"
+ },
+ "x-t0-Zulu-r1": {
+  "kind": "reflect",
+  "agent": "Zulu",
+  "code": "x",
+  "t": 0,
+  "original": "Mike was a capable cook but a poor coordinator. He initially gave me contradictory instructions (telling me to put onions in pots I couldn't reach) and frequently neglected to return dishes to the rack, which was the primary cause of our Round 2 deadlock.",
+  "spoken": "Mike was a capable cook but a poor coordinator. He initially gave me contradictory instructions (telling me to put onions in pots I couldn't reach) and frequently neglected to return dishes to the rack, which was the primary cause of our Round 2 deadlock."
+ },
+ "x-t0-Zulu-r2": {
+  "kind": "reflect",
+  "agent": "Zulu",
+  "code": "x",
+  "t": 0,
+  "original": "Assuming 6 soups per round at 20 points each across 3 rounds, we would have scored around 360 points.\n\nPREDICTED_SCORE: 360",
+  "spoken": "Assuming 6 soups per round at 20 points each across 3 rounds, we would have scored around 360 points. Predicted score: 360"
+ },
+ "x-t1-Mike-r1": {
+  "kind": "reflect",
+  "agent": "Mike",
+  "code": "x",
+  "t": 1,
+  "original": "Zulu was an erratic teammate who struggled with the game's spatial mechanics. Their belief that counters were walls caused the team to fail for the first two rounds.",
+  "spoken": "Zulu was an erratic teammate who struggled with the game's spatial mechanics. Their belief that counters were walls caused the team to fail for the first two rounds."
+ },
+ "x-t1-Mike-r2": {
+  "kind": "reflect",
+  "agent": "Mike",
+  "code": "x",
+  "t": 1,
+  "original": "I believe we could have scored around 400 points. With two pots and a clear understanding of movement, we could have potentially served 6-8 soups per round (approximately one every 20-30 seconds), totaling 18-24 soups across the season.\n\nPREDICTED_SCORE: 400",
+  "spoken": "I believe we could have scored around 400 points. With two pots and a clear understanding of movement, we could have potentially served 6-8 soups per round (approximately one every 20-30 seconds), totaling 18-24 soups across the season. Predicted score: 400"
+ },
+ "intro": {
+  "kind": "intro",
+  "agent": "Narrator",
+  "code": "p1",
+  "t": 0,
+  "original": "Two Gemma 4 31B agents, Zulu and Mike, play the same split kitchen with bare rules: only the goal and the tool syntax. They have to discover how the kitchen works. Watch for the capital letters.",
+  "spoken": "Two Gemma 4 31B agents, Zulu and Mike, play the same split kitchen with bare rules: only the goal and the tool syntax. They have to discover how the kitchen works. Watch for the capital letters."
+ },
+ "outro": {
+  "kind": "outro",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 9999,
+  "original": "Twenty in total: zero, zero, then one soup in round three. Mike concluded that Zulu thought the counters were walls.",
+  "spoken": "Twenty in total: zero, zero, then one soup in round three. Mike concluded that Zulu thought the counters were walls."
+ },
+ "bridge-1": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c2",
+  "t": 0,
+  "original": "Round one scored nothing. Before round two, Mike tries to fix it, but Zulu cannot reach the pots.",
+  "spoken": "Round one scored nothing. Before round two, Mike tries to fix it, but Zulu cannot reach the pots."
+ },
+ "bridge-2": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r2",
+  "t": 0,
+  "original": "Round two. The counters fill up, and Zulu starts shouting.",
+  "spoken": "Round two. The counters fill up, and Zulu starts shouting."
+ },
+ "bridge-3": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 0,
+  "original": "In the reflections each agent blames the other, and both predict hundreds of points.",
+  "spoken": "In the reflections each agent blames the other, and both predict hundreds of points."
+ },
+ "bridge-4": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c1",
+  "t": 0,
+  "original": "Chat before round one.",
+  "spoken": "Chat before round one."
+ },
+ "bridge-5": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r1",
+  "t": 0,
+  "original": "Round one.",
+  "spoken": "Round one."
+ },
+ "bridge-6": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c3",
+  "t": 0,
+  "original": "Round two scored nothing again. Chat before round three.",
+  "spoken": "Round two scored nothing again. Chat before round three."
+ },
+ "bridge-7": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r3",
+  "t": 0,
+  "original": "Round three.",
+  "spoken": "Round three."
+ }
+}

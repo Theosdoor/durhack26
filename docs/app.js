@@ -30,7 +30,7 @@ const FEED_TYPES = new Set(["pickup", "putdown", "add_to_pot", "cook_start", "co
 const S = {
   index: null, maps: {}, cache: new Map(),
   home: { team: "", rules: "", n: "", level: "", pair: "", sort: "score-desc" },
-  season: null, phase: null, t: 0, playing: false, speed: 1, timer: null, openDetails: new Set(),
+  season: null, phase: null, speaking: null, bub: new Map(), t: 0, playing: false, speed: 1, timer: null, openDetails: new Set(),
 };
 
 /* ------------------------------------------------------------ theme */
@@ -157,6 +157,7 @@ function renderHome() {
   const seg = (key, items) => `<div class="seg" role="group">${items.map(([v, l]) =>
     `<button type="button" data-k="${key}" data-v="${esc(v)}" aria-pressed="${String(f[key]) === String(v)}">${esc(l)}</button>`).join("")}</div>`;
   app.innerHTML = `
+  <section id="reel" class="reel" aria-label="Highlight reel" hidden></section>
   <section class="intro">
     <div class="card">
       <h1>LLM chefs, no assigned roles</h1>
@@ -194,6 +195,7 @@ function renderHome() {
   app.querySelectorAll(".seg button").forEach((el) => el.addEventListener("click", () => { f[el.dataset.k] = el.dataset.v; renderHome(); }));
   $("#reset").addEventListener("click", () => { Object.assign(f, { team: "", rules: "", n: "", level: "", pair: "", sort: "score-desc" }); renderHome(); });
   renderGrid();
+  loadHighlights().then(renderReel);
 }
 
 function predictedMean(r) {
@@ -399,7 +401,8 @@ function renderStage() {
   }
   stage.innerHTML = `
     <div class="stage-bar"><span class="ph">${esc(p.title)}</span><span id="stats"></span></div>
-    ${p.game ? kitchenSVG(p) : `<div class="talk" id="talk">${talkHTML(p)}</div>`}
+    ${p.game ? `<div class="stagebody"><div class="kwrap">${kitchenSVG(p)}<div class="bubbles" id="bubbles"></div></div><div class="narr" id="narr" hidden></div></div>`
+      : `<div class="speakbar" id="speakbar"></div><div class="stagebody talkbody"><div class="talk" id="talk">${talkHTML(p)}</div><div class="narr" id="narr" hidden></div></div>`}
     <div class="controls">
       <button type="button" id="prevph" title="Previous phase (P)" aria-label="Previous phase">&laquo;</button>
       <button type="button" id="back" title="Back one ${unit} (Left)">&#9664;</button>
@@ -422,6 +425,7 @@ function renderStage() {
   $("#speed").addEventListener("change", (e) => { S.speed = Number(e.target.value); if (S.playing) { stop(); play(); } });
   $("#scrub").addEventListener("input", (e) => { stop(); seek(Number(e.target.value)); });
   S.chefs = new Map();
+  S.bub = new Map();
   S.dynKey = null;
 }
 
@@ -529,7 +533,7 @@ function talkHTML(p) {
       }
       if (d.reasoning) body += `<details${S.openDetails.has("r" + d.i) ? " open" : ""} data-key="r${d.i}"><summary>Reasoning (${d.reasoning.length.toLocaleString()} chars)</summary><div class="reasoning">${esc(d.reasoning)}</div></details>`;
     }
-    return `<article class="turn" data-t="${d.t}" style="--c:${c}">
+    return `<article class="turn" data-t="${d.t}" data-i="${d.i}" data-agent="${esc(d.agent)}" style="--c:${c}">
       <div class="hd"><span><span class="swatch" style="background:${c}"></span><span class="name">${esc(d.agent)}</span>
         <span class="muted">${esc(shortModel(info?.model || ""))}</span></span>
         <span>${flags}<span class="muted mono">turn ${d.t}</span></span></div>${body}</article>`;
@@ -627,7 +631,7 @@ function updateSide() {
       const title = phaseTitleOf(r);
       if (title !== last) { html += `<div class="sep">${esc(title)}</div>`; last = title; }
       const now = r.phase === p.phase && r.round === p.round && r.t === t;
-      html += `<div class="post${now ? " now" : ""}" style="--c:${s.colour[r.agent]}"><span class="who">${esc(r.agent)}</span><span class="at">${r.phase === "round" || r.phase === "practice" ? "t=" : "turn "}${r.t}</span><div>${esc(r.text)}</div></div>`;
+      html += `<div class="post${now ? " now" : ""}" data-i="${r.i}" data-agent="${esc(r.agent)}" style="--c:${s.colour[r.agent]}"><span class="ico" aria-hidden="true">${SPK_ICON}</span><span class="who">${esc(r.agent)}</span><span class="at">${r.phase === "round" || r.phase === "practice" ? "t=" : "turn "}${r.t}</span><div>${esc(r.text)}</div></div>`;
     }
     const board = $("#board");
     board.innerHTML = html || `<p class="empty-note">No posts yet.</p>`;
@@ -682,6 +686,7 @@ function update(moveMs = 0) {
     if (cur) talk.scrollTo({ top: cur.offsetTop - talk.offsetTop - 4, behavior: S.playing ? "smooth" : "auto" });
   }
   updateSide();
+  updateSpeech();
   const play = $("#play");
   if (play) play.innerHTML = S.playing ? "&#10074;&#10074; Pause" : "&#9654; Play";
 }
@@ -730,6 +735,7 @@ function play() {
 }
 
 function stop() {
+  if (HL.active && !HL.busy) exitHighlight();
   if (S.timer) clearInterval(S.timer);
   S.timer = null;
   if (S.playing) { S.playing = false; const b = $("#play"); if (b) b.innerHTML = "&#9654; Play"; }
@@ -749,5 +755,215 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "n" || e.key === "N") stepPhase(1);
   else if (e.key === "p" || e.key === "P") stepPhase(-1);
 });
+
+/* ------------------------------------------------------------ who is speaking
+   Whenever an agent posts, a speech bubble in its colour appears above its chef (talk phases:
+   a bar above the transcript) and the post is highlighted on the Board, whatever the sound
+   settings. The bubble stays ~2.5 s of playback (scaled with the speed). The highlight player adds
+   S.speaking (a voice clip is playing: the bubble pulses; narrator lines get a caption bar). */
+const SPK_ICON = '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const shortText = (x) => { x = String(x || "").replace(/\s+/g, " ").trim(); return x.length > 62 ? x.slice(0, 60).trimEnd() + "\u2026" : x; };
+
+function speechItems() {
+  const p = S.phase, t = S.t, sp = S.speaking;
+  const W = Math.max(2, Math.round(2.5 * S.speed));
+  const act = p.posts.filter((r) => (p.game ? r.t <= t && r.t > t - W : r.t === t));
+  const by = new Map();
+  for (const r of act) by.set(r.agent, { agent: r.agent, text: r.text, i: r.i });
+  if (sp && !sp.narrator && !by.has(sp.agent)) by.set(sp.agent, { agent: sp.agent, text: sp.text || "", i: null });
+  return [...by.values()];
+}
+
+function updateSpeech() {
+  const s = S.season, p = S.phase, t = S.t;
+  if (!s || !p) return;
+  const sp = S.speaking;
+  const items = speechItems();
+  const pulsing = (a) => !!(sp && !sp.narrator && sp.agent === a);
+  if (p.game) {
+    const box = $("#bubbles");
+    if (box) {
+      const sprites = s.sprites, T = sprites.T, cols = Math.max(...p.map.map((r) => r.length));
+      const W = cols * T, H = p.top + p.map.length * T;
+      const f = p.byT[t];
+      const seen = new Set();
+      for (const it of items) {
+        const a = f?.agents?.find((x) => x.name === it.agent);
+        if (!a) continue;
+        seen.add(it.agent);
+        let b = S.bub.get(it.agent);
+        if (!b) {
+          const el = document.createElement("div");
+          box.appendChild(el);
+          b = { el, text: null };
+          S.bub.set(it.agent, b);
+        }
+        const below = a.pos[1] <= 1;
+        const lx = Math.min(86, Math.max(14, ((a.pos[0] + 0.5) * T) / W * 100));
+        const ty = ((p.top + (a.pos[1] + (below ? 1 : 0)) * T) / H) * 100;
+        b.el.className = `bubble${below ? " below" : ""}${pulsing(it.agent) ? " pulse" : ""}`;
+        b.el.style.cssText = `left:${lx}%;top:${ty}%;--c:${s.colour[it.agent]}`;
+        const txt = shortText(it.text);
+        if (b.text !== it.agent + txt) { b.el.innerHTML = `<span class="ico" aria-hidden="true">${SPK_ICON}</span><b>${esc(it.agent)}</b> ${esc(txt)}`; b.text = it.agent + txt; }
+      }
+      for (const [k, b] of S.bub) if (!seen.has(k)) { b.el.remove(); S.bub.delete(k); }
+    }
+  } else {
+    const bar = $("#speakbar");
+    if (bar) {
+      const it = items[items.length - 1];
+      bar.style.setProperty("--c", it ? s.colour[it.agent] : "var(--line)");
+      bar.className = `speakbar${it ? " on" : ""}${it && pulsing(it.agent) ? " pulse" : ""}`;
+      bar.innerHTML = it ? `<span class="avatar" style="background:${s.colour[it.agent]}">${esc(it.agent[0])}</span><b>${esc(it.agent)}</b>
+        <span class="ico" aria-hidden="true">${SPK_ICON}</span><span class="cap">${esc(shortText(it.text))}</span>`
+        : `<span class="muted">${p.phase === "chat" ? "Nobody is speaking at this turn" : "&nbsp;"}</span>`;
+    }
+  }
+  const narr = $("#narr");
+  if (narr) {
+    narr.hidden = !(sp && sp.narrator);
+    if (sp && sp.narrator) narr.innerHTML = `<b>Narrator</b> ${esc(sp.text || "")}`;
+  }
+  // Board and transcript: highlight what is being said
+  const ids = new Set(items.map((x) => String(x.i)));
+  const names = new Set(items.map((x) => x.agent));
+  let first = null;
+  for (const el of app.querySelectorAll("#board .post")) {
+    const on = ids.has(el.dataset.i);
+    el.classList.toggle("speaking", on);
+    el.classList.toggle("pulse", on && pulsing(el.dataset.agent));
+    if (on) first = el;
+  }
+  const board = $("#board");
+  if (board && first) board.scrollTop = Math.max(0, first.offsetTop - board.offsetTop - board.clientHeight / 2 + first.clientHeight / 2);
+  for (const el of app.querySelectorAll("#talk .turn")) {
+    const on = ids.has(el.dataset.i) || (!p.posts.length && Number(el.dataset.t) === t && !!sp && !sp.narrator && sp.agent === el.dataset.agent);
+    el.classList.toggle("speaking", on);
+  }
+}
+
+/* ------------------------------------------------------------ highlight reel
+   Whole seasons, narrated: intro, the replay of every phase (fast-forwarding through stretches
+   without a voice clip), narrator bridges and the voiced lines, then the outro. Playback waits for
+   each clip to end so speech never overlaps. Clips come from audio/manifest.json (see audio.js);
+   the saved Voices setting is not touched. Music and Effects toggles apply as usual. */
+const HL = { list: [], cur: -1, token: 0, active: false, busy: false, loaded: false };
+
+async function loadHighlights() {
+  if (HL.loaded) return HL.list;
+  HL.loaded = true;
+  try {
+    const res = await fetch("audio/manifest.json");
+    if (res.ok) HL.list = ((await res.json()).highlights || []).filter((h) => h.season && h.phases && h.phases.length);
+  } catch { /* no manifest: no reel */ }
+  return HL.list;
+}
+
+function renderReel() {
+  const el = $("#reel");
+  if (!el || !HL.list.length) return;
+  el.hidden = false;
+  el.innerHTML = `<div class="reel-head"><h2>Highlight reel</h2>
+    <p class="muted">Whole seasons, narrated, with agents voiced by text-to-speech. Needs sound; Music and Effects toggles still apply.</p>
+    <button type="button" class="primary" id="reel-all">&#9654; Play the reel</button></div>
+    <div class="reel-cards">${HL.list.map((h, i) => `<article class="card hl-card">
+      <h3>${esc(h.title)}</h3><p>${esc(h.teaser)}</p>
+      <div class="tags"><span class="tag">${esc(h.team)}</span><span class="tag rules-${esc(h.rules_key || "")}">${esc(h.rules)}</span>
+        <span class="tag">${esc(h.score)} points</span><span class="tag">${h.posts_voiced === h.posts_total ? "every post voiced" : `${h.posts_voiced} of ${h.posts_total} posts voiced`}</span><span class="tag">${esc(levelName(h.level || ""))}</span></div>
+      <div class="hl-actions"><button type="button" data-hl="${i}">&#9654; Play highlight</button>
+        <a href="#${esc(h.season)}">Open replay</a></div></article>`).join("")}</div>`;
+  el.querySelectorAll("button[data-hl]").forEach((b) => b.addEventListener("click", () => startHighlight(Number(b.dataset.hl))));
+  $("#reel-all").addEventListener("click", () => startHighlight(0));
+}
+
+function hlBar(h, status) {
+  const bar = $("#hlbar");
+  if (!bar) return;
+  if (!h) { bar.hidden = true; bar.innerHTML = ""; return; }
+  bar.hidden = false;
+  bar.innerHTML = `<span class="hl-now"><b>Highlight ${HL.cur + 1} of ${HL.list.length}</b>: ${esc(h.title)}
+    <span class="muted" id="hlstat">${esc(status || "")}</span></span>
+    <span class="hl-btns"><button type="button" id="hlnext">Next highlight &raquo;</button>
+    <button type="button" class="ghost" id="hlexit">Exit highlight</button></span>`;
+  $("#hlnext").addEventListener("click", () => startHighlight((HL.cur + 1) % HL.list.length));
+  $("#hlexit").addEventListener("click", () => exitHighlight());
+}
+function hlStatus(text) { const el = $("#hlstat"); if (el) el.textContent = text; }
+
+function exitHighlight() {
+  const was = HL.active;
+  HL.active = false; HL.token++;
+  S.speaking = null;
+  if (window.UCAudio) UCAudio.setHighlight(false);
+  if (S.phase && $("#stage")) updateSpeech();
+  if (S.playing) { S.playing = false; const b = $("#play"); if (b) b.innerHTML = "&#9654; Play"; }
+  if (was || !$("#hlbar")?.hidden) hlBar(null);
+}
+
+async function startHighlight(i) {
+  await loadHighlights();
+  const h = HL.list[i];
+  if (!h || !window.UCAudio) return;
+  exitHighlight();
+  const token = ++HL.token;
+  HL.cur = i;
+  UCAudio.setHighlight(true);
+  hlBar(h, "loading\u2026");
+  history.pushState(null, "", `#${h.season}--${h.phases[0]}-t0`);
+  await route();
+  if (token !== HL.token) return;
+  runHighlight(h, token);
+}
+
+const speakInfo = (m) => (m.bridge ? { narrator: true, text: m.text } : { agent: m.agent, text: m.text || "" });
+
+async function runHighlight(h, token) {
+  HL.active = true;
+  const alive = () => HL.active && token === HL.token;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const say = async (src, info) => {
+    if (!src || !alive()) return;
+    S.speaking = info || null; updateSpeech();
+    await UCAudio.speak(src);
+    S.speaking = null; if (S.phase) updateSpeech();
+  };
+  const marks = [...(h.bridges || []).map((b) => ({ ...b, bridge: true })), ...(h.clips || [])];
+  S.playing = true;
+  hlStatus("introduction");
+  await say(h.intro, { narrator: true, text: h.intro_text });
+  for (const code of h.phases) {
+    if (!alive()) return;
+    const ph = S.season.phases.find((p) => p.code === code);
+    if (!ph) continue;
+    HL.busy = true; selectPhase(ph, 0); HL.busy = false;
+    S.playing = true; update();
+    hlStatus(ph.title);
+    const mine = marks.filter((m) => m.code === code);
+    const at = (t) => mine.filter((m) => m.t === t).sort((a, b) => (b.bridge ? 1 : 0) - (a.bridge ? 1 : 0));
+    for (const m of at(0)) { await say(m.src, speakInfo(m)); if (!alive()) return; }
+    let t = 0;
+    while (t < ph.hi) {
+      const near = mine.some((m) => m.t > t && m.t - t <= 2);
+      const base = interval();
+      const ms = near ? base : base / (ph.game ? 8 : 3);
+      await sleep(ms);
+      if (!alive()) return;
+      const from = t;
+      t += 1;
+      seek(t, Math.min(ms * 0.9, 400));
+      try { UCAudio.advance(S.season, ph, from, t, near ? S.speed : S.speed * 8); } catch (e) { console.warn(e); }
+      for (const m of at(t)) { await say(m.src, speakInfo(m)); if (!alive()) return; }
+    }
+    await sleep(500);
+  }
+  if (!alive()) return;
+  hlStatus("conclusion");
+  await say(h.outro, { narrator: true, text: h.outro_text });
+  if (!alive()) return;
+  HL.active = false;
+  S.playing = false; update();
+  hlStatus("finished");
+  UCAudio.setHighlight(false);
+}
 
 route();

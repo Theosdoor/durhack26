@@ -26,6 +26,18 @@ branch", branch `main`, folder `/docs`. The site is then served at
 `https://<owner>.github.io/<repo>/`.
 
 Sound (toggles in the player, remembered per browser): music (off by default) and sound effects
-(on) are synthesized with the Web Audio API, no audio files. Voices (off) play only clips listed
-in `docs/audio/manifest.json`; its format, including a `highlights` list for narrated clips, is
-documented at the top of `docs/audio.js`. Add `?sfxlog` to the URL to log every sound call.
+(on) are synthesized with the Web Audio API. Voices (off) play only clips listed in
+`docs/audio/manifest.json`; its format is documented at the top of `docs/audio.js`. Add `?sfxlog`
+to the URL to log every sound call.
+
+Speaking: in every replay, when an agent posts, a speech bubble in its colour appears above its
+chef (a bar above the transcript in chat, private turns and reflections) and the post is
+highlighted on the Board, whatever the sound settings.
+
+Highlight reel: the home page opens with whole, narrated seasons (intro, bridges, outro by a
+narrator voice; board posts and some reflection lines voiced per agent). The clips are
+ElevenLabs text-to-speech (model `eleven_v4_turbo`, premade voices) generated once by
+`uv run python scripts/make_highlights.py` (`--plan`, `--test`, `--generate`; needs
+`ELEVENLABS_API_KEY`, which is never written to `docs/`). It is cached and refuses to pass a
+credit cap; `docs/audio/plan.json` lists every candidate line, its cost and whether it was
+voiced, and `docs/audio/<season>/clips.json` the original and the spoken text.

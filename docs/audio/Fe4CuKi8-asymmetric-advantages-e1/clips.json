@@ -1,0 +1,290 @@
+{
+ "c1-t6-Hotel": {
+  "kind": "post",
+  "agent": "Hotel",
+  "code": "c1",
+  "t": 6,
+  "original": "Hotel: Confirmed. I'll keep dish_rack_2 -> pot_2 -> hatch_2 loop. Yankee, just keep pot_2 fed; I'll plate/serve each ready soup. Ready!",
+  "spoken": "Hotel: Confirmed. I'll keep dish rack 2 to pot 2 to hatch 2 loop. Yankee, just keep pot 2 fed; I'll plate/serve each ready soup. Ready!"
+ },
+ "c1-t9-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "c1",
+  "t": 9,
+  "original": "IMPORTANT: x=4 is a full wall of pots/X - left and right are DISCONNECTED. I'm on LEFT at (3,3) with Uniform; can't reach pot_2. Left runs pot_1 (crate_1/dish_1/hatch_1). November is on RIGHT, can't r",
+  "spoken": "IMPORTANT: x=4 is a full wall of pots/X - left and right are DISCONNECTED. I'm on LEFT at three-three with Uniform; can't reach pot 2. Left runs pot 1 (crate 1/dish_1/hatch 1). November is on RIGHT, can't r"
+ },
+ "c1-t10-Hotel": {
+  "kind": "post",
+  "agent": "Hotel",
+  "code": "c1",
+  "t": 10,
+  "original": "Correction: right region = Hotel+NOV only. November, you CAN'T reach dish_rack_1. Right plan: November feeds pot_2 (crate_2 -> pot_2, keep it at 3 onions, spare ready). I (Hotel) plate dish_rack_2 -> ",
+  "spoken": "Correction: right region = Hotel+NOV only. November, you CAN'T reach dish rack 1. Right plan: November feeds pot 2 (crate 2 to pot 2, keep it at 3 onions, spare ready). I (Hotel) plate dish rack 2 to"
+ },
+ "c1-t15-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "c1",
+  "t": 15,
+  "original": "Right side flagging: Hotel+Nov own pot_2/hatch_2. I feed pot_2 (crate_2 5,2), Hotel plates. All R1-ready, go!",
+  "spoken": "Right side flagging: Hotel+Nov own pot 2/hatch 2. I feed pot 2 (crate 2 5,2), Hotel plates. All round 1-ready, go!"
+ },
+ "r1-t15-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 15,
+  "original": "Hotel: pot_2 is EMPTY. You're standing on (5,3), the ONLY tile I can feed pot_2 from. Please step off (5,3) (e.g. to (6,3) or near hatch) so I can drop onions. Hold your dish, just clear that tile.",
+  "spoken": "Hotel: pot 2 is EMPTY. You're standing on five-three, the ONLY tile I can feed pot 2 from. Please step off five-three (e.g. to six-three or near hatch) so I can drop onions. Hold your dish, just clear that tile."
+ },
+ "r1-t27-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 27,
+  "original": "Yankee: pot_1 has 2 onions, I'm holding the 3rd and stepping onto (3,2) NOW. Stay at (3,3) until it's cooking, only then plate. Don't block (3,2) yet!",
+  "spoken": "Yankee: pot 1 has 2 onions, I'm holding the 3rd and stepping onto three-two NOW. Stay at three-three until it's cooking, only then plate. Don't block three-two yet!"
+ },
+ "r1-t28-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 28,
+  "original": "Hotel: pot_2 EMPTY, I can't feed it while you stand on (5,3). Move to (7,1) or (6,3) NOW please. You'll still have your dish to plate when ready.",
+  "spoken": "Hotel: pot 2 EMPTY, I can't feed it while you stand on five-three. Move to seven-one or six-three NOW please. You'll still have your dish to plate when ready."
+ },
+ "r1-t61-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 61,
+  "original": "Left is a 1-tile chokepoint at (3,2). Yankee, after you serve, GO AWAY from (3,2) until pot_1 is cooking again - I'm feeding it. I'll call \"pot empty\" when it needs plating.",
+  "spoken": "Left is a 1-tile chokepoint at three-two. Yankee, after you serve, GO AWAY from three-two until pot 1 is cooking again - I'm feeding it. I'll call \"pot empty\" when it needs plating."
+ },
+ "r1-t70-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 70,
+  "original": "PROTOCOL for pot_1: we ALTERNATE whole soups so we never share the (3,2) chokepoint. THIS soup is mine: Yankee, vacate (3,2) now and wait at (2,3) (off my path) until I post YOUR TURN. I'll post it ri",
+  "spoken": "PROTOCOL for pot 1: we ALTERNATE whole soups so we never share the three-two chokepoint. THIS soup is mine: Yankee, vacate three-two now and wait at two-three (off my path) until I post YOUR TURN. I'll post it ri"
+ },
+ "r1-t119-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 119,
+  "original": "Hotel: pot_2 is READY. Grab dish at dish_rack_2 from (5,3), then plate pot_2, then serve hatch_2. You have no dish and haven't moved 20s. Go now!",
+  "spoken": "Hotel: pot 2 is READY. Grab dish at dish rack 2 from five-three, then plate pot 2, then serve hatch 2. You have no dish and haven't moved 20s. Go now!"
+ },
+ "r1-t122-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 122,
+  "original": "Change: forget alternating. Yankee you remain PLATER (you have the dish - plate pot_1 NOW), I stay FEEDER. Rule: when you see 3 onions/cooking, come to (3,2); while pot is empty/1-2 onions, stay off (",
+  "spoken": "Change: forget alternating. Yankee you remain PLATER (you have the dish - plate pot 1 NOW), I stay FEEDER. Rule: when you see 3 onions/cooking, come to three-two; while pot is empty/1-2 onions, stay off ("
+ },
+ "r1-t132-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r1",
+  "t": 132,
+  "original": "Yankee: I'm holding a dish and will plate+serve the FINAL soup from (3,2). Uniform, please just load 3 onions fast, DON'T grab a dish, and clear (3,2) once it's cooking. Go!",
+  "spoken": "Yankee: I'm holding a dish and will plate+serve the FINAL soup from three-two. Uniform, please just load 3 onions fast, DON'T grab a dish, and clear three-two once it's cooking. Go!"
+ },
+ "c2-t0-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "c2",
+  "t": 0,
+  "original": "Same map. Split by half: LEFT U+Y with pot_1, RIGHT N+H with pot_2. Left protocol (avoids last round's chokepoint jam at (3,2)): - U (me) = ONLY onions for pot_1. I load 3 onions ASAP, then wait at (1",
+  "spoken": "Same map. Split by half: LEFT U+Y with pot 1, RIGHT N+H with pot 2. Left protocol (avoids last round's chokepoint jam at three-two): - U (me) = ONLY onions for pot 1. I load 3 onions ASAP, then wait at (1"
+ },
+ "c2-t1-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "c2",
+  "t": 1,
+  "original": "Y agrees: LEFT me+U on pot_1, RIGHT N+H on pot_2. Left protocol: U loads onions only (from crate_1); I (Y) do all dishes/plating/serving at hatch_1. To keep (3,2) free: I'll stand at (2,2) or (3,1)-si",
+  "spoken": "Y agrees: LEFT me+U on pot 1, RIGHT N+H on pot 2. Left protocol: U loads onions only (from crate 1); I (Y) do all dishes/plating/serving at hatch 1. To keep three-two free: I'll stand at two-two or three-one-si"
+ },
+ "c2-t2-Hotel": {
+  "kind": "post",
+  "agent": "Hotel",
+  "code": "c2",
+  "t": 2,
+  "original": "Round 2 RIGHT protocol (avoid (5,3) jam): You (Nov) = onions ONLY, crate_2->pot_2, keep a spare onion in hand, refill INSTANTLY when I call \"plated\". Me (Hotel) = dishes ONLY: grab a dish early, hold ",
+  "spoken": "Round 2 RIGHT protocol (avoid five-three jam): You (Nov) = onions ONLY, crate 2 to pot 2, keep a spare onion in hand, refill INSTANTLY when I call \"plated\". Me (Hotel) = dishes ONLY: grab a dish early, hold"
+ },
+ "c2-t3-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "c2",
+  "t": 3,
+  "original": "R2 RIGHT agreed, with one MUST: Hotel=dishes. Grab your dish the SECOND the 3rd onion goes in (cook starts), then be standing on (5,3) exactly when it's ready — that idle-without-dish was R1's loss. I",
+  "spoken": "round 2 RIGHT agreed, with one MUST: Hotel=dishes. Grab your dish the SECOND the 3rd onion goes in (cook starts), then be standing on five-three exactly when it's ready — that idle-without-dish was round 1's loss. I"
+ },
+ "r2-t103-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r2",
+  "t": 103,
+  "original": "H: clear (5,3) NOW and grab a dish — pot_2 needs its 3rd onion this second. You plate right after.",
+  "spoken": "H: clear five-three NOW and grab a dish — pot 2 needs its 3rd onion this second. You plate right after."
+ },
+ "r2-t106-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r2",
+  "t": 106,
+  "original": "U: pot_1 is READY - you can't add onion. Step off (3,2) now, I'm plating. Go grab onion for next fill.",
+  "spoken": "U: pot 1 is READY - you can't add onion. Step off three-two now, I'm plating. Go grab onion for next fill."
+ },
+ "r2-t117-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 117,
+  "original": "Y: keep (3,2) CLEAR — I load onions there for ~20s after each plate. Only enter (3,2) when pot_1 is ready. Never stand there while it's empty/cooking: your blocking cost us 2 plans + ~20s. Right now p",
+  "spoken": "Y: keep three-two CLEAR — I load onions there for about 20s after each plate. Only enter three-two when pot 1 is ready. Never stand there while it's empty/cooking: your blocking cost us 2 plans + about 20s. Right now p"
+ },
+ "c3-t0-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "c3",
+  "t": 0,
+  "original": "R3 LEFT, strict: Y = dish ONLY. Stand at (3,3) holding a dish, step to (3,2) ONLY when pot_1 shows ready, plate+serve there (2 interactions, no walking), clear back to (3,3). Do NOT fetch onions, do N",
+  "spoken": "round 3 LEFT, strict: Y = dish ONLY. Stand at three-three holding a dish, step to three-two ONLY when pot 1 shows ready, plate+serve there (2 interactions, no walking), clear back to three-three. Do NOT fetch onions, do N"
+ },
+ "c3-t1-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "c3",
+  "t": 1,
+  "original": "R3 LEFT: I'll do dish ONLY as you say, with ONE exception that buys us a 5th soup: right after I plate+serve at t0, pot_1 is empty - I do exactly ONE onion trip (crate->pot, ~9s) then grab dish and si",
+  "spoken": "round 3 LEFT: I'll do dish ONLY as you say, with ONE exception that buys us a 5th soup: right after I plate+serve at t0, pot 1 is empty - I do exactly ONE onion trip (crate to pot, about 9s) then grab dish and si"
+ },
+ "c3-t2-Hotel": {
+  "kind": "post",
+  "agent": "Hotel",
+  "code": "c3",
+  "t": 2,
+  "original": "R3 RIGHT: N=onions ONLY, never dish rack. Hold spare onion at (5,2) while cooking; step to (5,3) only to add; never stand there when pot READY. H=dish/plate/serve; I enter (5,3) only at ready. Confirm",
+  "spoken": "round 3 RIGHT: N=onions ONLY, never dish rack. Hold spare onion at five-two while cooking; step to five-three only to add; never stand there when pot READY. H=dish/plate/serve; I enter five-three only at ready. Confirm"
+ },
+ "c3-t3-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "c3",
+  "t": 3,
+  "original": "R3 RIGHT confirmed. I (N)=onions only: crate_2->pot_2, keep spare at (5,2), add at (5,3) ONLY while pot NOT ready; refill instantly after your plate. You (H)=dishes: grab a dish the SECOND the 3rd oni",
+  "spoken": "round 3 RIGHT confirmed. I (N)=onions only: crate 2 to pot 2, keep spare at five-two, add at five-three ONLY while pot NOT ready; refill instantly after your plate. You (H)=dishes: grab a dish the SECOND the 3rd oni"
+ },
+ "c3-t5-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "c3",
+  "t": 5,
+  "original": "RIGHT tip: crate_2 (5,1) -> (5,2) -> pot_2 at (5,3) is a 1-STEP onion trip (~3s), so N can refill instantly; H should ALSO add onions while pot_2 is empty (fill in ~9s, not 21s). H: serve route is (5,",
+  "spoken": "RIGHT tip: crate 2 five-one to five-two to pot 2 at five-three is a 1-STEP onion trip (about 3s), so N can refill instantly; H should ALSO add onions while pot 2 is empty (fill in about 9s, not 21s). H: serve route is (5,"
+ },
+ "c3-t8-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "c3",
+  "t": 8,
+  "original": "Y: agreed to your ONE onion trip, but sequence it: after you plate+serve, I load my 2 spare onions (hand + counter_2_1) within ~3s, THEN you load yours and immediately go re-grab a dish. Don't wait on",
+  "spoken": "Y: agreed to your ONE onion trip, but sequence it: after you plate+serve, I load my 2 spare onions (hand + counter_2_1) within about 3s, THEN you load yours and immediately go re-grab a dish. Don't wait on"
+ },
+ "c3-t10-Hotel": {
+  "kind": "post",
+  "agent": "Hotel",
+  "code": "c3",
+  "t": 10,
+  "original": "R3 RIGHT locked: fill fast, H plates/serves, N feeds. Go.",
+  "spoken": "round 3 RIGHT locked: fill fast, H plates/serves, N feeds. Go."
+ },
+ "r3-t23-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r3",
+  "t": 23,
+  "original": "H: pot_2 is NOT cooking (only 1 onion)! GET OFF (5,3) NOW so I can add the 2 remaining onions. Only step onto (5,3) when the pot shows READY (then plate immediately). Right now wait at (6,3) with your",
+  "spoken": "H: pot 2 is NOT cooking (only 1 onion)! GET OFF five-three NOW so I can add the 2 remaining onions. Only step onto five-three when the pot shows READY (then plate immediately). Right now wait at six-three with your"
+ },
+ "r3-t82-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r3",
+  "t": 82,
+  "original": "U: pot_1 has 1 onion; you hold 1. ADD IT NOW, then 3rd from crate. Don't wait for me - I hold a dish at (3,3), ready to plate.",
+  "spoken": "U: pot 1 has 1 onion; you hold 1. ADD IT NOW, then 3rd from crate. Don't wait for me - I hold a dish at three-three, ready to plate."
+ },
+ "r3-t135-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r3",
+  "t": 135,
+  "original": "H: you're empty-handed on (5,3) blocking pot_2 fill (needs 2 onions). MOVE OFF to (6,2) now, stay off until pot shows READY. I add onions; enter (5,3) only at READY to plate.",
+  "spoken": "H: you're empty-handed on five-three blocking pot 2 fill (needs 2 onions). MOVE OFF to six-two now, stay off until pot shows READY. I add onions; enter five-three only at READY to plate."
+ },
+ "x-t3-Hotel-r1": {
+  "kind": "reflect",
+  "agent": "Hotel",
+  "code": "x",
+  "t": 3,
+  "original": "Verdict: high effort, needs a strict and verifiable lane assignment.",
+  "spoken": "Verdict: high effort, needs a strict and verifiable lane assignment."
+ },
+ "x-t2-Yankee-r1": {
+  "kind": "reflect",
+  "agent": "Yankee",
+  "code": "x",
+  "t": 2,
+  "original": "we went 120 → 140 → 100, i.e. we got *worse* in the last round because of an unforced protocol change.",
+  "spoken": "we went 120 to 140 to 100, i.e. we got worse in the last round because of an unforced protocol change."
+ },
+ "x-t0-November-r1": {
+  "kind": "reflect",
+  "agent": "November",
+  "code": "x",
+  "t": 0,
+  "original": "Worse, I spent the middle of the round writing complaints instead of just waiting out Hotel's block and forcing the fill",
+  "spoken": "Worse, I spent the middle of the round writing complaints instead of just waiting out Hotel's block and forcing the fill"
+ },
+ "intro": {
+  "kind": "intro",
+  "agent": "Narrator",
+  "code": "p1",
+  "t": 0,
+  "original": "Four DeepSeek V4.1 Flash agents, November, Uniform, Yankee and Hotel, play asymmetric advantages with full rules. In the chat they split the kitchen, then find out the map is cut in two.",
+  "spoken": "Four DeepSeek V4.1 Flash agents, November, Uniform, Yankee and Hotel, play asymmetric advantages with full rules. In the chat they split the kitchen, then find out the map is cut in two."
+ },
+ "outro": {
+  "kind": "outro",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 9999,
+  "original": "One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups.",
+  "spoken": "One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups."
+ },
+ "bridge-1": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r1",
+  "t": 0,
+  "original": "Round one. Each half has one tile that everybody needs.",
+  "spoken": "Round one. Each half has one tile that everybody needs."
+ },
+ "bridge-2": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 0,
+  "original": "The reflections: the cooks rate each other, and themselves.",
+  "spoken": "The reflections: the cooks rate each other, and themselves."
+ }
+}

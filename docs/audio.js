@@ -8,20 +8,28 @@
      appears during playback; does nothing when there is no manifest or no entry;
    - sfx (default on): short sounds for game events during playback, rate-limited.
 
-   Voice manifest (docs/audio/manifest.json), every path relative to docs/:
+   Voice manifest (docs/audio/manifest.json, version 2), every path relative to docs/:
    {
-     "version": 1,
+     "version": 2,
      "posts": { "<season id>": { "<post key>": "audio/<season id>/<post key>.mp3" } },
      "highlights": [
-       { "season": "<season id>", "phase": "r2", "from": 40, "to": 90, "title": "...",
-         "narration": "audio/<season id>/highlight-1.mp3",
-         "posts": { "<post key>": "audio/<season id>/<post key>.mp3" } }
+       { "id": "<season id>", "season": "<season id>", "title": "...", "teaser": "...", "team": "GLM x2",
+         "rules": "full rules", "rules_key": "full", "score": 120, "rounds": [0, 60, 60],
+         "phases": ["p1", "p2", "c1", "r1", ...],            // the whole season, in play order
+         "intro": "audio/<season id>/intro.mp3", "outro": "audio/<season id>/outro.mp3",
+         "bridges": [ { "code": "c2", "t": 0, "src": "audio/..." } ],   // narrator, spoken as that moment begins
+         "clips":   [ { "code": "r1", "t": 96, "agent": "Whiskey", "kind": "post|reflect", "src": "audio/..." } ] }
      ]
    }
    A post key is "<phase code>-t<time>-<agent>" (phase codes as in the URL hash: c2, r2, d2, p1),
    with "-2", "-3"... appended when one agent posts more than once at the same time, e.g.
-   "r2-t80-Lima". UCAudio.postKey(season, post) computes it. Highlights are loaded and exposed
-   (UCAudio.highlights) for a later highlights player; nothing plays them yet.
+   "r2-t80-Lima". UCAudio.postKey(season, post) computes it. "posts" holds the voiced board posts
+   and is what the Voices toggle plays during normal replay. Only the best lines of a season have a
+   clip; a post without one plays silently (its text is shown as usual). "reflect" clips are
+   excerpts of a reflection answer (phase x, t = turn index). docs/audio/<season id>/clips.json
+   gives the original and the spoken text of every clip; docs/audio/plan.json the ranked plan.
+   The highlight player (app.js) uses UCAudio.speak(src) / stopSpeak() and setHighlight(on): in
+   highlight mode the saved Voices setting is untouched and ignored, so clips never overlap.
 
    Test mode: add ?sfxlog to the URL: every sound call is console.logged as "[sfx] <name> ..."
    and pushed to window.__sfxLog. */
@@ -160,7 +168,7 @@
   }
 
   /* ---------------------------------------------------------- voices (manifest only) */
-  let manifest = null, manifestTried = false, voice = null;
+  let manifest = null, manifestTried = false, voice = null, hlMode = false, spkFin = null;
   async function loadManifest() {
     if (manifestTried) return manifest;
     manifestTried = true;
@@ -178,7 +186,7 @@
     return k > 0 ? `${base}-${k + 1}` : base;
   }
   async function playVoice(season, post, code) {
-    if (!on.voices) return;
+    if (!on.voices || hlMode) return;
     const m = await loadManifest();
     const key = postKey(season, post, code);
     const src = m?.posts?.[season.id]?.[key];
@@ -186,6 +194,23 @@
     if (!src) return;
     try { if (voice) voice.pause(); voice = new Audio(src); voice.volume = 0.9; await voice.play(); } catch { /* blocked or missing */ }
   }
+
+  // highlight player: speak one clip and resolve when it ends (or fails, or after 90 s)
+  function speak(src) {
+    return new Promise((resolve) => {
+      stopSpeak();
+      const a = new Audio(src);
+      let done = false;
+      const fin = () => { if (done) return; done = true; clearTimeout(to); if (voice === a) voice = null; if (spkFin === fin) spkFin = null; resolve(); };
+      const to = setTimeout(fin, 90000);
+      a.addEventListener("ended", fin); a.addEventListener("error", fin);
+      a.volume = 0.95; voice = a; spkFin = fin;
+      if (LOG) { console.log(`[sfx] speak ${src}`); window.__sfxLog.push({ name: "speak", src }); }
+      a.play().catch(fin);
+    });
+  }
+  function stopSpeak() { const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
+  function setHighlight(v) { hlMode = !!v; if (!v) stopSpeak(); }
 
   /* ---------------------------------------------------------- player hooks */
   // called by app.js while playing, after time moved from `from` to `to` in phase `p`
@@ -230,6 +255,6 @@
     }));
   }
 
-  const api = { advance, controlsHTML, bind, postKey, play, highlights: [], state: on };
+  const api = { advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();

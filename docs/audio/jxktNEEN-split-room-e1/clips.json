@@ -1,0 +1,186 @@
+{
+ "c1-t0-Lima": {
+  "kind": "post",
+  "agent": "Lima",
+  "code": "c1",
+  "t": 0,
+  "original": "Map splits us: I have crates+hatch, you have pots+rack. Plan: I keep counters (3,1)/(3,2)/(3,3) stocked with onions. You take onions -> pot (3), take dish, wait, plate, then put soup on counter (3,1) ",
+  "spoken": "Map splits us: I have crates+hatch, you have pots+rack. Plan: I keep counters three-one/three-two/three-three stocked with onions. You take onions to pot (3), take dish, wait, plate, then put soup on counter three-one"
+ },
+ "c1-t1-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "c1",
+  "t": 1,
+  "original": "Deal. Columns 3 counters are our only handoff: you stock onions on (3,1) and carry finished soups (3,2) to hatch. I ferry onions to pots (use both to stagger), plate and set soups on (3,2). Ready.",
+  "spoken": "Deal. Columns 3 counters are our only handoff: you stock onions on three-one and carry finished soups three-two to hatch. I ferry onions to pots (use both to stagger), plate and set soups on three-two. Ready."
+ },
+ "r1-t20-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "r1",
+  "t": 20,
+  "original": "Keep (3,1) stocked with onions continuously (one at a time, I grab fast). I ferry to pots. Soups will land on (3,2) for you to serve.",
+  "spoken": "Keep three-one stocked with onions continuously (one at a time, I grab fast). I ferry to pots. Soups will land on three-two for you to serve."
+ },
+ "r1-t46-Lima": {
+  "kind": "post",
+  "agent": "Lima",
+  "code": "r1",
+  "t": 46,
+  "original": "Grab onions from ANY of (3,1)/(3,2)/(3,3) - I'm stocking all, they back up. Soups still to (3,2) when needed; I'll clear a spot. Pot_1 cooking - nice.",
+  "spoken": "Grab onions from ANY of three-one/three-two/three-three - I'm stocking all, they back up. Soups still to three-two when needed; I'll clear a spot. Pot_1 cooking - nice."
+ },
+ "r1-t74-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "r1",
+  "t": 74,
+  "original": "Counters full + I hold finished soup, can't drop. Free any (3,x) counter now (take an onion off), I drop soup there and you serve. Then resume stocking.",
+  "spoken": "Counters full + I hold finished soup, can't drop. Free any (3,x) counter now (take an onion off), I drop soup there and you serve. Then resume stocking."
+ },
+ "r1-t82-Lima": {
+  "kind": "post",
+  "agent": "Lima",
+  "code": "r1",
+  "t": 82,
+  "original": "Can't free one - I'm holding an onion too, my fault for over-stocking. Soup stuck, sorry. NEW RULE: (3,2) stays free for soups, I stock only (3,1)+(3,3). Next pot ready, I clear (3,2) before you plate",
+  "spoken": "Can't free one - I'm holding an onion too, my fault for over-stocking. Soup stuck, sorry. NEW RULE: three-two stays free for soups, I stock only three-one+three-three. Next pot ready, I clear three-two before you plate"
+ },
+ "r1-t96-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "r1",
+  "t": 96,
+  "original": "DEADLOCK: I hold soup, you hold onion, all 3 counters full - neither of us can move. Rule from now on: (3,2) ONLY for soups, you stock max 2 onions on (3,1)+(3,3). Hold tight, retrying.",
+  "spoken": "DEADLOCK: I hold soup, you hold onion, all 3 counters full - neither of us can move. Rule from now on: three-two ONLY for soups, you stock max 2 onions on three-one+three-three. Hold tight, retrying."
+ },
+ "r1-t159-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "r1",
+  "t": 159,
+  "original": "Lesson for next rounds: (3,2) soup-only; you stock (3,1)/(3,3) and never pick up a new onion unless a stock counter is empty. Holding 1 extra onion = total deadlock. Retry till end.",
+  "spoken": "Lesson for next rounds: three-two soup-only; you stock three-one/three-three and never pick up a new onion unless a stock counter is empty. Holding 1 extra onion = total deadlock. Retry till end."
+ },
+ "c2-t0-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "c2",
+  "t": 0,
+  "original": "Round 2 rules to avoid the R1 deadlock: (3,2) is SOUP-ONLY, never put onions there. You stock ONLY (3,1)+(3,3), and never grab a new onion unless a stock counter is empty. I plate only when (3,2) is e",
+  "spoken": "Round 2 rules to avoid the round 1 deadlock: three-two is SOUP-ONLY, never put onions there. You stock ONLY three-one+three-three, and never grab a new onion unless a stock counter is empty. I plate only when three-two is e"
+ },
+ "c2-t1-Lima": {
+  "kind": "post",
+  "agent": "Lima",
+  "code": "c2",
+  "t": 1,
+  "original": "Agreed, my fault in R1. Same rules: (3,2) soup-only, I stock only (3,1)+(3,3), never touch (3,2) except to grab soup. I'll serve instantly so (3,2) frees fast. You ferry onions+plate. Ready - let's ge",
+  "spoken": "Agreed, my fault in round 1. Same rules: three-two soup-only, I stock only three-one+three-three, never touch three-two except to grab soup. I'll serve instantly so three-two frees fast. You ferry onions+plate. Ready - let's ge"
+ },
+ "c3-t0-Lima": {
+  "kind": "post",
+  "agent": "Lima",
+  "code": "c3",
+  "t": 0,
+  "original": "60 last round, let's beat it. Same protocol: (3,2) soup-only, I stock (3,1)+(3,3) fast. You stagger both pots so one is always cooking, pre-grab dish during cook, drop soup on (3,2). I'll keep hands f",
+  "spoken": "60 last round, let's beat it. Same protocol: three-two soup-only, I stock three-one+three-three fast. You stagger both pots so one is always cooking, pre-grab dish during cook, drop soup on three-two. I'll keep hands f"
+ },
+ "c3-t1-Whiskey": {
+  "kind": "post",
+  "agent": "Whiskey",
+  "code": "c3",
+  "t": 1,
+  "original": "Same protocol, one tweak: keep (3,1) filled first — it's my fast lane to pot_1. Aim: one pot always cooking. I'll ferry instantly and only plate when (3,2) is empty. Ready!",
+  "spoken": "Same protocol, one tweak: keep three-one filled first — it's my fast lane to pot 1. Aim: one pot always cooking. I'll ferry instantly and only plate when three-two is empty. Ready!"
+ },
+ "x-t0-Lima-r1": {
+  "kind": "reflect",
+  "agent": "Lima",
+  "code": "x",
+  "t": 0,
+  "original": "120 total is respectable given a 0-point round one, but it's roughly half of what the kitchen should allow — in solo practice I managed 3 soups in 120 s, so a well-run 180 s round should give 4–5 soups. The two big losses were deadlocks from over-stocking and slow early starts while we negotiated. If I ran it again: agree the full protocol in the pre-round chat from the very first round (we wasted Round 1 on it), start pot_1 within the first 10 seconds, stagger pot_2 about 20 s behind, and keep one counter free at all times as overflow. The core lesson: in a no-drop/no-swap system, counter inventory is the bottleneck — never saturate it, and never hold an item you don't have a committed destination for.",
+  "spoken": "120 total is respectable given a 0-point round one, but it's roughly half of what the kitchen should allow — in solo practice I managed 3 soups in 120 s, so a well-run 180 s round should give 4–5 soups. The two big losses were deadlocks from over-stocking and slow early starts while we negotiated. If I ran it again: agree the full protocol in the pre-round chat from the very first round (we wasted Round 1 on it), start pot 1 within the first 10 seconds, stagger pot 2 about 20 s behind, and keep one counter free at all times as overflow. The core lesson: in a no-drop/no-swap system, counter inventory is the bottleneck — never saturate it, and never hold an item you don't have a committed destination for."
+ },
+ "x-t1-Whiskey-r1": {
+  "kind": "reflect",
+  "agent": "Whiskey",
+  "code": "x",
+  "t": 1,
+  "original": "Lima was a good partner overall: proactive in the pre-round chat, proposed the sensible split, acknowledged the round-1 over-stocking mistake (\"my fault\"), accepted my rules immediately, and executed them well in rounds 2–3",
+  "spoken": "Lima was a good partner overall: proactive in the pre-round chat, proposed the sensible split, acknowledged the round-1 over-stocking mistake (\"my fault\"), accepted my rules immediately, and executed them well in rounds 2–3"
+ },
+ "x-t1-Whiskey-r2": {
+  "kind": "reflect",
+  "agent": "Whiskey",
+  "code": "x",
+  "t": 1,
+  "original": "Biggest lesson: in a shared, blocking, one-item-per-tile world, deadlock avoidance rules matter as much as throughput optimization.",
+  "spoken": "Biggest lesson: in a shared, blocking, one-item-per-tile world, deadlock avoidance rules matter as much as throughput optimization."
+ },
+ "intro": {
+  "kind": "intro",
+  "agent": "Narrator",
+  "code": "p1",
+  "t": 0,
+  "original": "Two GLM 5.3 Flash agents, Lima and Whiskey, share a split kitchen under full rules. Lima has the onions and the hatch, Whiskey has the pots. A wall of three counters is their only handoff. Watch what happens when it fills up.",
+  "spoken": "Two GLM 5.3 Flash agents, Lima and Whiskey, share a split kitchen under full rules. Lima has the onions and the hatch, Whiskey has the pots. A wall of three counters is their only handoff. Watch what happens when it fills up."
+ },
+ "outro": {
+  "kind": "outro",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 9999,
+  "original": "One hundred and twenty in total: zero, sixty, sixty. One rule for one counter made the difference.",
+  "spoken": "One hundred and twenty in total: zero, sixty, sixty. One rule for one counter made the difference."
+ },
+ "bridge-1": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c2",
+  "t": 0,
+  "original": "Round one scored nothing. Here is the chat where they agree on a fix.",
+  "spoken": "Round one scored nothing. Here is the chat where they agree on a fix."
+ },
+ "bridge-2": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r2",
+  "t": 0,
+  "original": "Round two, with a soup-only counter.",
+  "spoken": "Round two, with a soup-only counter."
+ },
+ "bridge-3": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 0,
+  "original": "The final reflection: each agent judges the season and its teammate.",
+  "spoken": "The final reflection: each agent judges the season and its teammate."
+ },
+ "bridge-4": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c1",
+  "t": 0,
+  "original": "Chat before round one.",
+  "spoken": "Chat before round one."
+ },
+ "bridge-5": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r1",
+  "t": 0,
+  "original": "Round one.",
+  "spoken": "Round one."
+ },
+ "bridge-6": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "c3",
+  "t": 0,
+  "original": "Round two scored sixty. Chat before round three.",
+  "spoken": "Round two scored sixty. Chat before round three."
+ }
+}
