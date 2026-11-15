@@ -1,0 +1,154 @@
+{
+ "r1-t15-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 15,
+  "original": "Hotel: pot_2 is EMPTY. You're standing on (5,3), the ONLY tile I can feed pot_2 from. Please step off (5,3) (e.g. to (6,3) or near hatch) so I can drop onions. Hold your dish, just clear that tile.",
+  "spoken": "Hotel: pot 2 is EMPTY. You're standing on five-three, the ONLY tile I can feed pot 2 from. Please step off five-three (e.g. to six-three or near hatch) so I can drop onions. Hold your dish, just clear that tile."
+ },
+ "r1-t27-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 27,
+  "original": "Yankee: pot_1 has 2 onions, I'm holding the 3rd and stepping onto (3,2) NOW. Stay at (3,3) until it's cooking, only then plate. Don't block (3,2) yet!",
+  "spoken": "Yankee: pot 1 has 2 onions, I'm holding the 3rd and stepping onto three-two NOW. Stay at three-three until it's cooking, only then plate. Don't block three-two yet!"
+ },
+ "r1-t28-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 28,
+  "original": "Hotel: pot_2 EMPTY, I can't feed it while you stand on (5,3). Move to (7,1) or (6,3) NOW please. You'll still have your dish to plate when ready.",
+  "spoken": "Hotel: pot 2 EMPTY, I can't feed it while you stand on five-three. Move to seven-one or six-three NOW please. You'll still have your dish to plate when ready."
+ },
+ "r1-t61-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 61,
+  "original": "Left is a 1-tile chokepoint at (3,2). Yankee, after you serve, GO AWAY from (3,2) until pot_1 is cooking again - I'm feeding it. I'll call \"pot empty\" when it needs plating.",
+  "spoken": "Left is a 1-tile chokepoint at three-two. Yankee, after you serve, GO AWAY from three-two until pot 1 is cooking again - I'm feeding it. I'll call \"pot empty\" when it needs plating."
+ },
+ "r1-t70-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 70,
+  "original": "PROTOCOL for pot_1: we ALTERNATE whole soups so we never share the (3,2) chokepoint. THIS soup is mine: Yankee, vacate (3,2) now and wait at (2,3) (off my path) until I post YOUR TURN. I'll post it ri",
+  "spoken": "PROTOCOL for pot 1: we ALTERNATE whole soups so we never share the three-two chokepoint. THIS soup is mine: Yankee, vacate three-two now and wait at two-three (off my path) until I post YOUR TURN. I'll post it ri"
+ },
+ "r1-t119-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r1",
+  "t": 119,
+  "original": "Hotel: pot_2 is READY. Grab dish at dish_rack_2 from (5,3), then plate pot_2, then serve hatch_2. You have no dish and haven't moved 20s. Go now!",
+  "spoken": "Hotel: pot 2 is READY. Grab dish at dish rack 2 from five-three, then plate pot 2, then serve hatch 2. You have no dish and haven't moved 20s. Go now!"
+ },
+ "r1-t122-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r1",
+  "t": 122,
+  "original": "Change: forget alternating. Yankee you remain PLATER (you have the dish - plate pot_1 NOW), I stay FEEDER. Rule: when you see 3 onions/cooking, come to (3,2); while pot is empty/1-2 onions, stay off (",
+  "spoken": "Change: forget alternating. Yankee you remain PLATER (you have the dish - plate pot 1 NOW), I stay FEEDER. Rule: when you see 3 onions/cooking, come to three-two; while pot is empty/1-2 onions, stay off ("
+ },
+ "r1-t132-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r1",
+  "t": 132,
+  "original": "Yankee: I'm holding a dish and will plate+serve the FINAL soup from (3,2). Uniform, please just load 3 onions fast, DON'T grab a dish, and clear (3,2) once it's cooking. Go!",
+  "spoken": "Yankee: I'm holding a dish and will plate+serve the FINAL soup from three-two. Uniform, please just load 3 onions fast, DON'T grab a dish, and clear three-two once it's cooking. Go!"
+ },
+ "r2-t74-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r2",
+  "t": 74,
+  "original": "t=69 pot_1 has 2 onions. After my next serve I'll help carry onions too: we fill pot_1 in ~10s instead of 21s. Keep loading; I'll take 1-2 trips per cycle.",
+  "spoken": "t=69 pot 1 has 2 onions. After my next serve I'll help carry onions too: we fill pot 1 in about 10s instead of 21s. Keep loading; I'll take 1-2 trips per cycle."
+ },
+ "r2-t103-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r2",
+  "t": 103,
+  "original": "H: clear (5,3) NOW and grab a dish — pot_2 needs its 3rd onion this second. You plate right after.",
+  "spoken": "H: clear five-three NOW and grab a dish — pot 2 needs its 3rd onion this second. You plate right after."
+ },
+ "r2-t106-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r2",
+  "t": 106,
+  "original": "U: pot_1 is READY - you can't add onion. Step off (3,2) now, I'm plating. Go grab onion for next fill.",
+  "spoken": "U: pot 1 is READY - you can't add onion. Step off three-two now, I'm plating. Go grab onion for next fill."
+ },
+ "r2-t117-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r2",
+  "t": 117,
+  "original": "Y: keep (3,2) CLEAR — I load onions there for ~20s after each plate. Only enter (3,2) when pot_1 is ready. Never stand there while it's empty/cooking: your blocking cost us 2 plans + ~20s. Right now p",
+  "spoken": "Y: keep three-two CLEAR — I load onions there for about 20s after each plate. Only enter three-two when pot 1 is ready. Never stand there while it's empty/cooking: your blocking cost us 2 plans + about 20s. Right now p"
+ },
+ "r3-t14-Uniform": {
+  "kind": "post",
+  "agent": "Uniform",
+  "code": "r3",
+  "t": 14,
+  "original": "Y: I'm on onions+crate_1. Do NOT stand on (1,1)/(1,2)/(3,2). Take a dish now and wait at (3,3) until pot_1 is ready, then plate+serve.",
+  "spoken": "Y: I'm on onions+crate 1. Do NOT stand on one-one/one-two/three-two. Take a dish now and wait at three-three until pot 1 is ready, then plate+serve."
+ },
+ "r3-t23-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r3",
+  "t": 23,
+  "original": "H: pot_2 is NOT cooking (only 1 onion)! GET OFF (5,3) NOW so I can add the 2 remaining onions. Only step onto (5,3) when the pot shows READY (then plate immediately). Right now wait at (6,3) with your",
+  "spoken": "H: pot 2 is NOT cooking (only 1 onion)! GET OFF five-three NOW so I can add the 2 remaining onions. Only step onto five-three when the pot shows READY (then plate immediately). Right now wait at six-three with your"
+ },
+ "r3-t82-Yankee": {
+  "kind": "post",
+  "agent": "Yankee",
+  "code": "r3",
+  "t": 82,
+  "original": "U: pot_1 has 1 onion; you hold 1. ADD IT NOW, then 3rd from crate. Don't wait for me - I hold a dish at (3,3), ready to plate.",
+  "spoken": "U: pot 1 has 1 onion; you hold 1. ADD IT NOW, then 3rd from crate. Don't wait for me - I hold a dish at three-three, ready to plate."
+ },
+ "r3-t135-November": {
+  "kind": "post",
+  "agent": "November",
+  "code": "r3",
+  "t": 135,
+  "original": "H: you're empty-handed on (5,3) blocking pot_2 fill (needs 2 onions). MOVE OFF to (6,2) now, stay off until pot shows READY. I add onions; enter (5,3) only at READY to plate.",
+  "spoken": "H: you're empty-handed on five-three blocking pot 2 fill (needs 2 onions). MOVE OFF to six-two now, stay off until pot shows READY. I add onions; enter five-three only at READY to plate."
+ },
+ "intro-rounds": {
+  "kind": "intro",
+  "agent": "Narrator",
+  "code": "p1",
+  "t": 0,
+  "original": "Four DeepSeek V4.1 Flash agents play asymmetric advantages with full rules. Here are their three rounds.",
+  "spoken": "Four DeepSeek V4.1 Flash agents play asymmetric advantages with full rules. Here are their three rounds."
+ },
+ "outro": {
+  "kind": "outro",
+  "agent": "Narrator",
+  "code": "x",
+  "t": 9999,
+  "original": "One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups.",
+  "spoken": "One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups."
+ },
+ "bridge-1": {
+  "kind": "bridge",
+  "agent": "Narrator",
+  "code": "r1",
+  "t": 0,
+  "original": "Round one. Each half has one tile that everybody needs.",
+  "spoken": "Round one. Each half has one tile that everybody needs."
+ }
+}

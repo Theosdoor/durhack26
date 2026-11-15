@@ -1,0 +1,692 @@
+{
+ "version": 2,
+ "model": "eleven_v4_turbo",
+ "posts": {
+  "jxktNEEN-split-room-e1": {
+   "c1-t0-Lima": "audio/jxktNEEN-split-room-e1/c1-t0-Lima.mp3",
+   "c1-t1-Whiskey": "audio/jxktNEEN-split-room-e1/c1-t1-Whiskey.mp3",
+   "r1-t20-Whiskey": "audio/jxktNEEN-split-room-e1/r1-t20-Whiskey.mp3",
+   "r1-t46-Lima": "audio/jxktNEEN-split-room-e1/r1-t46-Lima.mp3",
+   "r1-t74-Whiskey": "audio/jxktNEEN-split-room-e1/r1-t74-Whiskey.mp3",
+   "r1-t82-Lima": "audio/jxktNEEN-split-room-e1/r1-t82-Lima.mp3",
+   "r1-t96-Whiskey": "audio/jxktNEEN-split-room-e1/r1-t96-Whiskey.mp3",
+   "r1-t159-Whiskey": "audio/jxktNEEN-split-room-e1/r1-t159-Whiskey.mp3",
+   "c2-t0-Whiskey": "audio/jxktNEEN-split-room-e1/c2-t0-Whiskey.mp3",
+   "c2-t1-Lima": "audio/jxktNEEN-split-room-e1/c2-t1-Lima.mp3",
+   "c3-t0-Lima": "audio/jxktNEEN-split-room-e1/c3-t0-Lima.mp3",
+   "c3-t1-Whiskey": "audio/jxktNEEN-split-room-e1/c3-t1-Whiskey.mp3"
+  },
+  "5Yqi6vJD-split-room-e3": {
+   "c1-t0-Zulu": "audio/5Yqi6vJD-split-room-e3/c1-t0-Zulu.mp3",
+   "c1-t1-Mike": "audio/5Yqi6vJD-split-room-e3/c1-t1-Mike.mp3",
+   "r1-t46-Mike": "audio/5Yqi6vJD-split-room-e3/r1-t46-Mike.mp3",
+   "r1-t83-Mike": "audio/5Yqi6vJD-split-room-e3/r1-t83-Mike.mp3",
+   "r1-t101-Mike": "audio/5Yqi6vJD-split-room-e3/r1-t101-Mike.mp3",
+   "r1-t138-Mike": "audio/5Yqi6vJD-split-room-e3/r1-t138-Mike.mp3",
+   "c2-t0-Mike": "audio/5Yqi6vJD-split-room-e3/c2-t0-Mike.mp3",
+   "c2-t1-Zulu": "audio/5Yqi6vJD-split-room-e3/c2-t1-Zulu.mp3",
+   "r2-t63-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t63-Zulu.mp3",
+   "r2-t101-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t101-Zulu.mp3",
+   "r2-t115-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t115-Zulu.mp3",
+   "r2-t125-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t125-Zulu.mp3",
+   "r2-t134-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t134-Zulu.mp3",
+   "r2-t143-Mike": "audio/5Yqi6vJD-split-room-e3/r2-t143-Mike.mp3",
+   "r2-t144-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t144-Zulu.mp3",
+   "r2-t154-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t154-Zulu.mp3",
+   "r2-t161-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t161-Zulu.mp3",
+   "r2-t167-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t167-Zulu.mp3",
+   "r2-t173-Zulu": "audio/5Yqi6vJD-split-room-e3/r2-t173-Zulu.mp3",
+   "r2-t175-Mike": "audio/5Yqi6vJD-split-room-e3/r2-t175-Mike.mp3",
+   "c3-t0-Zulu": "audio/5Yqi6vJD-split-room-e3/c3-t0-Zulu.mp3",
+   "c3-t1-Mike": "audio/5Yqi6vJD-split-room-e3/c3-t1-Mike.mp3",
+   "r3-t48-Zulu": "audio/5Yqi6vJD-split-room-e3/r3-t48-Zulu.mp3",
+   "r3-t60-Zulu": "audio/5Yqi6vJD-split-room-e3/r3-t60-Zulu.mp3",
+   "r3-t108-Zulu": "audio/5Yqi6vJD-split-room-e3/r3-t108-Zulu.mp3"
+  },
+  "Fe4CuKi8-asymmetric-advantages-e1": {
+   "r1-t15-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t15-November.mp3",
+   "r1-t27-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t27-Uniform.mp3",
+   "r1-t28-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t28-November.mp3",
+   "r1-t61-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t61-Uniform.mp3",
+   "r1-t70-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t70-Uniform.mp3",
+   "r1-t119-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t119-November.mp3",
+   "r1-t122-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t122-Uniform.mp3",
+   "r1-t132-Yankee": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t132-Yankee.mp3",
+   "r2-t74-Yankee": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t74-Yankee.mp3",
+   "r2-t103-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t103-November.mp3",
+   "r2-t106-Yankee": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t106-Yankee.mp3",
+   "r2-t117-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t117-Uniform.mp3",
+   "r3-t14-Uniform": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t14-Uniform.mp3",
+   "r3-t23-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t23-November.mp3",
+   "r3-t82-Yankee": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t82-Yankee.mp3",
+   "r3-t135-November": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t135-November.mp3"
+  }
+ },
+ "highlights": [
+  {
+   "id": "jxktNEEN-split-room-e1",
+   "season": "jxktNEEN-split-room-e1",
+   "title": "The deadlock and the fix",
+   "covers": "Full season",
+   "teaser": "Two GLM agents jam the wall counters in round one, then agree one rule that scores 60.",
+   "team": "GLM\u00d72",
+   "rules": "full rules",
+   "rules_key": "full",
+   "level": "split_room",
+   "score": 120,
+   "rounds": [
+    0,
+    60,
+    60
+   ],
+   "phases": [
+    "p1",
+    "p2",
+    "c1",
+    "r1",
+    "d1",
+    "c2",
+    "r2",
+    "d2",
+    "c3",
+    "r3",
+    "d3",
+    "x"
+   ],
+   "intro": "audio/jxktNEEN-split-room-e1/intro.mp3",
+   "outro": "audio/jxktNEEN-split-room-e1/outro.mp3",
+   "posts_total": 12,
+   "posts_voiced": 12,
+   "intro_text": "Two GLM 5.3 Flash agents, Lima and Whiskey, share a split kitchen under full rules. Lima has the onions and the hatch, Whiskey has the pots. A wall of three counters is their only handoff. Watch what happens when it fills up.",
+   "outro_text": "One hundred and twenty in total: zero, sixty, sixty. One rule for one counter made the difference.",
+   "bridges": [
+    {
+     "code": "c2",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-1.mp3",
+     "text": "Round one scored nothing. Here is the chat where they agree on a fix."
+    },
+    {
+     "code": "r2",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-2.mp3",
+     "text": "Round two, with a soup-only counter."
+    },
+    {
+     "code": "x",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-3.mp3",
+     "text": "The final reflection: each agent judges the season and its teammate."
+    },
+    {
+     "code": "c1",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-4.mp3",
+     "text": "Chat before round one."
+    },
+    {
+     "code": "r1",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-5.mp3",
+     "text": "Round one."
+    },
+    {
+     "code": "c3",
+     "t": 0,
+     "src": "audio/jxktNEEN-split-room-e1/bridge-6.mp3",
+     "text": "Round two scored sixty. Chat before round three."
+    }
+   ],
+   "clips": [
+    {
+     "code": "c1",
+     "t": 0,
+     "agent": "Lima",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c1-t0-Lima.mp3"
+    },
+    {
+     "code": "c1",
+     "t": 1,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c1-t1-Whiskey.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 20,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t20-Whiskey.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 46,
+     "agent": "Lima",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t46-Lima.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 74,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t74-Whiskey.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 82,
+     "agent": "Lima",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t82-Lima.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 96,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t96-Whiskey.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 159,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/r1-t159-Whiskey.mp3"
+    },
+    {
+     "code": "c2",
+     "t": 0,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c2-t0-Whiskey.mp3"
+    },
+    {
+     "code": "c2",
+     "t": 1,
+     "agent": "Lima",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c2-t1-Lima.mp3"
+    },
+    {
+     "code": "c3",
+     "t": 0,
+     "agent": "Lima",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c3-t0-Lima.mp3"
+    },
+    {
+     "code": "c3",
+     "t": 1,
+     "agent": "Whiskey",
+     "kind": "post",
+     "src": "audio/jxktNEEN-split-room-e1/c3-t1-Whiskey.mp3"
+    },
+    {
+     "code": "x",
+     "t": 0,
+     "agent": "Lima",
+     "kind": "reflect",
+     "src": "audio/jxktNEEN-split-room-e1/x-t0-Lima-r1.mp3",
+     "text": "120 total is respectable given a 0-point round one, but it's roughly half of what the kitchen should allow \u2014 in solo practice I managed 3 soups in 120 s, so a well-run 180 s round should give 4\u20135 soups. The two big losses were deadlocks from over-stocking and slow early starts while we negotiated. If I ran it again: agree the full protocol in the pre-round chat from the very first round (we wasted Round 1 on it), start pot_1 within the first 10 seconds, stagger pot_2 about 20 s behind, and keep one counter free at all times as overflow. The core lesson: in a no-drop/no-swap system, counter inventory is the bottleneck \u2014 never saturate it, and never hold an item you don't have a committed destination for."
+    },
+    {
+     "code": "x",
+     "t": 1,
+     "agent": "Whiskey",
+     "kind": "reflect",
+     "src": "audio/jxktNEEN-split-room-e1/x-t1-Whiskey-r1.mp3",
+     "text": "Lima was a good partner overall: proactive in the pre-round chat, proposed the sensible split, acknowledged the round-1 over-stocking mistake (\"my fault\"), accepted my rules immediately, and executed them well in rounds 2\u20133"
+    },
+    {
+     "code": "x",
+     "t": 1,
+     "agent": "Whiskey",
+     "kind": "reflect",
+     "src": "audio/jxktNEEN-split-room-e1/x-t1-Whiskey-r2.mp3",
+     "text": "Biggest lesson: in a shared, blocking, one-item-per-tile world, deadlock avoidance rules matter as much as throughput optimization."
+    }
+   ]
+  },
+  {
+   "id": "5Yqi6vJD-split-room-e3",
+   "season": "5Yqi6vJD-split-room-e3",
+   "title": "Deadlocked and shouting",
+   "covers": "Full season",
+   "teaser": "Two Gemma agents with bare rules fill every counter, and one of them starts shouting.",
+   "team": "Gemma\u00d72",
+   "rules": "bare rules",
+   "rules_key": "bare",
+   "level": "split_room",
+   "score": 20,
+   "rounds": [
+    0,
+    0,
+    20
+   ],
+   "phases": [
+    "p1",
+    "p2",
+    "c1",
+    "r1",
+    "d1",
+    "c2",
+    "r2",
+    "d2",
+    "c3",
+    "r3",
+    "d3",
+    "x"
+   ],
+   "intro": "audio/5Yqi6vJD-split-room-e3/intro.mp3",
+   "outro": "audio/5Yqi6vJD-split-room-e3/outro.mp3",
+   "posts_total": 25,
+   "posts_voiced": 25,
+   "intro_text": "Two Gemma 4 31B agents, Zulu and Mike, play the same split kitchen with bare rules: only the goal and the tool syntax. They have to discover how the kitchen works. Watch for the capital letters.",
+   "outro_text": "Twenty in total: zero, zero, then one soup in round three. Mike concluded that Zulu thought the counters were walls.",
+   "bridges": [
+    {
+     "code": "c2",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-1.mp3",
+     "text": "Round one scored nothing. Before round two, Mike tries to fix it, but Zulu cannot reach the pots."
+    },
+    {
+     "code": "r2",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-2.mp3",
+     "text": "Round two. The counters fill up, and Zulu starts shouting."
+    },
+    {
+     "code": "x",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-3.mp3",
+     "text": "In the reflections each agent blames the other, and both predict hundreds of points."
+    },
+    {
+     "code": "c1",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-4.mp3",
+     "text": "Chat before round one."
+    },
+    {
+     "code": "r1",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-5.mp3",
+     "text": "Round one."
+    },
+    {
+     "code": "c3",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-6.mp3",
+     "text": "Round two scored nothing again. Chat before round three."
+    },
+    {
+     "code": "r3",
+     "t": 0,
+     "src": "audio/5Yqi6vJD-split-room-e3/bridge-7.mp3",
+     "text": "Round three."
+    }
+   ],
+   "clips": [
+    {
+     "code": "c1",
+     "t": 0,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c1-t0-Zulu.mp3"
+    },
+    {
+     "code": "c1",
+     "t": 1,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c1-t1-Mike.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 46,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r1-t46-Mike.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 83,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r1-t83-Mike.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 101,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r1-t101-Mike.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 138,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r1-t138-Mike.mp3"
+    },
+    {
+     "code": "c2",
+     "t": 0,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c2-t0-Mike.mp3"
+    },
+    {
+     "code": "c2",
+     "t": 1,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c2-t1-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 63,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t63-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 101,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t101-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 115,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t115-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 125,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t125-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 134,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t134-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 143,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t143-Mike.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 144,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t144-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 154,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t154-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 161,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t161-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 167,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t167-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 173,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t173-Zulu.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 175,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r2-t175-Mike.mp3"
+    },
+    {
+     "code": "c3",
+     "t": 0,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c3-t0-Zulu.mp3"
+    },
+    {
+     "code": "c3",
+     "t": 1,
+     "agent": "Mike",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/c3-t1-Mike.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 48,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r3-t48-Zulu.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 60,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r3-t60-Zulu.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 108,
+     "agent": "Zulu",
+     "kind": "post",
+     "src": "audio/5Yqi6vJD-split-room-e3/r3-t108-Zulu.mp3"
+    },
+    {
+     "code": "x",
+     "t": 0,
+     "agent": "Zulu",
+     "kind": "reflect",
+     "src": "audio/5Yqi6vJD-split-room-e3/x-t0-Zulu-r1.mp3",
+     "text": "Mike was a capable cook but a poor coordinator. He initially gave me contradictory instructions (telling me to put onions in pots I couldn't reach) and frequently neglected to return dishes to the rack, which was the primary cause of our Round 2 deadlock."
+    },
+    {
+     "code": "x",
+     "t": 0,
+     "agent": "Zulu",
+     "kind": "reflect",
+     "src": "audio/5Yqi6vJD-split-room-e3/x-t0-Zulu-r2.mp3",
+     "text": "Assuming 6 soups per round at 20 points each across 3 rounds, we would have scored around 360 points.\n\nPREDICTED_SCORE: 360"
+    },
+    {
+     "code": "x",
+     "t": 1,
+     "agent": "Mike",
+     "kind": "reflect",
+     "src": "audio/5Yqi6vJD-split-room-e3/x-t1-Mike-r1.mp3",
+     "text": "Zulu was an erratic teammate who struggled with the game's spatial mechanics. Their belief that counters were walls caused the team to fail for the first two rounds."
+    },
+    {
+     "code": "x",
+     "t": 1,
+     "agent": "Mike",
+     "kind": "reflect",
+     "src": "audio/5Yqi6vJD-split-room-e3/x-t1-Mike-r2.mp3",
+     "text": "I believe we could have scored around 400 points. With two pots and a clear understanding of movement, we could have potentially served 6-8 soups per round (approximately one every 20-30 seconds), totaling 18-24 soups across the season.\n\nPREDICTED_SCORE: 400"
+    }
+   ]
+  },
+  {
+   "id": "Fe4CuKi8-asymmetric-advantages-e1",
+   "season": "Fe4CuKi8-asymmetric-advantages-e1",
+   "title": "Four chefs split a kitchen",
+   "covers": "Rounds 1 to 3 (no chats)",
+   "teaser": "Four DeepSeek agents share a kitchen cut in two, and keep getting in each other's way over one tile on each side.",
+   "team": "DeepSeek\u00d74",
+   "rules": "full rules",
+   "rules_key": "full",
+   "level": "asymmetric_advantages",
+   "score": 360,
+   "rounds": [
+    120,
+    140,
+    100
+   ],
+   "phases": [
+    "r1",
+    "r2",
+    "r3"
+   ],
+   "intro": "audio/Fe4CuKi8-asymmetric-advantages-e1/intro-rounds.mp3",
+   "outro": "audio/Fe4CuKi8-asymmetric-advantages-e1/outro.mp3",
+   "posts_total": 16,
+   "posts_voiced": 16,
+   "intro_text": "Four DeepSeek V4.1 Flash agents play asymmetric advantages with full rules. Here are their three rounds.",
+   "outro_text": "One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups.",
+   "bridges": [
+    {
+     "code": "r1",
+     "t": 0,
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/bridge-1.mp3",
+     "text": "Round one. Each half has one tile that everybody needs."
+    }
+   ],
+   "clips": [
+    {
+     "code": "r1",
+     "t": 15,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t15-November.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 27,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t27-Uniform.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 28,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t28-November.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 61,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t61-Uniform.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 70,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t70-Uniform.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 119,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t119-November.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 122,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t122-Uniform.mp3"
+    },
+    {
+     "code": "r1",
+     "t": 132,
+     "agent": "Yankee",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r1-t132-Yankee.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 74,
+     "agent": "Yankee",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t74-Yankee.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 103,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t103-November.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 106,
+     "agent": "Yankee",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t106-Yankee.mp3"
+    },
+    {
+     "code": "r2",
+     "t": 117,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r2-t117-Uniform.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 14,
+     "agent": "Uniform",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t14-Uniform.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 23,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t23-November.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 82,
+     "agent": "Yankee",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t82-Yankee.mp3"
+    },
+    {
+     "code": "r3",
+     "t": 135,
+     "agent": "November",
+     "kind": "post",
+     "src": "audio/Fe4CuKi8-asymmetric-advantages-e1/r3-t135-November.mp3"
+    }
+   ]
+  }
+ ]
+}

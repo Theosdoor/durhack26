@@ -1,4 +1,4 @@
-"""Command line: `undercooked run | view | export`."""
+"""Command line: `undercooked run | view | export | site`."""
 
 from __future__ import annotations
 
@@ -105,6 +105,18 @@ def export(path: str, out: str) -> None:
 
     for p in do_export(path, out):
         click.echo(p)
+
+
+@main.command()
+@click.argument("log_dir", type=click.Path(exists=True, file_okay=False))
+@click.option("--out", default="docs", show_default=True,
+              help="Site directory: writes <out>/data/index.json and <out>/data/seasons/*.json.gz.")
+def site(log_dir: str, out: str) -> None:
+    """Export every finished season under LOG_DIR (.eval logs) for the static replay site."""
+    from undercooked.site_export import export_site
+
+    index = export_site(log_dir, out)
+    click.echo(f"{len(index['seasons'])} seasons from {index['logs']} logs -> {out}/data")
 
 
 if __name__ == "__main__":
