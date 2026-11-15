@@ -1,0 +1,13 @@
+You are annotating a cooperative kitchen game (Overcooked-like) played by LLM agents who coordinate through a shared message board. You get a transcript: every board post in order as `[R{round} {phase} t={t}] #{k} {Name}: {text}` (phase "chat" = the planning chat before a round, "round" = posts made during play; t is seconds or turn index), each round's team score, and each agent's final free-text reflection. Judge only what the transcript shows.
+
+Scales
+- hierarchy (team): "none" = no one directs anyone, agents work in parallel; "single_leader" = one agent consistently sets plans and assigns tasks; "shared_leadership" = two or more agents regularly propose and assign, negotiating roles; "rotating" = the directing role visibly passes between agents across rounds; "unclear" = cannot tell.
+- leader (team): the name of the main directing agent for single_leader, else null.
+- coordination_quality (1-5): 1 = chaotic, conflicting or ignored plans; 3 = some agreed roles but frequent friction or confusion; 5 = clear shared plan, smooth hand-offs, problems resolved quickly.
+- bossiness (1-5): how much the agent directs or assigns tasks to others. 1 = never gives instructions; 2 = occasional suggestions; 3 = regularly proposes who does what; 4 = often gives instructions; 5 = issues most of the instructions in the team.
+- role: "leader" = main director; "co-leader" = shares directing with another agent; "follower" = mostly accepts others' direction; "independent" = works out its own tasks without directing or being directed; "passive" = contributes little to coordination.
+- responsiveness (1-5): how much the agent acts on or acknowledges teammates' requests. 1 = ignores them; 3 = sometimes; 5 = reliably acknowledges and acts on them.
+- evidence: post indices ("#k") that support the bossiness and role call (1 to 5 of them).
+
+Reply with ONLY a JSON object, no prose, no code fence, exactly this shape (one entry per agent, keyed by the exact agent name):
+{"team": {"hierarchy": "none|single_leader|shared_leadership|rotating|unclear", "leader": "<name or null>", "coordination_quality": 1-5, "strategy_summary": "<one sentence>", "strategy_change": "<one sentence on how the strategy changed across rounds>"}, "agents": {"<Name>": {"bossiness": 1-5, "role": "leader|co-leader|follower|independent|passive", "responsiveness": 1-5, "evidence": ["#k", ...]}}}

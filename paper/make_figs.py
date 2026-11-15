@@ -16,7 +16,7 @@ out.mkdir(parents=True, exist_ok=True)
 MAPS = ["cramped_room", "asymmetric_advantages", "coordination_ring", "counter_circuit", "split_room"]
 SHORT = {"cramped_room": "cramped", "asymmetric_advantages": "asymmetric", "coordination_ring": "ring",
          "counter_circuit": "circuit", "split_room": "split"}
-plt.rcParams.update({"font.size": 8, "axes.spines.top": False, "axes.spines.right": False})
+plt.rcParams.update({"font.size": 7, "axes.spines.top": False, "axes.spines.right": False})
 FULL, BARE, OPEN = "#2f6aa8", "#d08a1e", "#3d8a3a"
 
 
@@ -28,7 +28,7 @@ def mse(x):
 # Figure 2: 2-agent self-play, team total by model and rules, per map
 self2 = d[(d.n_agents == 2) & (~d.mixed)]
 teams = ["DeepSeek×2", "GLM×2", "Gemma×2", "Qwen3×2", "Muse×2"]
-fig, axes = plt.subplots(1, 5, figsize=(7.0, 1.9), sharey=True)
+fig, axes = plt.subplots(1, 5, figsize=(5.5, 1.9), sharey=True)
 for ax, lvl in zip(axes, MAPS):
     x = np.arange(len(teams))
     for k, (rules, col) in enumerate([("full", FULL), ("bare", BARE)]):
@@ -46,7 +46,7 @@ fig.savefig(out / "fig2_models.pdf")
 
 # Figure 3: DeepSeek self-play, team total by number of agents and rules, per map
 ds = d[d.team.str.startswith("DeepSeek×")]
-fig, axes = plt.subplots(1, 5, figsize=(7.0, 1.7), sharey=True)
+fig, axes = plt.subplots(1, 5, figsize=(5.5, 1.6), sharey=True)
 for ax, lvl in zip(axes, MAPS):
     x = np.arange(3)
     for k, (rules, col) in enumerate([("full", FULL), ("bare", BARE)]):
