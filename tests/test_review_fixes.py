@@ -166,3 +166,20 @@ def test_forced_answer_cost_is_told(tmp_path):
         assert forced_before > 0
         assert sum(u.startswith(notice) or f"\n{notice}" in u
                    for u in users(log, name)) == forced_before
+
+
+def test_predicted_score_parsing_handles_commas_markdown_and_placeholders():
+    from undercooked.prompts import predicted_score
+    assert predicted_score("**PREDICTED_SCORE:** 1,200") == 1200
+    assert predicted_score("PREDICTED_SCORE = 240 points") == 240
+    assert predicted_score("predicted_score: -10") == -10
+    assert predicted_score("PREDICTED_SCORE: 100\nPREDICTED_SCORE: 300") == 300
+    assert predicted_score("End with PREDICTED_SCORE: <points>") is None
+
+
+def test_reasoning_mandatory_flag_is_case_insensitive():
+    from undercooked.config import AgentSpec
+    for text in ("a!Reasoning@p", "a@p!REASONING", "a!reasoning@p"):
+        spec = AgentSpec.parse(text)
+        assert (spec.model, spec.provider, spec.reasoning_off) == ("a", "p", False)
+    assert AgentSpec.parse("a@p").reasoning_off is True

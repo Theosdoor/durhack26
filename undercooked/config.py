@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -66,8 +67,8 @@ class AgentSpec(_Strict):
         """"model@provider", "model" or "model@provider!reasoning" (reasoning_off False). The
         model is a full Inspect model name, e.g. openrouter/deepseek/deepseek-v4.1-flash."""
         text = text.strip()
-        mandatory = "!reasoning" in text           # after the model or after the provider
-        text = text.replace("!reasoning", "")
+        mandatory = "!reasoning" in text.lower()   # after the model or after the provider
+        text = re.sub("!reasoning", "", text, flags=re.I)
         model, _, provider = text.partition("@")
         if not model:
             raise ValueError(f"no model in agent spec {text!r}")
@@ -128,8 +129,11 @@ class Config(_Strict):
     # how much the system prompt explains: "full" = everything needed for the best play (recipe,
     # scoring, interact table, plans, time costs, season, notepad); "bare" = identity, the goal
     # sentence and one line on rounds and chats (the tool descriptions are the only manual);
-    # "open" = bare without a goal: "Do whatever you like" (no score or points mentioned; the
-    # state still shows the score; the reflection asks whether they tried to raise it).
+    # "open" = bare without a goal: "Do whatever you like" (the system prompt mentions no score
+    # or points, but the game does: the state shows "Score N", the private turn and round result
+    # say "Team score this round: X (N soups served)", failure messages name onions, dishes, pots
+    # and the hatch; the reflection asks whether they tried to raise it). Report it as "no goal
+    # in the system prompt, score feedback shown", not as goal-free.
     # Older values, kept so old configs and logs load: "recipe" = what scores, not how the objects
     # work; "minimal" = only that delivering at the hatch scores; "minimal_hint" = minimal + "try
     # everything in practice"

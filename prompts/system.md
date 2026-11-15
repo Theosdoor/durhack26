@@ -1,4 +1,4 @@
-The system prompt. With rules: full, in reading order: identity, the kitchen rules (kitchen_rules, recipe, scoring.*, map_key, actions, interact_table, plans), season, deciding, the board or chat section (from communication.md), notepad, goal. With rules: bare: identity, bare.goal, one bare.season_* line. With rules: open: identity, open.invitation, one bare.season_* line (no goal, no score). The other sections are snippets the code inserts depending on the experimental condition. See README.md.
+The system prompt. With rules: full, in reading order: identity, the kitchen rules (kitchen_rules, recipe, scoring.*, map_key, actions, interact_table, plans), season, deciding, the board or chat section (from communication.md), notepad, goal. With rules: bare: identity, bare.goal, one bare.season_* line. With rules: open: identity, open.invitation, one bare.season_* line (no goal and no score in the system prompt; the game's state, round results and private turns still show the score). The other sections are snippets the code inserts depending on the experimental condition. See README.md.
 
 ## identity
 You are {me}, one of {cooks} cooks in a kitchen game. {team}

@@ -3,7 +3,7 @@
 name: overnight_mixed
 levels: [split_room, asymmetric_advantages]
 rules: bare
-epochs: 3
+epochs: 2   # 2 seats x 2 epochs: each model plays each seat once (3 would give 2:1)
 practice_s: 120
 agents:
   - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

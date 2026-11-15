@@ -274,13 +274,13 @@ def reflection(cfg: Config, history: list[int]) -> str:
     return "\n".join(lines)
 
 
-_PREDICTED = re.compile(r"PREDICTED_SCORE\W*?(-?\d+(?:\.\d+)?)", re.I)
+_PREDICTED = re.compile(r"PREDICTED_SCORE\W*?(-?\d[\d,]*(?:\.\d+)?)", re.I)
 
 
 def predicted_score(text: str | None) -> float | None:
     """The number on the last "PREDICTED_SCORE: <number>" line of a reflection (None if none)."""
     hits = _PREDICTED.findall(text or "")
-    return float(hits[-1]) if hits else None
+    return float(hits[-1].replace(",", "")) if hits else None   # "1,200" -> 1200
 
 
 # ------------------------------------------------------------- experimental conditions
