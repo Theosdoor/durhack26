@@ -18,12 +18,12 @@ from undercooked.replay import DecisionRecord, Event, Frame, Replay
 
 OVERVIEW = "All conditions"
 
-RULES_LABEL = {"full": "full rules", "recipe": "recipe rules", "minimal": "goal-only",
-               "minimal_hint": "goal + hint"}
+RULES_LABEL = {"full": "full rules", "bare": "bare rules", "open": "no goal",
+               "recipe": "recipe rules", "minimal": "goal-only", "minimal_hint": "goal + hint"}
 COMMS_LABEL = {"full": "comms", "planning_only": "planning-only comms", "none": "no comms"}
 FAMILY_NAME = {"deepseek": "DeepSeek", "gemma": "Gemma", "gemini": "Gemini", "qwen": "Qwen",
                "llama": "Llama", "gpt": "GPT", "claude": "Claude", "glm": "GLM", "kimi": "Kimi",
-               "mistral": "Mistral", "grok": "Grok"}
+               "mistral": "Mistral", "grok": "Grok", "muse": "Muse"}
 
 
 class Season(NamedTuple):
@@ -50,12 +50,17 @@ def models_label(models: Sequence[str]) -> str:
 def condition_key(rep: Replay) -> tuple:
     h = rep.header
     debrief = "score_only" if h.debrief == "score_only" else "private"   # "full" = "private"
-    return (h.rules, h.comms, debrief, h.reasoning, tuple(a.model for a in h.agents))
+    return (h.rules, h.comms, debrief, h.reasoning, tuple(a.model for a in h.agents),
+            h.scoring, h.reflection)
 
 
 def condition_label(key: tuple) -> str:
-    rules, comms, debrief, reasoning, models = key
+    rules, comms, debrief, reasoning, models, scoring, reflection = key
     parts = [RULES_LABEL.get(rules, rules), COMMS_LABEL.get(comms, comms)]
+    if scoring == "orders":
+        parts.append("orders")
+    if not reflection:
+        parts.append("no reflection")
     if debrief == "score_only":
         parts.append("score-only debrief")
     if reasoning != "on":
