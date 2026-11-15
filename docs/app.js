@@ -771,7 +771,7 @@ function resumeHighlight() {
 
 document.addEventListener("keydown", (e) => {
   if (!S.season || !S.phase || !location.hash) return;
-  if (e.target.matches("input[type=text], textarea, select")) return;
+  if (e.target.matches("input[type=text], textarea, select, input.vol")) return;   // a volume slider keeps its own arrow keys
   if (e.key === " ") {
     if (e.target.closest("button, a, summary")) e.target.blur();   // Space is play/pause, not "press the focused button"
     e.preventDefault(); toggle();

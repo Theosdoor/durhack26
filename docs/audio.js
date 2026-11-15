@@ -60,9 +60,15 @@
   const LVL_DEFAULT = { music: 0.6, voices: 0.95, sfx: 0.6 };
   const readLvl = (k) => { try { const v = parseFloat(localStorage.getItem(`uc-audio-${k}vol`)); return v > 0 && v <= 1 ? v : LVL_DEFAULT[k]; } catch { return LVL_DEFAULT[k]; } };
   const lvl = { music: readLvl("music"), voices: readLvl("voices"), sfx: readLvl("sfx") };
+  // a level saved as 0 by the earlier music-only slider meant "off"
+  for (const k of Object.keys(lvl)) { try { if (localStorage.getItem(`uc-audio-${k}vol`) === "0") on[k] = false; } catch { /* private mode */ } }
   const musicGain = () => 0.5 * lvl.music ** 2;
   const sfxGain = () => 0.97 * lvl.sfx ** 2;
-  const voiceVol = () => Math.min(1, lvl.voices ** 2);
+  // voice volume for a source whose old fixed volume was `base` (clips 0.9, highlight clips 0.95,
+  // browser speech 1), scaled so the default level reproduces it. Highlights narrate even with Voices
+  // off (they are an explicit "play this"), but muting during one silences it until it ends.
+  let hlMuted = false;
+  const voiceVol = (base) => (hlMuted ? 0 : Math.min(1, base * (lvl.voices / LVL_DEFAULT.voices) ** 2));
   const LOG = /[?&]sfxlog\b/.test(location.search);
   window.__sfxLog = []; window.__musicLog = [];
   let ctx = null, master = null, sfxBus = null, musicBus = null;
@@ -269,7 +275,7 @@
     const src = m?.posts?.[season.id]?.[key];
     if (LOG) console.log(`[sfx] voice ${key} ${src || "(none)"}`);
     if (!src) return;
-    try { if (voice) voice.pause(); voice = new Audio(src); voice.volume = voiceVol(); await voice.play(); } catch { /* blocked or missing */ }
+    try { if (voice) voice.pause(); voice = new Audio(src); voice.volBase = 0.9; voice.volume = voiceVol(0.9); await voice.play(); } catch { /* blocked or missing */ }
   }
 
   /* ---------------------------------------------------------- browser voices (speechSynthesis) */
@@ -348,7 +354,7 @@
       const u = new SpeechSynthesisUtterance(text);
       const v = voiceFor(item.season, seat);
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-GB";
-      u.pitch = SEAT_PITCH[seat % SEAT_PITCH.length]; u.rate = SEAT_RATE[seat % SEAT_RATE.length]; u.volume = voiceVol();
+      u.pitch = SEAT_PITCH[seat % SEAT_PITCH.length]; u.rate = SEAT_RATE[seat % SEAT_RATE.length]; u.volume = voiceVol(1);
       u.onend = finish; u.onerror = finish;
       ttsDog = setTimeout(finish, est);
       synth.speak(u);
@@ -381,7 +387,7 @@
       const to = setTimeout(fin, 90000);
       spkTo = to;
       a.addEventListener("ended", fin); a.addEventListener("error", fin);
-      a.volume = voiceVol(); voice = a; spkFin = fin;
+      a.volBase = 0.95; a.volume = voiceVol(0.95); voice = a; spkFin = fin;
       if (LOG) { console.log(`[sfx] speak ${src}`); window.__sfxLog.push({ name: "speak", src }); }
       a.play().catch(fin);
     });
@@ -396,7 +402,7 @@
     if (voice && spkFin) { const f = spkFin; spkTo = setTimeout(f, 90000); voice.play().catch(f); }
   }
   function stopSpeak() { ttsCancel(); const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
-  function setHighlight(v) { hlMode = !!v; if (!v) stopSpeak(); }
+  function setHighlight(v) { hlMode = !!v; hlMuted = false; if (!v) stopSpeak(); }
 
   addEventListener("pagehide", () => { if (synth) { try { synth.cancel(); } catch { /* gone */ } } });
 
@@ -446,7 +452,8 @@
     if (k === "music") { if (musicBus && musicTimer) musicBus.gain.setTargetAtTime(musicGain(), t, 0.05); if (on.music !== wasOn) { if (musicWanted()) startMusic(); else stopMusic(true); } }
     if (k === "sfx" && sfxBus) sfxBus.gain.setTargetAtTime(sfxGain(), t, 0.05);
     if (k === "voices") {
-      if (voice) voice.volume = voiceVol();
+      if (hlMode) hlMuted = !on.voices && (wasOn || hlMuted);   // muting during a highlight silences it
+      if (voice) voice.volume = voiceVol(voice.volBase || 0.9);
       if (on.voices && !wasOn) loadManifest();
       if (!on.voices && wasOn && !hlMode) { if (voice) voice.pause(); ttsCancel(); }
     }
