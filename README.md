@@ -42,7 +42,7 @@ Deep links use the hash only, so they work from any subpath: `#<season id>` open
 time is the turn index.
 
 Live at https://theosdoor.github.io/durhack26/ (GitHub Pages: deploy from branch `main`, folder
-`/docs`). The Paper tab opens `docs/paper.pdf`.
+`/docs`).
 
 Sound (toggles in the player, remembered per browser): music (off by default) and sound effects
 (on) are synthesized with the Web Audio API. Voices (off) play only clips listed in
