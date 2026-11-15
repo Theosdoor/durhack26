@@ -732,12 +732,12 @@ function play() {
   const ms = interval();
   if (S.t === 0 && window.UCAudio) { try { UCAudio.advance(S.season, S.phase, -1, 0, S.speed); } catch (e) { console.warn(e); } }   // posts at t=0 (first chat speaker)
   S.timer = setInterval(() => {
+    if (window.UCAudio && UCAudio.holdClock(S.phase, S.speed)) return;   // a post is being read aloud (browser voices)
     if (S.t >= S.phase.hi) {   // end of this phase: carry on into the next one, stop at the end of the season
       const ph = S.season.phases, nxt = ph[ph.indexOf(S.phase) + 1];
       if (nxt) { selectPhase(nxt, 0); play(); } else { stop(); update(); }
       return;
     }
-    if (window.UCAudio && UCAudio.holdClock(S.phase, S.speed)) return;   // a post is being read aloud (browser voices)
     const from = S.t;
     seek(S.t + 1, Math.min(ms * 0.9, 400));
     if (window.UCAudio) { try { UCAudio.advance(S.season, S.phase, from, S.t, S.speed); } catch (e) { console.warn(e); } }

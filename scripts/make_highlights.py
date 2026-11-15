@@ -7,7 +7,7 @@
 Four full seasons are presented; only the best lines get a voice (ranked, then cut at a credit cap).
 Narration and clips go to docs/audio/<season id>/<key>.mp3 and docs/audio/manifest.json.
 The API key (ELEVENLABS_API_KEY) is read from the environment or from the .env file named by
-UC_ENV (default /home2/nchw73/workspace/durhack26/.env) and is never printed or written.
+UC_ENV (default ./.env) and is never printed or written.
 """
 from __future__ import annotations
 
@@ -253,7 +253,7 @@ def dest(c):
 def key_from_env():
     k = os.environ.get("ELEVENLABS_API_KEY")
     if not k:
-        envf = Path(os.environ.get("UC_ENV", "/home2/nchw73/workspace/durhack26/.env"))
+        envf = Path(os.environ.get("UC_ENV", ".env"))
         for line in envf.read_text().splitlines():
             if line.startswith("ELEVENLABS_API_KEY="):
                 k = line.split("=", 1)[1].strip().strip("'\"")
