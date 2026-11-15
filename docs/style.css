@@ -217,6 +217,7 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 .sound button { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; padding: 4px 8px; color: var(--muted); }
 .sound button[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: var(--panel); }
 .sound button svg { flex: none; }
+.sound .vol { width: 72px; accent-color: var(--accent); align-self: center; margin: 0 6px 0 0; }
 @media (max-width: 560px) { .sound button { padding: 4px 6px; font-size: .78rem; } }
 
 /* highlight reel */
