@@ -207,12 +207,12 @@ def passer_plan(state: str) -> list[str]:
     me, mate, pot, counters = _me(state), _mate(state), _pot1(state), _counters(state)
     spot = {"an onion": "counter_2_1", "a dish": "counter_2_1"}.get(me)
     if spot is not None:
-        return [f"interact({spot})"] if counters.get(spot) == "empty" else ["wait(1)"]
+        return [f"interact({spot})"] if counters.get(spot, "empty") == "empty" else ["wait(1)"]
     onions = _pot_onions(pot) + sum(v == "onion" for v in counters.values()) + (mate == "an onion")
     dishes = sum(v == "dish" for v in counters.values()) + (mate in ("a dish", "a soup"))
     served = not re.search(r"Score 0\b", state)
     if onions < 3:
-        if counters.get("counter_2_1") != "empty":
+        if counters.get("counter_2_1", "empty") != "empty":
             return ["wait(1)"]
         return ["interact(onion_crate)", "interact(counter_2_1)"]
     if dishes == 0 and not served:

@@ -360,7 +360,7 @@ class Season:
                               reasoning_off=a.am.spec.reasoning_off) for a in self.agents],
             seed=cfg.seed, epoch=self.epoch, round_s=cfg.round_s, rounds=cfg.rounds,
             cook_s=cfg.cook_s, practice_s=cfg.practice_s if cfg.practice else None,
-            bins=cfg.bins, **condition(cfg)))
+            bins=cfg.bins, counters_shown=cfg.counters_shown, **condition(cfg)))
         clock = time.monotonic()
         self.event("briefing", 0, 0, "phase_start")
         self.event("briefing", 0, 0, "phase_end", duration_s=round(time.monotonic() - clock, 1))

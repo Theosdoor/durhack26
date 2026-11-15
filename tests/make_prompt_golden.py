@@ -44,6 +44,8 @@ def _grid() -> list[tuple[str, Config]]:
                     cfg(comms=comms, debrief=debrief, practice=practice, scoring=scoring,
                         decision={"reasoning": reasoning})))
     out.append(("push", cfg(board="push")))
+    out.append(("bins", cfg(bins=True)))
+    out.append(("counters_shown_shared", cfg(counters_shown="shared")))
     out.append(("one_round_one_post", cfg(rounds=1, chat_max_posts=1, practice_s=30,
                                           decision={"flat_s": 1, "reasoning_tokens": 500})))
     out.append(("odd_numbers", cfg(rounds=2, chat_max_posts=2, cook_s=15, max_plan_len=3,
@@ -120,7 +122,7 @@ def _state_texts() -> dict[str, Any]:
         s = Season(c, [agent_model(AgentSpec(model="mockllm/model"), c)] * 2, 1)
         a = s.agents[0]
         a.notepad = "np"
-        kitchen = Kitchen.load("practice" if phase == "practice" else c.level)
+        kitchen = Kitchen.load("practice" if phase == "practice" else c.level, c.bins)
         g = Game(kitchen, [x.name for x in s.agents] if phase == "round" else [a.name], c,
                  phase=phase, round=0 if phase == "practice" else 2)
         for _ in range(3):
@@ -140,6 +142,13 @@ def _state_texts() -> dict[str, Any]:
         g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], c, phase="round", round=1)
         out[f"engine.{scoring}"] = g.state_text("Kilo", unread_posts=0, notepad="n",
                                                 last_plan_result="none yet")
+    for shown in ("occupied", "shared"):      # counters_shown: an item on a counter, and none
+        for items in ({}, {(2, 2): "onion"}):
+            g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"],
+                     cfg(counters_shown=shown), phase="round", round=1)
+            g.counters.update(items)
+            out[f"engine.counters_{shown}.{'item' if items else 'none'}"] = g.state_text(
+                "Kilo", unread_posts=0, notepad=None, last_plan_result="none yet")
     # held items and every pot state, with and without orders (self-contained: no other test
     # has to have loaded these sections first)
     for scoring in ("soups", "orders"):
@@ -198,7 +207,7 @@ def render_all() -> dict[str, Any]:
         o["debrief"] = [prompts.debrief(c, 1, 20, 1, 0, [20], None),
                         prompts.debrief(c, 2, 30, 2, 1, [20, 30], 'my "note"'),
                         prompts.debrief(c, 3, -10, 0, 1, [20, 30, -10], "")]
-        g = Game(Kitchen.load(c.level), ["Kilo", "Tango"], c)
+        g = Game(Kitchen.load(c.level, c.bins), ["Kilo", "Tango"], c)
         o["kitchen_overview"] = prompts.kitchen_overview(g, "Kilo")
         g = Game(Kitchen.load("cramped_room"), ["Kilo", "Tango", "Lima"], c)
         o["kitchen_overview_n3"] = prompts.kitchen_overview(g, "Kilo")

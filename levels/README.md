@@ -22,8 +22,9 @@ pass-through counter, the only way items cross between rooms.
 Every level has one bin per room an agent can stand in (`B`, ids `bin_1`, `bin_2`, ... in reading
 order). Each replaces a plain wall counter that touches floor, never a shared (pass-through)
 counter and never a tile that blocks a path or the only access to an object, placed next to the
-dish rack or hatch where possible. `bins: false` in the config turns every `B` back into a
-counter (the layouts of runs before bins; 213 earlier seasons ran so).
+dish rack or hatch where possible. Bins are opt-in: with the default `bins: false` every `B` is
+loaded as a plain counter (the layouts and prompts of runs before bins existed, including the 213
+earlier seasons); `bins: true` makes them bins.
 
 | Level | Bins (x, y) | Where |
 |---|---|---|
@@ -36,7 +37,7 @@ counter (the layouts of runs before bins; 213 earlier seasons ran so).
 | `open_plan` | `bin_1` (6,2) | right wall, between the rack and the hatch |
 | `practice` | `bin_1` (2,2) | bottom wall, beside the rack |
 
-With bins, `forced_coordination`, `cramped_room`, `asymmetric_advantages`, `coordination_ring` and
+With `bins: true`, `forced_coordination`, `cramped_room`, `asymmetric_advantages`, `coordination_ring` and
 `counter_circuit` differ from the Overcooked-AI grids by those `B` tiles (each is an `X` there).
 
 Every level used in two-player rounds has start positions 1 and 2; `practice` has only 1.

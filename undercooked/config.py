@@ -148,9 +148,14 @@ class Config(_Strict):
     # "soups" = every soup served at a hatch scores orders.reward: no orders, nothing expires.
     # "orders" = a soup fills the open order due soonest; an expired order costs orders.penalty
     scoring: Literal["soups", "orders"] = "soups"
-    # True = the level files as written, bins ("B") included; False = every bin is a plain counter,
-    # the layouts runs had before bins existed (reproduces older results)
-    bins: bool = True
+    # True = the bins ("B" tiles) in the level files are bins (trash: interact while holding an item
+    # to throw it away; the full-rules prompt explains them); False = every B is a plain counter,
+    # the layouts and prompts of runs before bins existed (reproduces older results)
+    bins: bool = False
+    # which counters the state text lists each turn: "occupied" = only counters holding an item
+    # (and the chat overview names no counter); "shared" = the pass-through counters between rooms
+    # even when empty, plus occupied ones, and the overview names them (the behaviour of older runs)
+    counters_shown: Literal["occupied", "shared"] = "occupied"
     compact_at_tokens: int = 32000
     providers: Providers = Field(default_factory=Providers)
     agents: list[AgentSpec]

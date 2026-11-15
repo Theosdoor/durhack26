@@ -59,6 +59,7 @@ class Header(BaseModel):
     rules: Literal["full", "bare", "open", "recipe", "minimal", "minimal_hint"] = "full"
     scoring: Literal["soups", "orders"] = "orders"    # "soups": no orders (Frame.orders empty)
     reflection: bool = False
+    counters_shown: Literal["occupied", "shared"] = "shared"   # older logs listed the shared counters
     bins: bool = False             # the kitchen had bins ("B" tiles in map); older logs had none
 
 

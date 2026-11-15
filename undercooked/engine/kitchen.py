@@ -33,7 +33,7 @@ class Obj:
 class Kitchen:
     """Immutable level layout. Build with `Kitchen.load("forced_coordination")`."""
 
-    def __init__(self, name: str, rows: list[str], bins: bool = True):
+    def __init__(self, name: str, rows: list[str], bins: bool = False):
         if not rows:
             raise ValueError(f"level {name!r} is empty")
         self.name = name
@@ -79,9 +79,9 @@ class Kitchen:
 
     # ----------------------------------------------------------------- loading
     @classmethod
-    def load(cls, level: str | Path, bins: bool = True) -> "Kitchen":
-        """Load `levels/<level>.txt` (or any path to a level file). `bins=False` turns every `B`
-        into a counter (Config.bins)."""
+    def load(cls, level: str | Path, bins: bool = False) -> "Kitchen":
+        """Load `levels/<level>.txt` (or any path to a level file). `bins=False` (the default, as
+        Config.bins) turns every `B` into a counter."""
         p = Path(level)
         if not (p.suffix == ".txt" or p.exists()):
             p = LEVELS_DIR / f"{level}.txt"
