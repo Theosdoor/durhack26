@@ -296,16 +296,16 @@ def order_strip(orders: list[OrderState], t: int, width: int) -> str:
 
 # ---------------------------------------------------------------- entry point
 
-def render_svg(header: Header, frame: Frame) -> str:
-    """The whole scene as an SVG string (no newlines or indentation, so Markdown leaves it alone)."""
-    rows = header.map
+def map_tiles(rows: list[str], pots: list[PotState], counters: dict[str, str], cook_s: int = 20,
+              top: int = STRIP) -> list[str]:
+    """Every tile of the map (with its pot and counter item), the grid starting `top` px down.
+    With no pots and no counters it is the static background the static site draws on."""
     cols = max(len(r) for r in rows)
-    width, height = cols * T, STRIP + len(rows) * T
-    pots = {tuple(p.pos): p for p in frame.pots}
-    parts = [DEFS, order_strip(frame.orders, frame.t, width)]
+    at = {tuple(p.pos): p for p in pots}
+    parts = []
     for y, line in enumerate(rows):
         for x, ch in enumerate(line.ljust(cols)):
-            x0, y0 = x * T, STRIP + y * T
+            x0, y0 = x * T, top + y * T
             if ch == "X":
                 parts.append(pass_counter_tile(x0, y0) if is_pass_through(rows, x, y) else counter_tile(x0, y0))
             elif ch == "O":
@@ -315,12 +315,22 @@ def render_svg(header: Header, frame: Frame) -> str:
             elif ch == "S":
                 parts.append(hatch_tile(x0, y0))
             elif ch == "P":
-                parts.append(pot_tile(x0, y0, pots.get((x, y)), header.cook_s))
+                parts.append(pot_tile(x0, y0, at.get((x, y)), cook_s))
             else:
                 parts.append(floor_tile(x, y, x0, y0))
-            item = frame.counters.get(f"{x},{y}")
+            item = counters.get(f"{x},{y}")
             if item and ch in "XOD":
                 parts.append(counter_item(item, x0, y0))
+    return parts
+
+
+def render_svg(header: Header, frame: Frame) -> str:
+    """The whole scene as an SVG string (no newlines or indentation, so Markdown leaves it alone)."""
+    rows = header.map
+    cols = max(len(r) for r in rows)
+    width, height = cols * T, STRIP + len(rows) * T
+    parts = [DEFS, order_strip(frame.orders, frame.t, width)]
+    parts += map_tiles(rows, frame.pots, frame.counters, header.cook_s)
     names = [a.name for a in header.agents]
     letters = {a.name: a.letter for a in header.agents}
     for a in frame.agents:   # chefs last so they draw on top of tiles

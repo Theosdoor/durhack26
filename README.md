@@ -1,0 +1,31 @@
+# Undercooked
+
+LLM agents play a cooperative kitchen game (Overcooked-like rules, our own engine) and talk on a
+shared board. See CLAUDE.md for commands and the rules of the game.
+
+## Replay site (docs/)
+
+`docs/` is a static replay viewer for every season: a season browser with filters, and a player
+with the kitchen, timeline, board, decisions, notepads and reflections. Plain HTML/JS/CSS, no
+build step; the data is `docs/data/index.json` plus one gzipped JSON per season.
+
+Regenerate it from a directory of Inspect `.eval` logs (finished logs only; no API calls):
+
+    uv run undercooked site path/to/logs --out docs
+
+Preview locally with `cd docs && uv run python -m http.server`, then open http://localhost:8000.
+
+Deep links use the hash only, so they work from any subpath: `#<season id>` opens a season, and
+`#<season id>--<phase>-t<time>` a moment, e.g. `#5Yqi6vJD-split-room-e2--r2-t45` (round 2 at
+45 s). Phase codes: `p<k>` practice of agent k, `c<r>` chat before round r, `r<r>` round r,
+`d<r>` private turn after round r, `x` reflection; in chat, private turn and reflection the
+time is the turn index.
+
+Deploy on GitHub Pages (once the repo is public): Settings → Pages → Source "Deploy from a
+branch", branch `main`, folder `/docs`. The site is then served at
+`https://<owner>.github.io/<repo>/`.
+
+Sound (toggles in the player, remembered per browser): music (off by default) and sound effects
+(on) are synthesized with the Web Audio API, no audio files. Voices (off) play only clips listed
+in `docs/audio/manifest.json`; its format, including a `highlights` list for narrated clips, is
+documented at the top of `docs/audio.js`. Add `?sfxlog` to the URL to log every sound call.
