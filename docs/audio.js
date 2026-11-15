@@ -404,7 +404,7 @@
   function stopSpeak() { ttsCancel(); const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
   function setHighlight(v) { hlMode = !!v; hlMuted = false; if (!v) stopSpeak(); }
 
-  addEventListener("pagehide", () => { if (synth) { try { synth.cancel(); } catch { /* gone */ } } });
+  addEventListener("pagehide", () => { if (synth) { try { synth.cancel(); } catch { /* gone */ } } if (voice) { try { voice.pause(); } catch { /* gone */ } } });
 
   /* ---------------------------------------------------------- player hooks */
   // called by app.js while playing, after time moved from `from` to `to` in phase `p`
@@ -509,10 +509,13 @@
 
   function musicWanted() { return on.music && inReplay && playing; }
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
-  function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); stopMusic(true); } syncMusic(); }
+  // stop a board post being read aloud (clip or browser speech); the highlight player handles its own
+  function quietPosts() { if (hlMode) return; ttsCancel(); if (voice) { try { voice.pause(); } catch { /* gone */ } } }
+  // every navigation (to the season list, another season, or a link to a moment) silences posts
+  function setReplay(v) { inReplay = !!v; quietPosts(); if (!inReplay) { playing = false; stopMusic(true); } syncMusic(); }
   function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
-  // a user's pause stops the music at once; setPlaying(false) alone waits, as phase changes restart playback
-  const pauseMusic = () => stopMusic(true);
+  // a user's pause stops the music and any post being read at once; setPlaying(false) alone waits, as phase changes restart playback
+  const pauseMusic = () => { stopMusic(true); quietPosts(); };
   const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();
