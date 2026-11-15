@@ -95,7 +95,15 @@ Agents (seasons) & GLM & Gemma & GLM & Gemma\\
 \textbf{Agents over-predict.} Asked what they would have scored with full instructions, bare agents predicted a median of 270 points against an actual 160; agents that already had full instructions over-predicted by the same median, 80 points.
 
 \subsection{What agents do}\label{sec:qual}
-\todo{Qualitative findings by phase (0.5--0.75 page), stated directly with their evidence: (i) practice and exploration, by model; (ii) first chat and role-setting; (iii) strategy over rounds; (iv) notepads and private turns; (v) reflections; (vi) per-model signatures. Two or three short quotes; more in Appendix~\ref{app:quotes}.}
+We read about 50 seasons closely; the counts below are computed by script over all 213. Quotes are verbatim, with locators in Appendix~\ref{app:quotes}.
+
+\textbf{Practice.} With bare rules, the share of agents that served a soup alone in practice differs sharply by model: DeepSeek 97\% ($n=129$), GLM 85\% (34), Qwen 53\% (34), Gemma 42\% (36); with full rules it is 100\% for every model. Gemma's typical failure is to get stuck holding the wrong item: one Gemma agent picked up a dish at $t=8$ and held it to the end of practice, reasoning ``The player is currently holding a dish, which prevents them from picking up onions.''
+
+\textbf{First chat.} Roles are set in the first exchange. In 85\% of round-1 chats in pairs ($n=165$; chance 50\%) the seeded first speaker sends the most directive messages, and the second speaker usually just accepts (``Sounds good! I'll grab onions from crate\_1.''). The layout shapes the split: territorial on \emph{asymmetric} (``I'll take the LEFT side''), feeder/plater on \emph{cramped}, a relay across the wall counters on \emph{split}. Since the first speaker changes between rounds, the leadership the judges see is largely a first-mover effect, not a stable trait of an agent.
+
+\textbf{Rounds.} Teams repair failures through the chat. On \emph{split}, the typical failure is a deadlock at the shared wall counters: rounds scoring 0 fell from 9 of 48 seasons in round 1 to 4 in round 2 and 2 in round 3, after agents agreed counter protocols (``Round 2 rules to avoid the R1 deadlock: (3,2) is SOUP-ONLY, never put onions there.''). Larger teams block each other more and post more during play (``DEADLOCK: I'm ON (3,1) holding a dish.'').
+
+\textbf{Notes, reflections and model signatures.} DeepSeek writes long protocol-style notes in nearly every private turn (``Golf = ONION CHEF: fill pot 3 onions nonstop''); Gemma and Muse rarely write notes, and briefly. Open-rules agents still reason about points (``I didn't chase a risky 4th soup because a mistimed plating failure costs 20 pts''). Talkativeness is a model signature: in two-agent bare self-play, DeepSeek posts 375 words per agent-season, GLM 326, Qwen 177 and Gemma 83.
 
 \section{Discussion and limitations}\label{sec:limits}
 Undercooked makes the coordination of role-free LLM teams observable at low cost: the study cost \$35 and about three hours of wall time. For current open-weight models, explicit knowledge matters more than team size, and adding agents to a tightly coupled task mostly adds talk and dissolves single leadership into shared negotiation. Limitations: three seasons per cell gives wide error bars, and team size was varied for one model only; the open condition still shows the score; bare agents can learn the recipe from error messages by design; one mixed pair ran with unbalanced seats (Appendix~\ref{app:caveats}); role labels are LLM judgements validated only by inter-judge agreement; and simulated time removes real-time pressure.
@@ -402,6 +410,48 @@ Judges: GLM 5.3 Flash (\texttt{morph/fp8}, reasoning effort low, \texttt{max\_to
 \VerbatimInput[breaklines,breakanywhere,fontsize=\scriptsize,frame=single,framesep=2pt]{judge_prompt.txt}
 
 \section{Qualitative details and quotes}\label{app:quotes}
-\todo{Details and longer quotes from the qualitative analysis, by phase, each with log file, season, round and turn.}
+\textbf{Method.} We read about 50 seasons in the replay viewer and logs, chosen to cover every model, rules value, team size and layout; the counts in Section~\ref{sec:qual} are computed by script over all 213 seasons. Quotes are verbatim from the logs. Locator: eval log id (last 7 characters of the \texttt{.eval} file name), layout, epoch, phase and round, agent, model, rules, team size.
+
+\textbf{Quotes used in Section~\ref{sec:qual}.}
+\begin{itemize}\itemsep0pt\small
+\item ``The player is currently holding a dish, which prevents them from picking up onions.'' \hfill {\scriptsize [qFrhPPu, asymmetric ep3, practice, t=98, Yankee (Gemma, bare, 2 agents)]}
+\item ``Sounds good! I'll grab onions from crate\_1.'' \hfill {\scriptsize [ktmuWLp, cramped ep1, chat R1, Kilo (Qwen, bare, 2 agents)]}
+\item ``I'll take the LEFT side'' \hfill {\scriptsize [Fymf3CL, asymmetric ep1, chat R1, Uniform (DeepSeek, full, 4 agents)]}
+\item ``Round 2 rules to avoid the R1 deadlock: (3,2) is SOUP-ONLY, never put onions there.'' \hfill {\scriptsize [QcSUoo8, split ep1, chat R2, Whiskey (GLM, full, 2 agents)]}
+\item ``DEADLOCK: I'm ON (3,1) holding a dish.'' \hfill {\scriptsize [F3g3hyp, ring ep2, round R3, t=58, Kilo (DeepSeek, bare, 3 agents)]}
+\item ``Golf = ONION CHEF: fill pot 3 onions nonstop'' \hfill {\scriptsize [SQawxWu, cramped ep2, private turn R1, Golf (DeepSeek, bare, 2 agents)]}
+\item ``I didn't chase a risky 4th soup because a mistimed plating failure costs 20 pts'' \hfill {\scriptsize [DoaisDb, asymmetric ep1, reflection R3, November (DeepSeek, open, 2 agents)]}
+\end{itemize}
+
+\textbf{Further quotes by phase.}
+\begin{itemize}\itemsep0pt\small
+\item[] \textit{Practice}
+\item ``D = dispenser presumably.'' \hfill {\scriptsize [SQawxWu, cramped ep1, practice, t=0, Kilo (DeepSeek, bare, 2 agents)]}
+\item ``The pot needs 3 onions! Let me put the dish down on a counter and get more onions.'' \hfill {\scriptsize [ktmuWLp, cramped ep1, practice, t=20, Kilo (Qwen, bare, 2 agents)]}
+\item ``I've hit a soft-lock: I grabbed the dish too early, and with no counter to set it down, I can't pick up onions to fill the pot.'' \hfill {\scriptsize [DoaisDb, cramped ep1, practice, t=33, Kilo (DeepSeek, open, 2 agents)]}
+\item ``2 onions isn't enough'' \hfill {\scriptsize [xZvze3B, cramped ep1, practice, t=54, Kilo (GLM, bare, 2 agents)]}
+\item ``Recipe learned (solo practice): pot\_1 needs 3 onions to start cooking, 20s cook'' \hfill {\scriptsize [SQawxWu, cramped ep1, practice, t=89, Kilo (DeepSeek, bare, 2 agents)]}
+\item[] \textit{Chat}
+\item ``Kilo, you handle onion\_crate\_1. I'll handle onion\_crate\_2, get the dishes, and serve the soup.'' \hfill {\scriptsize [WM8ZnLW, cramped ep1, chat R1, Foxtrot (Gemma, full, 2 agents)]}
+\item ``Deal: you keep pot + left onions, cook/plating handoff at pot.'' \hfill {\scriptsize [eXWNc4Z, cramped ep1, chat R1, Foxtrot (GLM, open, 2 agents)]}
+\item ``IMPORTANT: x=4 is a full wall of pots/X - left and right are DISCONNECTED.'' \hfill {\scriptsize [Fymf3CL, asymmetric ep1, chat R1, Yankee (DeepSeek, full, 4 agents)]}
+\item ``Your job: (1) keep 5-6 onions stocked on (3,2)/(3,3) non-stop from t=0'' \hfill {\scriptsize [koczUWN, split ep2, chat R3, Quebec (DeepSeek, bare, 2 agents)]}
+\item ``Understood. I'll keep 5-6 onions on (3,2)/(3,3), never touch (3,1), and serve instantly.'' \hfill {\scriptsize [koczUWN, split ep2, chat R3, Romeo (Muse, bare, 2 agents)]}
+\item[] \textit{Rounds}
+\item ``DEADLOCK: I hold soup, you hold onion, all 3 counters full - neither of us can move.'' \hfill {\scriptsize [QcSUoo8, split ep1, round R1, t=96, Whiskey (GLM, full, 2 agents)]}
+\item ``MIKE! PUT THE DISH AWAY! I AM STILL HOLDING AN ONION AND EVERY COUNTER IS FULL! We are deadlocked!'' \hfill {\scriptsize [qFrhPPu, split ep3, round R2, t=161, Zulu (Gemma, bare, 2 agents)]}
+\item ``Maybe we can just wait till round ends. Score 0. That's bad.'' \hfill {\scriptsize [28jwS27, split ep2, round R3, t=134, Quebec (Muse, full, 2 agents)]}
+\item[] \textit{Private turns}
+\item ``Cold start is the biggest killer'' \hfill {\scriptsize [SQawxWu, cramped ep2, private turn R3, Golf (DeepSeek, bare, 2 agents)]}
+\item ``Lima is slow/idle a lot'' \hfill {\scriptsize [QcSUoo8, cramped ep2, private turn R1, Golf (GLM, full, 2 agents)]}
+\item[] \textit{Reflections}
+\item ``Good tactical sense, poor spatial discipline about other people's lanes.'' \hfill {\scriptsize [Fymf3CL, asymmetric ep1, reflection R3, Uniform (DeepSeek, full, 4 agents)]}
+\item ``a clean, fully-briefed season looks like roughly 210 per round, \textasciitilde{}630 total'' \hfill {\scriptsize [Fymf3CL, asymmetric ep1, reflection R3, Uniform (DeepSeek, full, 4 agents)]}
+\item ``I burned a visible amount of clock arguing with Yankee'' \hfill {\scriptsize [Fymf3CL, asymmetric ep1, reflection R3, Uniform (DeepSeek, full, 4 agents)]}
+\item ``the only person who physically walks to (2,1) to add onions or plate soup'' \hfill {\scriptsize [b8bLEwa, cramped ep2, reflection R3, Golf (Qwen, full, 2 agents)]}
+\item ``I took the "pot filler" role'' \hfill {\scriptsize [b8bLEwa, cramped ep2, reflection R3, Lima (Qwen, full, 2 agents)]}
+\end{itemize}
+
+\textbf{Caveats.} The first speaker is seeded per season and changes between rounds, and seeds are partly shared across conditions, so first-speaker effects are not fully independent between conditions. Whether an agent's stated role (e.g.\ ``I'll handle onions'') matches what it then does was checked by hand only in a few seasons.
 
 \end{document}
