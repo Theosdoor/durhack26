@@ -8,6 +8,9 @@ from undercooked.replay import Frame, OrderState
 
 
 def make_cfg(**kw) -> Config:
+    """Scoring "orders" unless given: most of these tests exercise the order machinery
+    (test_soups_scoring_* cover the default, scoring "soups")."""
+    kw.setdefault("scoring", "orders")
     return Config(name="test", level="forced_coordination", agents=[AgentSpec(model="mockllm/model")] * 2,
                   **kw)
 
@@ -72,9 +75,9 @@ def test_agent_starts():
 
 
 # ------------------------------------------------------------- interactions
-def setup_open(holding=None, pos=(2, 1)):
+def setup_open(holding=None, pos=(2, 1), **kw):
     """One agent on open_plan, placed by hand."""
-    g = game("open_plan", names=("Kilo",))
+    g = game("open_plan", names=("Kilo",), **kw)
     a = g.agent("Kilo")
     a.pos, a.holding = pos, holding
     return g, a
@@ -319,6 +322,28 @@ def test_orders_respect_max_open():
     assert [o.id for o in g.orders] == [1, 2]     # the t=20 arrival was skipped
     f = g.frame()
     assert isinstance(f, Frame) and f.t == 25 and len(f.orders) == 2
+
+
+def test_soups_scoring_has_no_orders_and_every_soup_scores():
+    g = game(names=("Kilo",), scoring="soups")
+    assert g.orders == [] and not g.uses_orders and g.accepts_soup
+    ev = run(g, 200)
+    assert not [e for e in ev if e.type.startswith("order")] and g.score == 0 and g.missed == 0
+    assert g.frame().orders == []
+    text = g.state_text("Kilo", unread_posts=0, notepad=None, last_plan_result="none yet")
+    assert "Orders" not in text and "order" not in text.lower()
+
+
+def test_soups_scoring_serves_without_an_order():
+    g, a = setup_open(holding="soup", pos=(5, 3), scoring="soups")
+    ev = do(g, a, "interact(hatch_1)")
+    serve = [e for e in ev if e.type == "serve"]
+    assert serve and serve[0].data == {"item": "soup", "at": "6,3", "points": 20}
+    assert (g.score, g.served, g.missed, a.holding) == (20, 1, 0, None)
+    ev = do(g, a, "wait(1)")
+    a.holding = "soup"
+    ev = do(g, a, "interact(hatch_1)")
+    assert (g.score, g.served) == (40, 2)
 
 
 def test_serve_on_due_second_counts():

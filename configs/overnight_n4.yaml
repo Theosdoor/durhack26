@@ -1,0 +1,8 @@
+# Overnight: four agents (DeepSeek self-play); --rules full|bare
+name: overnight_n4
+levels: [split_room, asymmetric_advantages, counter_circuit]
+n_agents: 4
+epochs: 3
+practice_s: 120
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

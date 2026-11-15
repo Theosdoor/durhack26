@@ -1,6 +1,7 @@
 # Pilot on forced_coordination (the layout formerly named split_room). Every option not
 # set here is the default (configs/template.yaml).
 name: split_room_nocomms
+scoring: orders                     # as these configs ran (before the soups default)
 level: forced_coordination
 board: pull                         # unread count; read_board() is free
 comms: none                         # no chat, no board

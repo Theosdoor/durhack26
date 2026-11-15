@@ -126,19 +126,94 @@ def generate_config(cfg: Config) -> GenerateConfig:
 NO_REASONING = {"reasoning_enabled": False}
 
 
-def reasoning_args(cfg: Config) -> dict[str, Any]:
+def reasoning_off(cfg: Config, spec: AgentSpec) -> bool:
+    """Does this agent's main model run with reasoning off? (decision.reasoning "off", unless
+    its endpoint cannot turn reasoning off: spec.reasoning_off False keeps it on.)"""
+    return cfg.decision.reasoning == "off" and spec.reasoning_off
+
+
+def reasoning_args(cfg: Config, spec: AgentSpec | None = None) -> dict[str, Any]:
     """Model args for the agents' main model: none when reasoning is on."""
-    return dict(NO_REASONING) if cfg.decision.reasoning == "off" else {}
+    off = cfg.decision.reasoning == "off" and (spec is None or spec.reasoning_off)
+    return dict(NO_REASONING) if off else {}
+
+
+# Some endpoints refuse reasoning off with HTTP 400 "Reasoning is mandatory for this endpoint and
+# cannot be disabled" (z-ai/glm-5.3-flash@morph/fp8). For those (AgentSpec.reasoning_off False)
+# the forced-answer follow-up keeps reasoning on, with a small reasoning budget inside
+# MANDATORY_MAX_TOKENS. An unflagged endpoint that answers a reasoning-off call with that 400 is
+# retried once with reasoning on (`with_reasoning_fallback`), and the model then skips straight
+# to the fallback for the rest of the run.
+MANDATORY = "Reasoning is mandatory"
+MANDATORY_MAX_TOKENS = 1500
+MANDATORY_REASONING_TOKENS = 500
+_fallback_box: ContextVar[list[str] | None] = ContextVar("undercooked_fallback_box", default=None)
+
+
+@contextmanager
+def reasoning_fallbacks() -> Iterator[list[str]]:
+    """Collect the reasoning-off calls inside this block (this task) that fell back to reasoning
+    on (one entry per call)."""
+    box: list[str] = []
+    token = _fallback_box.set(box)
+    try:
+        yield box
+    finally:
+        _fallback_box.reset(token)
+
+
+def _pinned(spec: AgentSpec, pin: str | None, config: GenerateConfig, **args: Any) -> Model:
+    if not spec.model.startswith(OPENROUTER):
+        return track_served_provider(get_model(spec.model, config=config, **args))
+    return track_served_provider(get_model(spec.model, provider=provider_options(pin or ""),
+                                           config=config, **args))
+
+
+def reasoning_on_model(spec: AgentSpec, pin: str | None) -> Model:
+    """The agent's endpoint with reasoning on and max_tokens MANDATORY_MAX_TOKENS."""
+    return _pinned(spec, pin, GenerateConfig(max_tokens=MANDATORY_MAX_TOKENS,
+                                             reasoning_tokens=MANDATORY_REASONING_TOKENS))
+
+
+def with_reasoning_fallback(model: Model, spec: AgentSpec, pin: str | None) -> Model:
+    """Make a reasoning-off Model retry a "Reasoning is mandatory" 400 once with reasoning on
+    (reasoning_on_model), noting the fallback in the active `reasoning_fallbacks()` box; after the
+    first such 400 every later call of this Model goes straight to reasoning on. Patches the
+    (memoized) instance once; compaction calls through it are covered too."""
+    if getattr(model, "_undercooked_fallback", False):
+        return model
+    original = model.generate
+    state = {"mandatory": False}
+
+    async def generate(input: Any, tools: Any = [], tool_choice: Any = None,
+                       config: GenerateConfig = GenerateConfig(), **kw: Any) -> Any:
+        if not state["mandatory"]:
+            try:
+                return await original(input, tools, tool_choice, config, **kw)
+            except Exception as e:                       # noqa: BLE001 - re-raised below
+                if MANDATORY not in str(e):
+                    raise
+                state["mandatory"] = True
+        box = _fallback_box.get()
+        if box is not None:
+            box.append(spec.model)
+        fallback = reasoning_on_model(spec, pin)
+        return await fallback.generate(input, tools, tool_choice, config, **kw)
+
+    model.generate = generate                    # type: ignore[method-assign]
+    model._undercooked_fallback = True           # type: ignore[attr-defined]
+    return model
 
 
 def no_reasoning_model(am: AgentModel, max_tokens: int) -> Model:
-    """The agent's model (same endpoint pin) with reasoning disabled and a small max_tokens: the
-    forced-answer follow-up call (season.py). get_model memoizes, so this is cheap to repeat."""
-    config = GenerateConfig(max_tokens=max_tokens)
-    if not am.spec.model.startswith(OPENROUTER):
-        return track_served_provider(get_model(am.spec.model, config=config, **NO_REASONING))
-    return track_served_provider(get_model(am.spec.model, provider=provider_options(am.provider),
-                                           config=config, **NO_REASONING))
+    """The model of the forced-answer follow-up call (season.py): the agent's endpoint with
+    reasoning disabled and a small max_tokens; for an endpoint whose reasoning cannot be turned
+    off (spec.reasoning_off False), reasoning on with max_tokens MANDATORY_MAX_TOKENS. get_model
+    memoizes, so this is cheap to repeat."""
+    if not am.spec.reasoning_off:
+        return reasoning_on_model(am.spec, am.provider)
+    model = _pinned(am.spec, am.provider, GenerateConfig(max_tokens=max_tokens), **NO_REASONING)
+    return with_reasoning_fallback(model, am.spec, am.provider)
 
 
 def provider_options(pin: str) -> dict[str, Any]:
@@ -150,10 +225,18 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
     """The agent's Model. With a provider pinned in the config nothing is fetched (no blocking
     GET), so `endpoints` is None; otherwise the endpoint list is fetched, kept in `endpoints`
     (logged by the season solver) and the cheapest eligible endpoint is pinned."""
-    config = generate_config(cfg)
-    args = reasoning_args(cfg)
+    off = reasoning_off(cfg, spec)
+    config = generate_config(cfg) if off or cfg.decision.reasoning == "on" else \
+        GenerateConfig(reasoning_tokens=cfg.decision.reasoning_tokens,
+                       max_tokens=cfg.decision.max_tokens)    # off asked, but mandatory
+    args = reasoning_args(cfg, spec)
+
+    def wrap(model: Model, pin: str | None) -> Model:
+        return with_reasoning_fallback(model, spec, pin) if off else model
+
     if not spec.model.startswith(OPENROUTER):
-        model = track_served_provider(get_model(spec.model, config=config, **args))
+        model = wrap(track_served_provider(get_model(spec.model, config=config, **args)),
+                     spec.provider)
         return AgentModel(model, spec, spec.provider)
     model_id = spec.model[len(OPENROUTER):]
     endpoints, error = None, None
@@ -164,6 +247,6 @@ def agent_model(spec: AgentSpec, cfg: Config) -> AgentModel:
             error = f"{type(e).__name__}: {e}"
             raise RuntimeError(f"cannot list endpoints for {model_id}: {error}") from e
     pin = spec.provider or pick_endpoint(endpoints or [], cfg.providers.min_quant)["tag"]
-    model = track_served_provider(
-        get_model(spec.model, provider=provider_options(pin), config=config, **args))
+    model = wrap(track_served_provider(
+        get_model(spec.model, provider=provider_options(pin), config=config, **args)), pin)
     return AgentModel(model, spec, pin, endpoints, error)

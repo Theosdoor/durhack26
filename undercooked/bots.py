@@ -156,7 +156,7 @@ class SoloBot:
         me = game.agent(self.name)
         hatch = _kind_reachable(game, self.name, "hatch")
         if me.holding == "soup":
-            return [f"interact({hatch})"] if hatch and game.orders else IDLE
+            return [f"interact({hatch})"] if hatch and game.accepts_soup else IDLE
         if me.holding == "dish":
             pot = _pot_to_plate(game, self.name, lead=10_000, only=self.pots)
             if pot is None:
@@ -219,13 +219,13 @@ class SplitPasserBot:
         shared = _shared(game)
         hatch = _kind_reachable(game, self.name, "hatch")
         if me.holding == "soup" and hatch:
-            return [f"interact({hatch})"] if game.orders else IDLE
+            return [f"interact({hatch})"] if game.accepts_soup else IDLE
         if me.holding is not None:
             spot = _empty_counter(game, self.name, shared)
             return [f"interact({spot})"] if spot else IDLE
         soup = _counter_with(game, self.name, "soup", shared)
         if soup and hatch:
-            return [f"interact({soup})"] + ([f"interact({hatch})"] if game.orders else [])
+            return [f"interact({soup})"] + ([f"interact({hatch})"] if game.accepts_soup else [])
         onions = sum(1 for p in shared if game.counters.get(p) == "onion")
         dishes = sum(1 for p in shared if game.counters.get(p) == "dish")
         free = sum(1 for p in shared if p not in game.counters)
@@ -263,7 +263,7 @@ class SplitCookBot:
         hatch = _kind_reachable(game, self.name, "hatch")
         if me.holding == "soup":
             if hatch:
-                return [f"interact({hatch})"] if game.orders else IDLE
+                return [f"interact({hatch})"] if game.accepts_soup else IDLE
             spot = _empty_counter(game, self.name, shared)
             return [f"interact({spot})"] if spot else IDLE
         if me.holding == "dish":
@@ -344,7 +344,7 @@ class PlaterBot:
         me = game.agent(self.name)
         hatch = _kind_reachable(game, self.name, "hatch")
         if me.holding == "soup":
-            return [f"interact({hatch})"] if hatch and game.orders else _idle(game, self.name)
+            return [f"interact({hatch})"] if hatch and game.accepts_soup else _idle(game, self.name)
         if me.holding == "dish":
             pot = _pot_to_plate(game, self.name, lead=10_000)
             if pot is None:

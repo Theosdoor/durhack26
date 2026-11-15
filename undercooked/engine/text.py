@@ -58,9 +58,11 @@ def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | No
         where = load("state", "where_round", round=game.round, rounds=game.cfg.rounds)
     lines = [load("state", "header", t=game.t, duration=game.duration, score=game.score,
                   where=where)]
-    if game.orders:
-        # rules minimal / minimal_hint: the order line names no dish (prompts/state.md)
-        item = "order_item_minimal" if game.cfg.rules.startswith("minimal") else "order_item"
+    if not game.uses_orders:
+        pass                        # scoring "soups": no orders, so no order line
+    elif game.orders:
+        # rules other than full / recipe: the order line names no dish (prompts/state.md)
+        item = "order_item" if game.cfg.rules in ("full", "recipe") else "order_item_minimal"
         orders = ", ".join(load("state", item, due_t=o.due_t)
                            for o in sorted(game.orders, key=lambda o: o.due_t))
         lines.append(load("state", "orders", orders=orders))
@@ -95,17 +97,28 @@ def rules_text(cfg: Config) -> str:
     """Plain-English rules, controls, map key and interact table for the system prompt (the
     kitchen_rules ... plans sections of prompts/system.md).
 
-    cfg.rules other than "full": the recipe and orders paragraphs of kitchen_rules (all but its
-    first paragraph, which says how time, walking and interacting work) and the interact table
-    are replaced by the section rules_<cfg.rules>; map_key, actions and plans stay."""
+    cfg.rules "full": kitchen_rules, recipe, scoring.<cfg.scoring>, map_key, actions,
+    interact_table, plans. "bare" and "open": nothing (their whole prompt is in
+    prompts.system_prompt). The older values "recipe", "minimal" and "minimal_hint": the recipe,
+    scoring and interact table are replaced by the section rules_<cfg.rules> (rules_recipe_soups
+    for recipe under scoring "soups"); kitchen_rules, map_key, actions and plans stay."""
     o = cfg.orders
     kw = dict(cook_s=cfg.cook_s, every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
               reward=o.reward, penalty=o.penalty, max_plan_len=cfg.max_plan_len,
               wait_min=WAIT_MIN, wait_max=WAIT_MAX, blocked_limit=BLOCKED_LIMIT)
+    if cfg.rules in ("bare", "open"):
+        return ""
     if cfg.rules == "full":
-        keys = ("kitchen_rules", "map_key", "actions", "interact_table", "plans")
-        return "\n\n".join(load("system", k, **kw) for k in keys) + "\n"
-    moving = load("system", "kitchen_rules", **kw).split("\n\n")[0]
-    parts = [moving, load("system", f"rules_{cfg.rules}")]
-    parts += [load("system", k, **kw) for k in ("map_key", "actions", "plans")]
+        hatch = load("system", f"hatch_soup.{cfg.scoring}", reward=o.reward)
+        parts = [load("system", "kitchen_rules"), load("system", "recipe", cook_s=cfg.cook_s),
+                 load("system", f"scoring.{cfg.scoring}", **kw), load("system", "map_key"),
+                 load("system", "actions", **kw),
+                 load("system", "interact_table", hatch_soup=hatch), load("system", "plans", **kw)]
+        return "\n\n".join(parts) + "\n"
+    legacy = f"rules_{cfg.rules}"
+    if cfg.rules == "recipe" and cfg.scoring == "soups":
+        legacy = "rules_recipe_soups"           # rules_recipe talks about orders
+    parts = [load("system", "kitchen_rules"), load("system", legacy)]
+    parts += [load("system", "map_key"), load("system", "actions", **kw),
+              load("system", "plans", **kw)]
     return "\n\n".join(parts) + "\n"

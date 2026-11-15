@@ -2,7 +2,7 @@ The board and the pre-round chat: the system prompt's board or chat section for 
 
 ## comms.full
 THE BOARD
-A message board shared by you and {mate}. post(message) puts a message of at most {max_post_chars} characters on it. {board_read} read_board() is free: it takes no game time.
+A message board shared by {us}. post(message) puts a message of at most {max_post_chars} characters on it. {board_read} read_board() is free: it takes no game time.
 {chat_rules}
 
 ## comms.planning_only
@@ -14,7 +14,7 @@ THE CHAT
 
 
 ## planning_only_rule
-You can exchange messages with your teammate only in the chat before each round: post(message) puts a message of at most {max_post_chars} characters on a board you share. There is no board during practice or rounds.
+You can exchange messages with your team only in the chat before each round: post(message) puts a message of at most {max_post_chars} characters on a board you share. There is no board during practice or rounds.
 
 ## chat_rules
 In the chat before a round you take turns. On your turn you may call post(message) and/or ready() (you are ready to start the round), or reply without calling a tool to pass. You have up to {chat_posts} per chat. The chat ends when each of you has called ready() or used all your posts (until then you keep getting turns, even after ready()), or after {chat_turns} each, whichever comes first.

@@ -3,6 +3,7 @@
 # Order rates per level from the bot tuning (configs/all_levels_nocomms.yaml). Every option not
 # set here is the default (configs/template.yaml): practice on, 3 rounds of 180 s.
 name: pilot_rules_comms
+scoring: orders                     # as these configs ran (before the soups default)
 levels: [split_room, cramped_room, asymmetric_advantages]
 level_overrides:
   split_room: {orders: {every_s: 20}}

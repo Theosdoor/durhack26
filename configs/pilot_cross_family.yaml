@@ -3,6 +3,7 @@
 # Order rate from the bot tuning (configs/all_levels_nocomms.yaml). Every option not set here is
 # the default (configs/template.yaml): practice on, 3 rounds of 180 s.
 name: pilot_cross_family
+scoring: orders                     # as these configs ran (before the soups default)
 level: split_room
 orders: {every_s: 20}
 epochs: 2

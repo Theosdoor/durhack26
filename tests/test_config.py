@@ -57,7 +57,8 @@ def test_configs_set_only_what_differs_from_the_default(path):
     cfg = Config.model_validate(data)
     defaults = Config(name=cfg.name, level=cfg.level, levels=cfg.levels,
                       agents=cfg.agents).model_dump(mode="json")
-    keep = {"name", "level", "levels", "agents", "comms", "debrief", "rules", "board"}
+    keep = {"name", "level", "levels", "agents", "comms", "debrief", "rules", "board", "scoring",
+            "reflection"}
     for key, value in data.items():
         if key in keep:
             continue

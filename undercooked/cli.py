@@ -35,18 +35,33 @@ def main() -> None:
               help="Model reasoning (default: config decision.reasoning).")
 @click.option("--comms", type=click.Choice(["full", "planning_only", "none"]), default=None,
               help="Communication condition (default: config comms).")
-@click.option("--debrief", type=click.Choice(["full", "score_only"]), default=None,
-              help="Debrief turn after each round, or the score only (default: config debrief).")
-@click.option("--rules", type=click.Choice(["full", "recipe", "minimal", "minimal_hint"]),
+@click.option("--debrief", type=click.Choice(["private", "full", "score_only"]), default=None,
+              help="Private turn after each round (full: its older name), or the score only "
+                   "(default: config debrief).")
+@click.option("--rules", type=click.Choice(["full", "bare", "open", "recipe", "minimal",
+                                            "minimal_hint"]),
               default=None, help="How much the system prompt explains (default: config rules).")
+@click.option("--scoring", type=click.Choice(["soups", "orders"]), default=None,
+              help="Every soup scores, or soups fill orders (default: config scoring).")
+@click.option("--reflection/--no-reflection", default=None,
+              help="Final reflection questions (default: config reflection).")
+@click.option("--model", "model", default=None,
+              help="Self-play: every agent uses this model (full Inspect name, e.g. "
+                   "openrouter/deepseek/deepseek-v4.1-flash; add !reasoning if its endpoint "
+                   "cannot turn reasoning off).")
+@click.option("--provider", default=None, help="Endpoint tag for --model, e.g. baidu/fp8.")
+@click.option("--agents", default=None,
+              help='Mixed team: "model1@provider1,model2@provider2" (each may end !reasoning); '
+                   "replaces the config's agents.")
 @click.option("--levels", default=None,
               help="Levels to play, comma-separated: one season per level and epoch "
                    "(default: config level / levels).")
 @click.option("--log-dir", default="logs", show_default=True)
 def run(config: str, epochs: int | None, rounds: int | None, round_s: int | None,
         no_practice: bool, max_samples: int | None, no_pipeline: bool, reasoning: str | None,
-        comms: str | None, debrief: str | None, rules: str | None, levels: str | None,
-        log_dir: str) -> None:
+        comms: str | None, debrief: str | None, rules: str | None, scoring: str | None,
+        reflection: bool | None, model: str | None, provider: str | None, agents: str | None,
+        levels: str | None, log_dir: str) -> None:
     """Run seasons of CONFIG (a YAML file in configs/) and print the log path."""
     from inspect_ai import eval as inspect_eval
 
@@ -55,7 +70,9 @@ def run(config: str, epochs: int | None, rounds: int | None, round_s: int | None
     task = undercooked(config=config, rounds=rounds, round_s=round_s,
                        practice=False if no_practice else None, epochs=epochs,
                        pipeline=False if no_pipeline else None, reasoning=reasoning,
-                       comms=comms, debrief=debrief, levels=levels, rules=rules)
+                       comms=comms, debrief=debrief, levels=levels, rules=rules,
+                       scoring=scoring, reflection=reflection, agents=agents,
+                       agent_model=model, agent_provider=provider)
     # one sample per level, `epochs` seasons each: by default run them all at once (Inspect
     # would otherwise cap it at its own default, which follows the task model, none/none). The
     # agents' model calls are still limited per model by max_connections.

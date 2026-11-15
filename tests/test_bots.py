@@ -23,7 +23,7 @@ def test_split_room_pair_serves_within_a_round():
 def test_single_solo_bot_cannot_score_on_forced_coordination():
     g = Game(Kitchen.load("forced_coordination"), ["Kilo"], CFG)
     run(g, {"Kilo": SoloBot("Kilo")}, 180)
-    assert g.served == 0 and g.score < 0
+    assert g.served == 0 and g.score == 0          # scoring "soups": nothing expires
 
 
 def test_solo_bot_serves_on_practice_within_60s():

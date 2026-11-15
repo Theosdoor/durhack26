@@ -6,7 +6,8 @@ in a pot, a soup in the hatch), then every "take" (pick up from a counter, take 
 rack, plate a soup), so a same-second handover over a counter works whoever is who;
 (2) movement resolves together (same target tile, swaps, or walking into a standing agent: the
 movers don't move, `bump`); (3) pots cook; (4) orders expire and arrive (none at or after the
-phase's end). `t` counts seconds since the phase started: events returned by `tick()` carry the
+phase's end; scoring "orders" only: under scoring "soups", the default, there are no orders and
+every soup served scores cfg.orders.reward). `t` counts seconds since the phase started: events returned by `tick()` carry the
 new `t`, the same `t` as the frame taken right after it.
 
 No agent has fixed priority. Whatever still depends on order (step planning, two agents in the
@@ -106,10 +107,21 @@ class Game:
         self._events: list[Event] = []
         self._just_started: set[str] = set()
         self._rank: dict[str, int] = {}   # this second's tie order (set by tick)
-        self._new_order()                           # first order at t=0
+        if self.uses_orders:
+            self._new_order()                       # first order at t=0
         self._pending, self._events = self._events, []
 
     # ================================================================ public API
+    @property
+    def uses_orders(self) -> bool:
+        """scoring "orders": soups fill open orders; "soups": no orders at all."""
+        return self.cfg.scoring == "orders"
+
+    @property
+    def accepts_soup(self) -> bool:
+        """Would the hatch take a soup now? (scoring "orders": only while an order is open)"""
+        return not self.uses_orders or bool(self.orders)
+
     @property
     def over(self) -> bool:
         return self.ended or self.t >= self.duration
@@ -226,7 +238,8 @@ class Game:
                 self.score -= self.cfg.orders.penalty
                 self.missed += 1
                 self._emit("order_missed", None, order=o.id, points=-self.cfg.orders.penalty)
-        if self.t % self.cfg.orders.every_s == 0 and self.t < self.duration:
+        if (self.uses_orders and self.t % self.cfg.orders.every_s == 0
+                and self.t < self.duration):
             self._new_order()
         out, self._events = self._events, []
         return out
@@ -453,7 +466,12 @@ class Game:
                 fail = f"you are holding nothing; bring an onion or a dish to {obj_id}"
         elif obj.kind == "hatch":
             if h == "soup":
-                if not self.orders:
+                if not self.uses_orders:
+                    a.holding = None
+                    self.score += self.cfg.orders.reward
+                    self.served += 1
+                    self._emit("serve", a.name, item="soup", at=at, points=self.cfg.orders.reward)
+                elif not self.orders:
                     fail = "no open order to serve; keep the soup until an order arrives"
                 else:
                     order = min(self.orders, key=lambda o: (o.due_t, o.id))

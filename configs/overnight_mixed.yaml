@@ -1,0 +1,10 @@
+# Overnight: mixed pairs (DeepSeek + another model), bare rules. Set the pair per run with
+#   --agents "openrouter/deepseek/deepseek-v4.1-flash@baidu/fp8,openrouter/<other>@<tag>"
+name: overnight_mixed
+levels: [split_room, asymmetric_advantages]
+rules: bare
+epochs: 3
+practice_s: 120
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}

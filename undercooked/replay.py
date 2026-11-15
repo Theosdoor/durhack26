@@ -12,9 +12,12 @@ A phase is identified by the pair (phase, round):
 - briefing and practice: round = 0.
 - chat: round = the round it plans for (the chat before round 2 has round = 2).
 - round: round = 1..N.
-- debrief: round = the round just played (the debrief after round 2 has round = 2).
+- debrief: the private turn after a round (config debrief "private"); round = the round just
+  played (the turn after round 2 has round = 2).
+- reflection: the final free-text answers after the last round; round = the number of rounds.
 Time `t`: in practice and rounds, whole game seconds since the phase started. In briefing,
-chat and debrief (no game clock), `t` is the turn index within the phase (0, 1, 2, ...).
+chat, debrief and reflection (no game clock), `t` is the turn index within the phase (0, 1, 2,
+...); in debrief and reflection it is the agent's index in the Header.
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
-Phase = Literal["briefing", "practice", "chat", "round", "debrief"]
+Phase = Literal["briefing", "practice", "chat", "round", "debrief", "reflection"]
 Pos = tuple[int, int]
 
 
@@ -32,7 +35,8 @@ class AgentInfo(BaseModel):
     letter: str                    # map letter = first letter of name
     model: str                     # e.g. openrouter/deepseek/deepseek-v4.1-flash
     provider: str | None = None    # pinned OpenRouter endpoint tag, e.g. "baidu/fp8"
-    seat: int = 1                  # start position (level digit) this season; seeded per season
+    seat: int = 1                  # start position (level digit) this season (season.assign_seats)
+    reasoning_off: bool = True     # config AgentSpec.reasoning_off (False: reasoning is mandatory)
 
 
 class Header(BaseModel):
@@ -47,12 +51,14 @@ class Header(BaseModel):
     rounds: int
     cook_s: int = 20               # seconds a full pot cooks (config.cook_s); viewers draw progress from it
     practice_s: int | None = None  # practice phase length, if practice ran
-    # experimental condition (config.decision.reasoning, config.comms, config.debrief);
-    # the defaults are what older logs ran with
+    # experimental condition (config.decision.reasoning, comms, debrief, rules, scoring,
+    # reflection); the defaults are what older logs ran with ("full" debrief = "private")
     reasoning: Literal["on", "off"] = "on"
     comms: Literal["full", "planning_only", "none"] = "full"
-    debrief: Literal["full", "score_only"] = "full"
-    rules: Literal["full", "recipe", "minimal", "minimal_hint"] = "full"   # config.rules
+    debrief: Literal["private", "full", "score_only"] = "full"
+    rules: Literal["full", "bare", "open", "recipe", "minimal", "minimal_hint"] = "full"
+    scoring: Literal["soups", "orders"] = "orders"    # "soups": no orders (Frame.orders empty)
+    reflection: bool = False
 
 
 class AgentState(BaseModel):
@@ -88,10 +94,10 @@ class Frame(BaseModel):
     agents: list[AgentState]       # in practice: just the one agent playing
     pots: list[PotState]
     counters: dict[str, str]       # "x,y" -> item, only non-empty counters
-    orders: list[OrderState]       # open orders
+    orders: list[OrderState]       # open orders (always empty under scoring "soups")
     score: int
-    served: int = 0                # orders served so far this round
-    missed: int = 0                # orders expired so far this round
+    served: int = 0                # soups served so far this round
+    missed: int = 0                # orders expired so far this round (scoring "orders" only)
 
 
 class Event(BaseModel):
@@ -168,6 +174,12 @@ class DecisionRecord(BaseModel):
     served_by: str | None = None   # provider OpenRouter reports for this call
     forced: bool = False           # answered only on the forced-answer follow-up call (above)
     finish_practice: bool = False  # called finish_practice() (practice only)
+    # a reasoning-off call was refused ("Reasoning is mandatory") and retried with reasoning on
+    reasoning_fallback: bool = False
+    # reflection phase: `text` is the answer; cutoff = the reply stopped before it ended normally
+    # (e.g. max_tokens; the text that came back is kept); predicted_score = the number on its
+    # "PREDICTED_SCORE: <n>" line (None if missing)
+    predicted_score: float | None = None
 
 
 Record = Annotated[Union[Header, Frame, Event, Post, DecisionRecord], Field(discriminator="kind")]

@@ -1,7 +1,13 @@
-The system prompt, in reading order: identity, the kitchen rules (kitchen_rules, map_key, actions, interact_table, plans), season, deciding, the board or chat section (from communication.md), notepad, goal. The sections after goal are optional snippets the code inserts depending on the experimental condition. See README.md.
+The system prompt. With rules: full, in reading order: identity, the kitchen rules (kitchen_rules, recipe, scoring.*, map_key, actions, interact_table, plans), season, deciding, the board or chat section (from communication.md), notepad, goal. With rules: bare: identity, bare.goal, one bare.season_* line. With rules: open: identity, open.invitation, one bare.season_* line (no goal, no score). The other sections are snippets the code inserts depending on the experimental condition. See README.md.
 
 ## identity
-You are {me}, one of two cooks in a kitchen game. Your teammate is {mate}.
+You are {me}, one of {cooks} cooks in a kitchen game. {team}
+
+## identity.one_mate
+Your teammate is {names}.
+
+## identity.many_mates
+Your teammates are {names}.
 
 ## kitchen_rules
 HOW THE KITCHEN WORKS
@@ -9,14 +15,19 @@ Time runs in game seconds. In one second you either walk one tile (up, down, lef
 diagonals) or do one interaction. You can only walk on floor tiles; counters, crates, racks,
 pots and the hatch block movement, and so do other players.
 
+## recipe
 Recipe (the only dish): onion soup. Put 3 onions in a pot; it starts cooking by itself when the
 3rd onion goes in and is ready {cook_s} s later. Take a dish to the ready pot to plate the
 soup, then carry the soup to the serving hatch. You can hold one item at a time: an onion, a
 dish or a soup. Onions and dishes never run out.
 
+## scoring.orders
 Orders: Each order is due {due_s} s after it arrives. Serving a soup
 fills the open order that is due soonest: +{reward} points. An order not served by its due
 time expires: -{penalty} points.
+
+## scoring.soups
+Scoring: every soup served at the serving hatch scores +{reward} points.
 
 ## map_key
 MAP KEY
@@ -45,7 +56,13 @@ counter     + holding item -> you put it on the counter (if the counter is empty
 counter     + empty hands  -> you pick up the item on the counter
 pot         + onion        -> the onion goes in (max 3; not while cooking or ready)
 pot         + dish         -> if the soup is ready, you now hold the soup and the pot is empty
-hatch       + soup         -> served: fills the open order due soonest
+hatch       + soup         -> {hatch_soup}
+
+## hatch_soup.orders
+served: fills the open order due soonest
+
+## hatch_soup.soups
+served: +{reward} points
 
 ## plans
 PLANS
@@ -56,7 +73,13 @@ reached from where you are, or an interaction does nothing. A new plan replaces 
 
 ## season
 THE SEASON
-{practice}Then you and {mate} play {rounds} together in the same kitchen. Each round lasts {round_s} s and starts afresh (empty pots, new orders, everyone back at the start). {between}
+{practice}Then {us} play {rounds} together in the same kitchen. Each round lasts {round_s} s and starts afresh ({afresh}). {between}
+
+## afresh.orders
+empty pots, new orders, everyone back at the start
+
+## afresh.soups
+empty pots, everyone back at the start
 
 ## deciding
 DECIDING
@@ -76,14 +99,14 @@ First you practise alone in a small practice kitchen for {practice_s} s (no boar
 ## practice_intro_no_comms
 First you practise alone in a small practice kitchen for {practice_s} s (the score does not count).
 
-## between_chat_debrief
-Before each round there is a chat on the board; after each round there is a debrief where you see the round's score.
+## between_chat_private
+Before each round there is a chat on the board. After each round you get a private turn: you see the round's score and may update your notepad.
 
 ## between_chat_score_only
 Before each round there is a chat on the board; after each round you are told the round's score.
 
-## between_no_chat_debrief
-After each round there is a debrief where you see the round's score.
+## between_no_chat_private
+After each round you get a private turn: you see the round's score and may update your notepad.
 
 ## between_no_chat_score_only
 After each round you are told the round's score.
@@ -113,6 +136,10 @@ When you have practised enough you may call finish_practice() to end your practi
 THE KITCHEN
 Your team scores by serving onion soup at the serving hatch. A soup needs onions cooked in a pot and a dish to carry it. Orders come in over time; serving a soup fills one and scores points, and an order left too long costs points. You can hold one item at a time. How the objects work is for you to find out by playing.
 
+## rules_recipe_soups
+THE KITCHEN
+Your team scores by serving onion soup at the serving hatch. A soup needs onions cooked in a pot and a dish to carry it. You can hold one item at a time. How the objects work is for you to find out by playing.
+
 ## rules_minimal
 THE KITCHEN
 Your team scores points by delivering things at the serving hatch. How the kitchen works is for you to find out by playing.
@@ -120,3 +147,18 @@ Your team scores points by delivering things at the serving hatch. How the kitch
 ## rules_minimal_hint
 THE KITCHEN
 Your team scores points by delivering things at the serving hatch. How the kitchen works is for you to find out by playing. Practice is a good time to try interacting with everything and see what happens.
+
+## bare.season_chat_full
+You play {rounds}, with a chat on a shared board before each round; during the rounds you can keep posting to it.
+
+## bare.season_planning_only
+You play {rounds}, with a chat on a shared board before each round.
+
+## bare.season_no_chat
+You play {rounds}.
+
+## bare.goal
+Get the highest team score by serving soups at the serving hatch.
+
+## open.invitation
+You are in a kitchen with {names}. Do whatever you like: explore, play, talk.

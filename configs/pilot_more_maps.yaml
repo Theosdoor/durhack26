@@ -3,6 +3,7 @@
 #   uv run undercooked run configs/pilot_more_maps.yaml --rules minimal --comms full|none
 # Same settings as configs/pilot_rules_comms.yaml otherwise (3 rounds of 180 s, 120 s practice).
 name: pilot_more_maps
+scoring: orders                     # as these configs ran (before the soups default)
 levels: [forced_coordination, coordination_ring, counter_circuit]
 level_overrides:
   forced_coordination: {orders: {every_s: 20}}

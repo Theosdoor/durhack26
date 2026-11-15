@@ -2,6 +2,7 @@
 # parallel. Each level's order rate is tuned with the scripted bots (analysis/bot_tuning.py):
 # two bots must clearly beat one without serving every order.
 name: all_levels_nocomms
+scoring: orders                     # as these configs ran (before the soups default)
 levels: [forced_coordination, split_room, cramped_room, asymmetric_advantages, coordination_ring,
          counter_circuit]
 level_overrides:

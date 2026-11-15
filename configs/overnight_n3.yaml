@@ -1,0 +1,8 @@
+# Overnight: three agents (DeepSeek self-play) on every level with room for three; --rules full|bare
+name: overnight_n3
+levels: [split_room, cramped_room, asymmetric_advantages, coordination_ring, counter_circuit]
+n_agents: 3
+epochs: 3
+practice_s: 120
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

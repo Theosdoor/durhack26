@@ -1,4 +1,4 @@
 XXPXX
-O  2O
-X1  X
+O3 2O
+X1 4X
 XDXSX

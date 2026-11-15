@@ -19,7 +19,7 @@ Plan accepted. It starts when this decision lands.
 Your plan has {n} actions. Only the first {max_len} actions are kept.
 
 ## post.description
-Post a message (at most {max_post_chars} characters) on the board you share with your teammate. One post per turn.
+Post a message (at most {max_post_chars} characters) on the board your team shares. One post per turn.
 
 ## post.message_param
 The message.
@@ -67,10 +67,13 @@ Say that you are ready to start the round (chat only).
 Noted: you are ready to start the round.
 
 ## finish_practice.description
-End your practice now (practice only). It ends when this decision lands; the season goes on once your teammate's practice is over too.
+End your practice now (practice only). It ends when this decision lands; the season goes on once everyone's practice is over.
 
 ## finish_practice.result
 Noted: your practice ends when this decision lands.
 
 ## act.description_no_recipe
 Set your plan: a list of 1 to {max_len} actions done in order, e.g. ["move_to(2, 2)", "interact(hatch_1)"]. Every decision must end with act. A new plan replaces your old one.
+
+## act.description_bare
+Set your plan: 1 to {max_len} actions done in order, each interact(<object id>), interact(x, y), move_to(x, y) or wait(<seconds>). Every decision must end with act.

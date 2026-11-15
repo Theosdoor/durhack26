@@ -1,4 +1,5 @@
-"""One season = one Inspect sample: briefing, practice, then chat -> round -> debrief per round.
+"""One season = one Inspect sample: briefing, practice, then per round: chat -> round -> private
+turn (logged with phase "debrief"; it leads into the next round's chat), then the reflection.
 
 Every replay record is logged with `transcript().info(rec.model_dump(mode="json"),
 source="kitchen")`, always from the season's game loop (never from inside a concurrent decision),
@@ -24,10 +25,12 @@ normal time. A decision that lands in step 1 (a cutoff, or any decision when fla
 its agent deciding again in that same second (step 2); one that lands in step 3 (a zero-cost
 decision, flat_s = 0) leaves it deciding again at t + 1.
 
-Seats: which agent spec (model, provider) starts at which start position is a seeded
-permutation per season (`assign_seats`), and the first speaker of each chat is drawn per round
-(`first_speaker`), so neither the agent index nor the model fixes a seat or speaking order. The
-engine itself gives no agent fixed priority (see engine/game.py).
+Seats: which agent spec (model, provider) starts at which start position is a seeded base
+permutation per seed (and level), rotated by one seat per epoch (`assign_seats`), so N epochs
+put each agent spec in each of the N seats once. The first speaker of each chat is drawn per
+round (`first_speaker`); the chat then goes round the agents in index order from there. Neither
+the agent index nor the model fixes a seat or speaking order. The engine itself gives no agent
+fixed priority (see engine/game.py).
 
 Pipelining (cfg.decision.pipeline, the default) gives exactly the same games, records and record
 order as the loop above (`_play_sequential`, kept as the reference), but does not hold the clock
@@ -65,7 +68,9 @@ from undercooked import prompts
 from undercooked.board import Board, format_posts
 from undercooked.config import NATO_NAMES, Config
 from undercooked.engine import Game, Kitchen
-from undercooked.providers import AgentModel, agent_model, served_providers
+from inspect_ai.model import GenerateConfig
+
+from undercooked.providers import AgentModel, agent_model, reasoning_fallbacks, served_providers
 from undercooked.providers import no_reasoning_model
 from undercooked.replay import AgentInfo, DecisionRecord, Event, Header, Phase, Post
 from undercooked.tools import (Turn, act_tool, board_empty_text, finish_practice_tool, note_tool,
@@ -76,6 +81,7 @@ ROUND_EXTRA_GENERATIONS = 2        # generations allowed after one without act()
 FORCED_MAX_TOKENS = 400            # max_tokens of the forced-answer follow-up call (no reasoning)
 FORCED_COST_S = 1                  # game seconds a forced answer adds to its decision
 PHASE_COUNTS = ("practice", "round", "chat", "debrief")   # phases cutoffs / forced are counted in
+REFLECTION_MAX_TOKENS = 2000       # max_tokens of the reflection call (a cut-off answer is kept)
 # discovery: an agent's first event of each type (by its own hand), practice included
 DISCOVERY = {"add_to_pot": "onion", "cook_start": "cook", "plate": "plate", "serve": "serve"}
 
@@ -93,11 +99,13 @@ def pick_names(seed: int, epoch: int, n: int = 2, level: str | None = None) -> l
 
 
 def assign_seats(seed: int, epoch: int, n: int = 2, level: str | None = None) -> list[int]:
-    """Start positions (level digits 1..n) for a season: cfg.agents[i] starts at seats[i]. A
-    seeded permutation from its own stream (independent of the names)."""
-    seats = list(range(1, n + 1))
-    random.Random(f"seats|{_stream(seed, level)}|{epoch}").shuffle(seats)
-    return seats
+    """Start positions (level digits 1..n) for a season: agent i starts at seats[i]. A base
+    permutation seeded by (seed, level) alone, rotated cyclically by epoch: epoch e gives agent i
+    the seat base[(i + e - 1) % n], so epochs 1..n put every agent in every seat exactly once
+    (2 agents: epochs 1 and 2 swap the seats). Independent of the names."""
+    base = list(range(1, n + 1))
+    random.Random(f"seats|{_stream(seed, level)}").shuffle(base)
+    return [base[(i + epoch - 1) % n] for i in range(n)]
 
 
 def first_speaker(seed: int, epoch: int, round: int, n: int = 2,
@@ -132,6 +140,7 @@ class Agent:
     practice_finished: int = 0      # 1 if it ended its practice early with finish_practice()
     last_cutoff: int = 0            # seconds the previous decision's cutoff cost (0: not a cutoff)
     last_forced: bool = False       # the previous decision was a forced answer (cost 1 s more)
+    predicted_score: float | None = None    # from its reflection (PREDICTED_SCORE line)
 
     @property
     def letter(self) -> str:
@@ -153,6 +162,8 @@ class Gen:
     followed_up: bool = False       # the forced-answer follow-up call was made
     forced: bool = False            # ... and it answered
     cutoff: bool = False            # ... and it did not answer either
+    fallbacks: int = 0              # reasoning-off calls retried with reasoning on
+    stop_reason: str | None = None  # of the last generation
 
     def add(self, output: ModelOutput, served_by: str | None) -> None:
         self.generations += 1
@@ -181,6 +192,7 @@ class Gen:
             output_tokens=self.output_tokens if self.generations else None,
             reasoning_tokens=self.reasoning_tokens,
             served_by=",".join(self.served_by) or None,
+            reasoning_fallback=self.fallbacks > 0,
             **{"forced": self.forced, "cutoff": self.cutoff, **kw})
 
 
@@ -292,8 +304,8 @@ class _LogBuffer:
 
 class Season:
     def __init__(self, cfg: Config, models: list[AgentModel], epoch: int):
-        if len(models) != 2:
-            raise ValueError(f"a season needs exactly 2 agents, got {len(models)}")
+        if len(models) < 1:
+            raise ValueError("a season needs at least one agent")
         if cfg.level is None:
             raise ValueError("a season plays one level: pass cfg.for_level(level)")
         self.cfg = cfg
@@ -303,8 +315,8 @@ class Season:
         seats = assign_seats(cfg.seed, epoch, len(models), level=self.stream)
         self.agents: list[Agent] = []
         for i, (name, am, seat) in enumerate(zip(names, models, seats)):
-            mate = names[1 - i]
-            system = ChatMessageSystem(content=prompts.system_prompt(cfg, name, mate))
+            mates = [n for n in names if n != name]
+            system = ChatMessageSystem(content=prompts.system_prompt(cfg, name, mates))
             intro = ChatMessageUser(content=prompts.season_intro(cfg), source="input")
             strategy = CompactionSummary(threshold=cfg.compact_at_tokens,
                                          prompt=prompts.compaction_prompt(cfg))
@@ -344,7 +356,8 @@ class Season:
         self.log(Header(
             config_name=cfg.name, level=cfg.level, map=Kitchen.load(cfg.level).map_rows(),
             agents=[AgentInfo(name=a.name, letter=a.letter, model=a.am.spec.model,
-                              provider=a.am.provider, seat=a.seat) for a in self.agents],
+                              provider=a.am.provider, seat=a.seat,
+                              reasoning_off=a.am.spec.reasoning_off) for a in self.agents],
             seed=cfg.seed, epoch=self.epoch, round_s=cfg.round_s, rounds=cfg.rounds,
             cook_s=cfg.cook_s, practice_s=cfg.practice_s if cfg.practice else None,
             **condition(cfg)))
@@ -362,11 +375,14 @@ class Season:
                 game = await self.round(r)
             self.rounds.append({"score": game.score, "served": game.served,
                                 "missed": game.missed})
-            if cfg.debrief == "full":
+            if cfg.debrief == "score_only":
+                self.post_result(r)
+            else:                                         # the private turn
                 async with span(f"debrief-{r}"):
                     await self.debrief(r)
-            else:
-                self.post_result(r)
+        if cfg.reflection:
+            async with span("reflection"):
+                await self.reflection()
         self.deliver_inbox()
         return self.summary()
 
@@ -401,13 +417,24 @@ class Season:
                for kind in ("cutoffs", "forced", "decisions") for phase in PHASE_COUNTS
                if phase in getattr(self.agents[0], kind)},
             "practice_finished": [a.practice_finished for a in self.agents],
+            "cutoffs_reflection": [a.cutoffs.get("reflection", 0) for a in self.agents],
+            "predicted_score": [a.predicted_score for a in self.agents],
             "firsts": [self.firsts.get(a.name, {}) for a in self.agents],
             "compactions": [a.compactions for a in self.agents],
         }
 
     # ------------------------------------------------------------------ model I/O
     async def model_turn(self, a: Agent, text: str, tools: list[ToolDef], max_gens: int,
-                         done: Callable[[], bool], force: Force | None = None) -> Gen:
+                         done: Callable[[], bool], force: Force | None = None,
+                         config: GenerateConfig | None = None) -> Gen:
+        with reasoning_fallbacks() as fell_back:
+            gen = await self._model_turn(a, text, tools, max_gens, done, force, config)
+        gen.fallbacks = len(fell_back)
+        return gen
+
+    async def _model_turn(self, a: Agent, text: str, tools: list[ToolDef], max_gens: int,
+                          done: Callable[[], bool], force: Force | None,
+                          config: GenerateConfig | None) -> Gen:
         """Append `text` as a user message, then generate (and run tools) until `done()`, a reply
         without tool calls, or `max_gens` generations. With `force`, one follow-up call if the
         turn has not answered (see `forced_answer`).
@@ -428,10 +455,12 @@ class Season:
         for _ in range(max_gens):
             model_input = base + a.messages[start:]
             with served_providers() as served:
-                output = await a.am.model.generate(model_input, tools=tools, tool_choice="auto")
+                output = await a.am.model.generate(model_input, tools=tools, tool_choice="auto",
+                                                   config=config or GenerateConfig())
             await a.compact.record_output(model_input, output)
             a.messages.append(output.message)
             gen.add(output, served[-1] if served else None)
+            gen.stop_reason = output.stop_reason
             if output.message.tool_calls:
                 result = await execute_tools(a.messages, tools)
                 a.messages.extend(result.messages)
@@ -857,8 +886,9 @@ class Season:
         used = {n: 0 for n in names}
         ready = {n: False for n in names}
         had_turn: set[str] = set()
-        order = [first, 1 - first]
-        max_turns = 2 * prompts.chat_turns_each(cfg)
+        n = len(self.agents)
+        order = [(first + j) % n for j in range(n)]      # round the table from the first speaker
+        max_turns = n * prompts.chat_turns_each(cfg)
         turn_i = 0
 
         def finished(n: str) -> bool:
@@ -866,7 +896,7 @@ class Season:
 
         k = 0
         while not all(finished(n) for n in names) and k < max_turns:
-            a = self.agents[order[k % 2]]
+            a = self.agents[order[k % n]]
             k += 1
             if ready[a.name] and used[a.name] >= cap:
                 continue                                  # nothing left to do: skip the turn
@@ -930,11 +960,40 @@ class Season:
         self.event("debrief", r, len(self.agents), "phase_end",
                    duration_s=round(time.monotonic() - clock, 1))
 
+    async def reflection(self) -> None:
+        """After the last round: each agent answers the reflection questions (prompts/messages.md
+        reflection.*) in one free-text reply, no tools, max_tokens REFLECTION_MAX_TOKENS. A reply
+        cut off (any stop reason but "stop") keeps whatever text came back and is a cutoff."""
+        clock = time.monotonic()
+        r = self.cfg.rounds
+        self.event("reflection", r, 0, "phase_start")
+        text = prompts.reflection(self.cfg, [x["score"] for x in self.rounds])
+
+        async def one(a: Agent) -> Gen:
+            async with span(f"agent-{a.name}"):
+                return await self.model_turn(a, text, [], 1, lambda: True,
+                                             config=GenerateConfig(max_tokens=REFLECTION_MAX_TOKENS))
+
+        results = await collect(*(one(a) for a in self.agents))
+        for a, gen in zip(self.agents, results):
+            t = a.index
+            self._log_side_events("reflection", r, t, a, gen, Turn())
+            cut = gen.stop_reason not in ("stop", None)
+            if cut:
+                a.cutoffs["reflection"] = a.cutoffs.get("reflection", 0) + 1
+                self.event("reflection", r, t, "cutoff", a.name)
+            rec = gen.record(phase="reflection", round=r, t=t, agent=a.name)
+            rec.cutoff = cut
+            rec.predicted_score = a.predicted_score = prompts.predicted_score(rec.text)
+            self.log(rec)
+        self.event("reflection", r, len(self.agents), "phase_end",
+                   duration_s=round(time.monotonic() - clock, 1))
+
 
 def condition(cfg: Config) -> dict[str, str]:
     """The experimental condition, for grouping runs in analysis (also in the Header)."""
     return {"reasoning": cfg.decision.reasoning, "comms": cfg.comms, "debrief": cfg.debrief,
-            "rules": cfg.rules}
+            "rules": cfg.rules, "scoring": cfg.scoring, "reflection": cfg.reflection}
 
 
 def _conversation(messages: list[ChatMessage]) -> list[dict[str, Any]]:
@@ -946,7 +1005,7 @@ def season_solver(run_cfg: Config) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         # the sample's level (task.dataset); its season plays cfg with that level's overrides
         cfg = run_cfg.for_level(state.metadata.get("level") or run_cfg.run_levels()[0])
-        models = [agent_model(spec, cfg) for spec in cfg.agents]
+        models = [agent_model(spec, cfg) for spec in cfg.season_agents()]
         # endpoints are only fetched (and logged) when the provider is picked automatically; a
         # provider pinned in the config is used as is, with endpoints None and no fetch
         providers = [{"agent_index": i, "model": m.spec.model, "pin": m.provider,
