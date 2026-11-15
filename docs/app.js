@@ -755,13 +755,13 @@ function stop() {
 
 function toggle() {
   if (HL.active) { if (HL.paused) resumeHighlight(); else pauseHighlight(); update(); return; }
-  if (S.playing) stop(); else play();
+  if (S.playing) { stop(); if (window.UCAudio) UCAudio.pauseMusic(); } else play();
   update();
 }
 function pauseHighlight() {
   HL.paused = true; HL.pauses++;
   S.playing = false;
-  if (window.UCAudio) { UCAudio.pauseSpeak(); UCAudio.setPlaying(false); }
+  if (window.UCAudio) { UCAudio.pauseSpeak(); UCAudio.setPlaying(false); UCAudio.pauseMusic(); }
 }
 function resumeHighlight() {
   HL.paused = false;

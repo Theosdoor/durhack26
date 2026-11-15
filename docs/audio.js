@@ -216,6 +216,7 @@
     const c = ensureCtx();
     if (!c || musicTimer) return;
     if (!(nextStep > c.currentTime && nextStep < c.currentTime + 1)) nextStep = c.currentTime + 0.1;
+    musicBus.gain.cancelScheduledValues(c.currentTime); musicBus.gain.setValueAtTime(musicGain(), c.currentTime);
     musicTimer = setInterval(() => {
       if (c.state !== "running") return;
       while (nextStep < c.currentTime + 0.2) { if (LOG) window.__musicLog.push(nextStep); scheduleStep(step++, nextStep); nextStep += EIGHTH; }
@@ -225,7 +226,13 @@
   function stopMusic(now = false) {
     if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
     if (!musicTimer) return;
-    const halt = () => { stopTimer = null; clearInterval(musicTimer); musicTimer = null; if (LOG) console.log("[sfx] music stop"); };
+    const halt = () => {
+      stopTimer = null; clearInterval(musicTimer); musicTimer = null;
+      // notes are scheduled whole and a little ahead: fade the bus so nothing rings on after a stop
+      const t = ctx.currentTime;
+      musicBus.gain.cancelScheduledValues(t); musicBus.gain.setValueAtTime(musicBus.gain.value, t); musicBus.gain.linearRampToValueAtTime(0, t + 0.08);
+      if (LOG) console.log("[sfx] music stop");
+    };
     if (now) halt(); else stopTimer = setTimeout(halt, 500);
   }
 
@@ -424,7 +431,7 @@
     if (vol) vol.addEventListener("input", () => {
       musicVol = Math.max(0, Math.min(1, Number(vol.value)));
       try { localStorage.setItem("uc-audio-musicvol", String(musicVol)); } catch { /* private mode */ }
-      if (musicBus) musicBus.gain.setTargetAtTime(musicGain(), ctx.currentTime, 0.05);
+      if (musicBus && musicTimer) musicBus.gain.setTargetAtTime(musicGain(), ctx.currentTime, 0.05);
     });
     root.querySelectorAll("button[data-snd]").forEach((b) => b.addEventListener("click", () => {
       const k = b.dataset.snd;
@@ -444,6 +451,8 @@
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
   function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); stopMusic(true); } syncMusic(); }
   function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
-  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
+  // a user's pause stops the music at once; setPlaying(false) alone waits, as phase changes restart playback
+  const pauseMusic = () => stopMusic(true);
+  const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();
