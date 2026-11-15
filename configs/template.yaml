@@ -47,6 +47,10 @@
 ## agents: provider pins an OpenRouter endpoint; reasoning_off: false for endpoints that refuse
 ## to turn reasoning off (e.g. z-ai/glm-5.3-flash@morph/fp8). CLI: --model M --provider P
 ## (self-play) or --agents "m1@p1,m2@p2" (a "!reasoning" suffix = reasoning_off: false).
+## Gemini API (no OpenRouter): model: google/gemini-2.5-flash (no provider; GOOGLE_API_KEY in .env;
+## uv sync --extra gemini); see configs/gemini_example.yaml. decision.reasoning_tokens is its
+## thinking_budget and reasoning "off" sets it to 0; thinking-only models (gemini-2.5-pro, gemini 3)
+## cannot turn it off: add "!reasoning". Via OpenRouter instead: openrouter/google/gemini-2.5-flash.
 # agents:                        # (required) the agent specs; cycled up to n_agents
 #   - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
 #   - {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}
