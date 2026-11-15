@@ -32,7 +32,7 @@ Scoring: every soup served at the serving hatch scores +{reward} points.
 ## map_key
 MAP KEY
 X counter (a wall; any counter next to the floor can hold one item)   ' ' floor
-O onion crate   D dish rack   P pot   S serving hatch
+O onion crate   D dish rack   P pot   S serving hatch   B bin (trash)
 Capital letters on the floor are players (the first letter of their name).
 Coordinates are (x, y): x is the column (left to right), y is the row (top to bottom),
 both starting at 0, as labelled around the map.
@@ -44,8 +44,8 @@ move_to(x, y)     walk to that floor tile.
 move_to(<id>)     walk next to that object without interacting.
 wait(<seconds>)   stand still for {wait_min} to {wait_max} s.
 Object ids are numbered in reading order (row by row, left to right): onion_crate_1,
-dish_rack_1, pot_1, pot_2, hatch_1, ... Counters are named by position: counter_2_1 is the
-counter at (2,1). An unnumbered id (onion_crate, dish_rack, pot, hatch) means the nearest one
+dish_rack_1, pot_1, pot_2, hatch_1, bin_1, ... Counters are named by position: counter_2_1 is the
+counter at (2,1). An unnumbered id (onion_crate, dish_rack, pot, hatch, bin) means the nearest one
 you can reach. You interact from any floor tile beside the object; facing does not matter.
 
 ## interact_table
@@ -57,6 +57,7 @@ counter     + empty hands  -> you pick up the item on the counter
 pot         + onion        -> the onion goes in (max 3; not while cooking or ready)
 pot         + dish         -> if the soup is ready, you now hold the soup and the pot is empty
 hatch       + soup         -> {hatch_soup}
+bin         + holding item -> you throw the item away (it is gone); with empty hands it fails
 
 ## hatch_soup.orders
 served: fills the open order due soonest

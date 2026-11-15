@@ -25,6 +25,7 @@ _VERBS = {
     "fetch": "interact", "collect": "interact", "cook": "interact", "fill": "interact",
     "moveto": "move_to", "goto": "move_to", "walkto": "move_to", "go": "move_to",
     "walk": "move_to", "move": "move_to", "navigate": "move_to", "navigateto": "move_to",
+    "discard": "interact", "throw": "interact", "throwaway": "interact", "toss": "interact",
     "wait": "wait", "sleep": "wait", "idle": "wait", "stay": "wait", "pause": "wait",
     "noop": "wait", "rest": "wait",
 }
@@ -47,6 +48,10 @@ _KIND_ALIASES = {
     "hatch": [
         "hatch", "serving_hatch", "serve", "serving", "serving_window", "window", "delivery",
         "serving_station", "service_hatch", "serving_counter", "pass", "server", "delivery_hatch",
+    ],
+    "bin": [
+        "bin", "bins", "trash", "trash_can", "trashcan", "trash_bin", "garbage", "garbage_bin",
+        "rubbish", "rubbish_bin", "dustbin", "waste_bin", "litter_bin", "waste",
     ],
     "counter": ["counter", "counters", "countertop", "counter_top", "table"],
 }
@@ -225,7 +230,7 @@ def _pos_action(verb: str, raw: str, pos: Pos, kind: str | None, kitchen: Kitche
             raise ParseError(f"there is no {kind} at ({x},{y}); it is floor")
         if verb == "interact":
             raise ParseError(f"({x},{y}) is floor; interact needs an object such as a pot, "
-                             f"crate, rack, hatch or counter (use move_to to walk there)")
+                             f"crate, rack, hatch, bin or counter (use move_to to walk there)")
         return Action("move_to", raw, pos=pos)
     if kind is not None and obj.kind != kind:
         raise ParseError(f"({x},{y}) is {obj.id}, not a {kind}")

@@ -1,7 +1,7 @@
 """Static kitchen layout: tiles, objects (with ids), start positions, rooms and pathfinding.
 
 Level files (levels/*.txt): `X` counter, ` ` floor, `O` onion crate, `D` dish rack, `P` pot,
-`S` serving hatch, `1`..`9` start positions (floor). Coordinates are (x=column, y=row).
+`S` serving hatch, `B` bin (trash), `1`..`9` start positions (floor). Coordinates are (x=column, y=row).
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ from undercooked.config import LEVELS_DIR
 
 Pos = tuple[int, int]
 
-KIND_BY_CHAR = {"X": "counter", "O": "onion_crate", "D": "dish_rack", "P": "pot", "S": "hatch"}
-KINDS = ("onion_crate", "dish_rack", "pot", "hatch", "counter")
+KIND_BY_CHAR = {"X": "counter", "O": "onion_crate", "D": "dish_rack", "P": "pot", "S": "hatch", "B": "bin"}
+KINDS = ("onion_crate", "dish_rack", "pot", "hatch", "bin", "counter")
 # Neighbour order is fixed so that pathfinding is deterministic: up, right, down, left.
 DIRS: dict[str, Pos] = {"up": (0, -1), "right": (1, 0), "down": (0, 1), "left": (-1, 0)}
 
@@ -33,10 +33,12 @@ class Obj:
 class Kitchen:
     """Immutable level layout. Build with `Kitchen.load("forced_coordination")`."""
 
-    def __init__(self, name: str, rows: list[str]):
+    def __init__(self, name: str, rows: list[str], bins: bool = True):
         if not rows:
             raise ValueError(f"level {name!r} is empty")
         self.name = name
+        if not bins:    # config bins: false: the old layouts, every bin is a plain counter
+            rows = [r.replace("B", "X") for r in rows]
         self.width = max(len(r) for r in rows)
         self.height = len(rows)
         # Pad ragged rows with counters so the kitchen is always enclosed.
@@ -77,8 +79,9 @@ class Kitchen:
 
     # ----------------------------------------------------------------- loading
     @classmethod
-    def load(cls, level: str | Path) -> "Kitchen":
-        """Load `levels/<level>.txt` (or any path to a level file)."""
+    def load(cls, level: str | Path, bins: bool = True) -> "Kitchen":
+        """Load `levels/<level>.txt` (or any path to a level file). `bins=False` turns every `B`
+        into a counter (Config.bins)."""
         p = Path(level)
         if not (p.suffix == ".txt" or p.exists()):
             p = LEVELS_DIR / f"{level}.txt"
@@ -86,7 +89,7 @@ class Kitchen:
         rows = [r.rstrip("\n") for r in text.split("\n")]
         while rows and not rows[-1].strip():
             rows.pop()
-        return cls(p.stem, rows)
+        return cls(p.stem, rows, bins)
 
     # ------------------------------------------------------------------ basics
     def map_rows(self) -> list[str]:

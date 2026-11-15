@@ -80,7 +80,7 @@ def test_export_and_header(season):
     assert [a.seat for a in h.agents] == [1, 2]
     assert all(a.name in NATO_NAMES and a.letter == a.name[0] for a in h.agents)
     assert [a.model for a in h.agents] == ["kitchenfake/cook", "kitchenfake/passer"]
-    assert h.map == ["XXXPX", "O X P", "O X X", "D X X", "XXXSX"]
+    assert h.map == ["XXXPX", "O X P", "O X X", "D X B", "XBXSX"] and h.bins is True
     assert h.cook_s == 2 and h.practice_s == 20
 
 

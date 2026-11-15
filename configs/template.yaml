@@ -20,6 +20,7 @@
 #   max_open: 3                  # [scoring orders] no new order while this many are open
 #   reward: 20                   # points per soup served (scoring orders: per order filled)
 #   penalty: 10                  # [scoring orders] points lost when an order expires
+# bins: true                    # bins ("B" tiles) in the levels; false turns each back into a counter: the layouts of runs before bins (213 earlier seasons)
 # cook_s: 20                     # seconds a full pot cooks
 # decision:
 #   mode: simulated              # the game clock stops while models think (realtime: not implemented)

@@ -148,6 +148,9 @@ class Config(_Strict):
     # "soups" = every soup served at a hatch scores orders.reward: no orders, nothing expires.
     # "orders" = a soup fills the open order due soonest; an expired order costs orders.penalty
     scoring: Literal["soups", "orders"] = "soups"
+    # True = the level files as written, bins ("B") included; False = every bin is a plain counter,
+    # the layouts runs had before bins existed (reproduces older results)
+    bins: bool = True
     compact_at_tokens: int = 32000
     providers: Providers = Field(default_factory=Providers)
     agents: list[AgentSpec]

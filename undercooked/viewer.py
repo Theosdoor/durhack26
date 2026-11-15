@@ -440,7 +440,7 @@ def main() -> None:
         decisions = [d for d in decisions if d.agent == who]
         events = [e for e in events if e.agent in (None, who)]
     if phase == "practice":   # practice is played in levels/practice.txt, not the header's level
-        practice_map = Kitchen.load("practice").map_rows()
+        practice_map = Kitchen.load("practice", rep.header.bins).map_rows()
         rep = rep.model_copy(update={"header": rep.header.model_copy(update={"map": practice_map})})
 
     fs = bool(st.session_state.get("fs_on")) and bool(frames)   # full screen only makes sense with a map

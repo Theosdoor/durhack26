@@ -187,6 +187,20 @@ def hatch_tile(x0: int, y0: int) -> str:
     return s + "</g>"
 
 
+def bin_tile(x0: int, y0: int) -> str:
+    """Bin (trash) from above: counter base, a grey round bin with a dark opening and a bin mark."""
+    cx, cy, r = x0 + T / 2, y0 + 40, 28
+    return ("<g data-tile='bin'>" + counter_tile(x0, y0)
+            + f"<ellipse cx='{cx}' cy='{cy + 5}' rx='{r + 2}' ry='{r - 4}' fill='#000000' fill-opacity='0.2'/>"
+            f"<circle cx='{cx}' cy='{cy}' r='{r}' fill='#7d8791' stroke='{INK}' stroke-width='3'/>"
+            f"<circle cx='{cx}' cy='{cy}' r='{r - 7}' fill='#2b3036' stroke='{INK}' stroke-width='2'/>"
+            f"<path d='M{cx - 12} {cy - 6} h24 M{cx - 9} {cy - 6} l2 16 h14 l2 -16 M{cx - 4} {cy - 11} h8' "
+            f"fill='none' stroke='#cfd6dc' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/>"
+            f"<path d='M{cx - 20} {cy - 14} a26 26 0 0 1 12 -9' fill='none' stroke='#ffffff' "
+            f"stroke-opacity='0.55' stroke-width='3' stroke-linecap='round'/>"
+            "</g>")
+
+
 def pot_tile(x0: int, y0: int, pot: PotState | None, cook_s: int = 20) -> str:
     """Pot from above: counter base, dark pot with handles, onions inside, and a state overlay."""
     s = counter_tile(x0, y0)
@@ -314,6 +328,8 @@ def map_tiles(rows: list[str], pots: list[PotState], counters: dict[str, str], c
                 parts.append(rack_tile(x0, y0))
             elif ch == "S":
                 parts.append(hatch_tile(x0, y0))
+            elif ch == "B":
+                parts.append(bin_tile(x0, y0))
             elif ch == "P":
                 parts.append(pot_tile(x0, y0, at.get((x, y)), cook_s))
             else:

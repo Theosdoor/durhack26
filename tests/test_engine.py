@@ -450,7 +450,7 @@ Your notepad: "..."\
 
 
 def test_state_text_forced_coordination_matches_spec():
-    g = Game(Kitchen.load("forced_coordination"), ["Kilo", "Tango"], make_cfg(), round=2)
+    g = Game(Kitchen.load("forced_coordination", bins=False), ["Kilo", "Tango"], make_cfg(bins=False), round=2)
     g.t, g.score = 37, 20
     g.orders[:] = [OrderState(id=3, created_t=10, due_t=70), OrderState(id=2, created_t=-8,
                                                                          due_t=52)]
