@@ -265,3 +265,10 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 .talkbody .narr { position: sticky; bottom: 8px; margin-top: 8px; }
 @media (prefers-reduced-motion: reduce) { .bubble.pulse .ico, .speakbar.pulse .ico, .post.pulse .ico { animation: none; } }
 @media (max-width: 600px) { .narr { font-size: .8rem; padding: 4px 8px; } .bubble { font-size: .7rem; } }
+
+/* voiced highlight seasons stand out in the season grid */
+.season-card.voiced { border: 2px solid var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.tag.voiced-tag { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.speed { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; }
+.speed input { width: 90px; }
+.speed b { min-width: 2.6em; font-variant-numeric: tabular-nums; }

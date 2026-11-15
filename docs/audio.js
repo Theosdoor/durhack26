@@ -44,6 +44,7 @@
   const LOG = /[?&]sfxlog\b/.test(location.search);
   window.__sfxLog = [];
   let ctx = null, master = null, sfxBus = null, musicBus = null;
+  let inReplay = false;   // music plays only while a replay is open, never on the home page
 
   function ensureCtx() {
     if (!ctx) {
@@ -61,7 +62,7 @@
   }
   // browsers allow audio only after a user gesture: start (or resume) the context on the first one
   for (const ev of ["pointerdown", "keydown"]) {
-    document.addEventListener(ev, () => { ensureCtx(); if (on.music) startMusic(); }, { capture: true });
+    document.addEventListener(ev, () => { ensureCtx(); if (on.music && inReplay) startMusic(); }, { capture: true });
   }
 
   /* ---------------------------------------------------------- building blocks */
@@ -246,7 +247,7 @@
       on[k] = !on[k];
       store.set(k, on[k]);
       ensureCtx();
-      if (k === "music") { if (on.music) startMusic(); else stopMusic(); }
+      if (k === "music") { if (on.music && inReplay) startMusic(); else stopMusic(); }
       if (k === "voices" && on.voices) loadManifest();
       if (k === "voices" && !on.voices && voice) voice.pause();
       b.setAttribute("aria-pressed", String(on[k]));
@@ -255,6 +256,11 @@
     }));
   }
 
-  const api = { advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
+  function setReplay(v) {
+    inReplay = !!v;
+    if (!inReplay) stopMusic();
+    else if (on.music && ctx) startMusic();
+  }
+  const api = { setReplay, advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();

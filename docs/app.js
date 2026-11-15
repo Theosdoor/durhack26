@@ -29,7 +29,7 @@ const FEED_TYPES = new Set(["pickup", "putdown", "add_to_pot", "cook_start", "co
 
 const S = {
   index: null, maps: {}, cache: new Map(),
-  home: { team: "", rules: "", n: "", level: "", pair: "", sort: "score-desc" },
+  home: { team: "", rules: "", n: "", level: "", pair: "", voiced: "", sort: "score-desc" },
   season: null, phase: null, speaking: null, bub: new Map(), t: 0, playing: false, speed: 1, timer: null, openDetails: new Set(),
 };
 
@@ -129,6 +129,7 @@ async function route() {
   stop();
   const target = parseHash();
   try {
+    if (window.UCAudio) UCAudio.setReplay(!!target);
     if (!target) { await loadIndex(); S.season = null; renderHome(); return; }
     if (!S.season || S.season.id !== target.id) {
       app.innerHTML = `<p class="loading">Loading season ${esc(target.id)}&hellip;</p>`;
@@ -184,6 +185,7 @@ function renderHome() {
     <label>Rules ${seg("rules", [["", "All"], ...rules.map((r) => [r, RULES[r] || r])])}</label>
     <label>Team size ${seg("n", [["", "All"], ...sizes.map((n) => [n, `${n} agents`])])}</label>
     <label>Pairing ${seg("pair", [["", "All"], ["self", "Self-play"], ["mixed", "Mixed"]])}</label>
+    <label>Voices ${seg("voiced", [["", "All"], ["1", "Voiced only"]])}</label>
     <label>Layout <select data-k="level">${opt("", "All layouts", f.level)}${levels.map((l) => opt(l, levelName(l), f.level)).join("")}</select></label>
     <label>Sort <select data-k="sort">${[["score-desc", "Score, high to low"], ["score-asc", "Score, low to high"],
       ["level", "Layout"], ["team", "Team"], ["gap", "Predicted minus actual"]].map(([v, l]) => opt(v, l, f.sort)).join("")}</select></label>
@@ -193,9 +195,9 @@ function renderHome() {
   <section class="grid" id="grid" aria-label="Seasons"></section>`;
   app.querySelectorAll("select[data-k]").forEach((el) => el.addEventListener("change", () => { f[el.dataset.k] = el.value; renderHome(); }));
   app.querySelectorAll(".seg button").forEach((el) => el.addEventListener("click", () => { f[el.dataset.k] = el.dataset.v; renderHome(); }));
-  $("#reset").addEventListener("click", () => { Object.assign(f, { team: "", rules: "", n: "", level: "", pair: "", sort: "score-desc" }); renderHome(); });
+  $("#reset").addEventListener("click", () => { Object.assign(f, { team: "", rules: "", n: "", level: "", pair: "", voiced: "", sort: "score-desc" }); renderHome(); });
   renderGrid();
-  loadHighlights().then(renderReel);
+  loadHighlights().then(() => { renderReel(); renderGrid(); });
 }
 
 function predictedMean(r) {
@@ -207,7 +209,8 @@ function renderGrid() {
   const f = S.home;
   let rows = S.index.filter((r) => (!f.team || r.team === f.team) && (!f.rules || r.rules === f.rules)
     && (!f.n || String(r.n_agents) === String(f.n)) && (!f.level || r.level === f.level)
-    && (!f.pair || (f.pair === "mixed") === r.mixed));
+    && (!f.pair || (f.pair === "mixed") === r.mixed)
+    && (!f.voiced || HL.list.some((h) => h.season === r.id)));
   const by = {
     "score-desc": (a, b) => b.total - a.total, "score-asc": (a, b) => a.total - b.total,
     level: (a, b) => a.level.localeCompare(b.level) || b.total - a.total,
@@ -221,7 +224,8 @@ function renderGrid() {
   $("#grid").innerHTML = rows.map((r) => {
     const pm = predictedMean(r);
     const bars = r.rounds.map((v, i) => `<div class="b" title="Round ${i + 1}: ${fmt(v)}"><span>${fmt(v)}</span><i style="height:${Math.max(4, ((v || 0) / maxRound) * 100)}%"></i></div>`).join("");
-    return `<a class="card season-card" href="#${esc(r.id)}">
+    const hl = HL.list.find((h) => h.season === r.id);
+    return `<a class="card season-card${hl ? " voiced" : ""}" href="#${esc(r.id)}">
       <div class="row">
         <div><div class="title">${esc(levelName(r.level))} <span class="muted">· season ${r.epoch}</span></div>
           <div class="team">${esc(r.team)}</div></div>
@@ -230,7 +234,7 @@ function renderGrid() {
       <div class="row">
         <div class="tags"><span class="tag rules-${esc(r.rules)}">${esc(RULES[r.rules] || r.rules)}</span>
           <span class="tag">${r.n_agents} agents</span>${r.mixed ? '<span class="tag">mixed</span>' : ""}
-          <span class="tag">${r.served} soups</span></div>
+          <span class="tag">${r.served} soups</span>${hl ? `<span class="tag voiced-tag" title="${esc(hl.title)}: ${esc(hl.covers || "")}"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-1px"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg> voiced</span>` : ""}</div>
         ${thumb(S.maps[r.level])}
       </div>
       <div class="bars" aria-label="Score per round">${bars}</div>
@@ -409,7 +413,7 @@ function renderStage() {
       <button type="button" id="play" class="primary" title="Play / pause (Space)">&#9654; Play</button>
       <button type="button" id="fwd" title="Forward one ${unit} (Right)">&#9654;</button>
       <button type="button" id="nextph" title="Next phase (N)" aria-label="Next phase">&raquo;</button>
-      <select id="speed" title="Playback speed" aria-label="Playback speed">${SPEEDS.map((v) => `<option value="${v}"${v === S.speed ? " selected" : ""}>${v}×</option>`).join("")}</select>
+      <label class="speed" title="Playback speed">Speed <input type="range" id="speed" min="0" max="${SPEEDS.length - 1}" step="1" value="${Math.max(0, SPEEDS.indexOf(S.speed))}" aria-label="Playback speed"><b id="speedval">${S.speed}×</b></label>
       <div class="scrub"><div class="marks">${marks.join("")}</div>
         <input type="range" id="scrub" min="0" max="${p.hi}" step="1" value="${S.t}" aria-label="Time"></div>
       <span class="time" id="time"></span>
@@ -422,7 +426,7 @@ function renderStage() {
   $("#fwd").addEventListener("click", () => seek(S.t + 1));
   $("#prevph").addEventListener("click", () => stepPhase(-1));
   $("#nextph").addEventListener("click", () => stepPhase(1));
-  $("#speed").addEventListener("change", (e) => { S.speed = Number(e.target.value); if (S.playing) { stop(); play(); } });
+  $("#speed").addEventListener("input", (e) => { S.speed = SPEEDS[Number(e.target.value)]; $("#speedval").textContent = `${S.speed}×`; if (S.playing) { stop(); play(); } });
   $("#scrub").addEventListener("input", (e) => { stop(); seek(Number(e.target.value)); });
   S.chefs = new Map();
   S.bub = new Map();
