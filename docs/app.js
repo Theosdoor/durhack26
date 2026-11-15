@@ -426,7 +426,7 @@ function renderStage() {
   $("#fwd").addEventListener("click", () => seek(S.t + 1));
   $("#prevph").addEventListener("click", () => stepPhase(-1));
   $("#nextph").addEventListener("click", () => stepPhase(1));
-  $("#speed").addEventListener("input", (e) => { S.speed = SPEEDS[Number(e.target.value)]; $("#speedval").textContent = `${S.speed}×`; if (S.playing) { stop(); play(); } });
+  $("#speed").addEventListener("input", (e) => { S.speed = SPEEDS[Number(e.target.value)]; $("#speedval").textContent = `${S.speed}×`; if (S.playing && !HL.active) { stop(); play(); } });
   $("#scrub").addEventListener("input", (e) => { stop(); seek(Number(e.target.value)); });
   S.chefs = new Map();
   S.bub = new Map();
@@ -732,7 +732,11 @@ function play() {
   const ms = interval();
   if (S.t === 0 && window.UCAudio) { try { UCAudio.advance(S.season, S.phase, -1, 0, S.speed); } catch (e) { console.warn(e); } }   // posts at t=0 (first chat speaker)
   S.timer = setInterval(() => {
-    if (S.t >= S.phase.hi) { stop(); update(); return; }
+    if (S.t >= S.phase.hi) {   // end of this phase: carry on into the next one, stop at the end of the season
+      const ph = S.season.phases, nxt = ph[ph.indexOf(S.phase) + 1];
+      if (nxt) { selectPhase(nxt, 0); play(); } else { stop(); update(); }
+      return;
+    }
     if (window.UCAudio && UCAudio.holdClock(S.phase, S.speed)) return;   // a post is being read aloud (browser voices)
     const from = S.t;
     seek(S.t + 1, Math.min(ms * 0.9, 400));
@@ -749,13 +753,27 @@ function stop() {
   if (window.UCAudio && !HL.active) UCAudio.setPlaying(false);
 }
 
-function toggle() { if (S.playing) stop(); else play(); update(); }
+function toggle() {
+  if (HL.active) { if (HL.paused) resumeHighlight(); else pauseHighlight(); update(); return; }
+  if (S.playing) stop(); else play();
+  update();
+}
+function pauseHighlight() {
+  HL.paused = true; HL.pauses++;
+  S.playing = false;
+  if (window.UCAudio) { UCAudio.pauseSpeak(); UCAudio.setPlaying(false); }
+}
+function resumeHighlight() {
+  HL.paused = false;
+  S.playing = true;
+  if (window.UCAudio) { UCAudio.setPlaying(true); UCAudio.resumeSpeak(); }
+}
 
 document.addEventListener("keydown", (e) => {
   if (!S.season || !S.phase || !location.hash) return;
   if (e.target.matches("input[type=text], textarea, select")) return;
   if (e.key === " ") {
-    if (e.target.closest("button, a, summary")) return;   // let Space press the focused control
+    if (e.target.closest("button, a, summary")) e.target.blur();   // Space is play/pause, not "press the focused button"
     e.preventDefault(); toggle();
   }
   else if (e.key === "ArrowRight") { e.preventDefault(); stop(); seek(S.t + (e.shiftKey ? 10 : 1)); }
@@ -855,7 +873,7 @@ function updateSpeech() {
    without a voice clip), narrator bridges and the voiced lines, then the outro. Playback waits for
    each clip to end so speech never overlaps. Clips come from audio/manifest.json (see audio.js);
    the saved Voices setting is not touched. Music and Effects toggles apply as usual. */
-const HL = { list: [], cur: -1, token: 0, active: false, busy: false, loaded: false };
+const HL = { list: [], cur: -1, token: 0, active: false, busy: false, loaded: false, paused: false, pauses: 0 };
 
 const elevenHL = (id) => HL.list.find((h) => h.season === id && h.tts !== "browser");
 const isBrowserHL = (h) => h.tts === "browser";
@@ -914,7 +932,7 @@ function hlStatus(text) { const el = $("#hlstat"); if (el) el.textContent = text
 
 function exitHighlight() {
   const was = HL.active;
-  HL.active = false; HL.token++;
+  HL.active = false; HL.paused = false; HL.token++;
   S.speaking = null;
   if (window.UCAudio) UCAudio.setPlaying(false);
   if (window.UCAudio) UCAudio.setHighlight(false);
@@ -944,8 +962,11 @@ async function runHighlight(h, token) {
   HL.active = true;
   UCAudio.setPlaying(true);
   const alive = () => HL.active && token === HL.token;
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep0 = (ms) => new Promise((r) => setTimeout(r, ms));
+  const gate = async () => { while (HL.paused && alive()) await sleep0(150); };
+  const sleep = async (ms) => { await gate(); await sleep0(ms); await gate(); };
   const say = async (src, info) => {
+    await gate();
     if (!src || !alive()) return;
     S.speaking = info || null; updateSpeech();
     await UCAudio.speak(src);
@@ -954,10 +975,15 @@ async function runHighlight(h, token) {
   const browser = isBrowserHL(h);
   // browser voices: every board post of the season is spoken as it appears (no narrator, no mp3s)
   const sayPost = async (m) => {
-    if (!alive()) return;
-    S.speaking = { agent: m.agent, text: m.text }; updateSpeech();
-    await UCAudio.speakText(m.text, m.agent, S.season);
-    S.speaking = null; if (S.phase) updateSpeech();
+    for (;;) {
+      await gate();
+      if (!alive()) return;
+      const g = HL.pauses;
+      S.speaking = { agent: m.agent, text: m.text }; updateSpeech();
+      await UCAudio.speakText(m.text, m.agent, S.season);
+      S.speaking = null; if (S.phase) updateSpeech();
+      if (HL.pauses === g) return;   // finished; if a pause cut it off, say it again after resume
+    }
   };
   const marks = browser ? S.season.posts.map((r) => ({ code: S.season.phases.find((p) => p.posts.includes(r))?.code, t: r.t, agent: r.agent, text: r.text }))
     : [...(h.bridges || []).map((b) => ({ ...b, bridge: true })), ...(h.clips || [])];
@@ -969,6 +995,7 @@ async function runHighlight(h, token) {
     const ph = S.season.phases.find((p) => p.code === code);
     if (!ph) continue;
     HL.busy = true; selectPhase(ph, 0); HL.busy = false;
+    await gate(); if (!alive()) return;
     S.playing = true; update();
     hlStatus(ph.title);
     const mine = marks.filter((m) => m.code === code);

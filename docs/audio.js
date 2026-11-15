@@ -355,11 +355,21 @@
       let done = false;
       const fin = () => { if (done) return; done = true; clearTimeout(to); if (voice === a) voice = null; if (spkFin === fin) spkFin = null; resolve(); };
       const to = setTimeout(fin, 90000);
+      spkTo = to;
       a.addEventListener("ended", fin); a.addEventListener("error", fin);
       a.volume = 0.95; voice = a; spkFin = fin;
       if (LOG) { console.log(`[sfx] speak ${src}`); window.__sfxLog.push({ name: "speak", src }); }
       a.play().catch(fin);
     });
+  }
+  // highlight pause: hold the ElevenLabs clip where it is; browser speech is cut (the player says that post again)
+  let spkTo = null;
+  function pauseSpeak() {
+    if (voice) { try { voice.pause(); } catch { /* gone */ } if (spkTo) { clearTimeout(spkTo); spkTo = null; } }
+    ttsCancel();
+  }
+  function resumeSpeak() {
+    if (voice && spkFin) { const f = spkFin; spkTo = setTimeout(f, 90000); voice.play().catch(f); }
   }
   function stopSpeak() { ttsCancel(); const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
   function setHighlight(v) { hlMode = !!v; if (!v) stopSpeak(); }
@@ -415,6 +425,6 @@
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
   function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); } syncMusic(); }
   function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
-  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
+  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();
