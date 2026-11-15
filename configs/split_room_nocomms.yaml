@@ -1,0 +1,11 @@
+# Pilot on forced_coordination (the layout formerly named split_room). Every option not
+# set here is the default (configs/template.yaml).
+name: split_room_nocomms
+scoring: orders                     # as these configs ran (before the soups default)
+level: forced_coordination
+board: pull                         # unread count; read_board() is free
+comms: none                         # no chat, no board
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  # mixed team: make one {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}  # ~2x faster than novita/bf16 (14 Nov test)

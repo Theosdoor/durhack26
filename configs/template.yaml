@@ -1,0 +1,53 @@
+## Every run option, with its default. Copy what you need into your own config; leave out
+## anything you'd set to the default. Lines starting "# " are options (delete the "# " to use
+## one); lines starting "##" are notes. tests/test_config.py uncomments every option and checks
+## that the result equals the defaults in undercooked/config.py, so this file can't drift.
+
+# name: my_experiment            # (required) run name: in the log and every Header
+# level: forced_coordination     # one level per run: a file stem in levels/ (see levels/README.md)
+# levels: null                   # several levels: one season per level and epoch; replaces level
+# level_overrides: {}            # per level: {orders: {every_s: 20}, round_s: 120, n_agents: 3}; only those fields change
+# rounds: 3                      # rounds per season
+# round_s: 180                   # game seconds per round
+# practice: true                 # each agent first plays alone in practice_level
+# practice_level: practice       # practice kitchen (a file stem in levels/)
+# practice_s: 60                 # practice length in game seconds (an agent may finish_practice() early)
+# chat_max_posts: 6              # posts per agent in each pre-round chat
+# scoring: soups                 # soups: every soup served scores orders.reward, no orders; orders: soups fill orders
+# orders:
+#   every_s: 30                  # [scoring orders] a new order every N seconds (the first at t=0)
+#   due_s: 60                    # [scoring orders] each order is due N seconds after it arrives
+#   max_open: 3                  # [scoring orders] no new order while this many are open
+#   reward: 20                   # points per soup served (scoring orders: per order filled)
+#   penalty: 10                  # [scoring orders] points lost when an order expires
+# cook_s: 20                     # seconds a full pot cooks
+# decision:
+#   mode: simulated              # the game clock stops while models think (realtime: not implemented)
+#   flat_s: 2                    # game seconds every decision costs
+#   post_words_per_s: 10         # extra seconds per decision = ceil(words posted / this)
+#   reasoning_tokens: 1000       # GenerateConfig.reasoning_tokens (providers may ignore it)
+#   max_tokens: 2000             # GenerateConfig.max_tokens: a reply that hits it gets the forced answer
+#   pipeline: true               # overlap model calls across game seconds (same outcomes, faster)
+#   reasoning: "on"              # "off": every call asks for no reasoning (not for reasoning_off: false agents)
+# max_plan_len: 5                # actions per plan (longer plans are cut)
+# epochs: 10                     # seasons per level (Inspect epochs)
+## Seats: a base permutation seeded by (seed, level) is rotated one seat per epoch, so with N
+## agents epochs 1..N put each agent spec in each start position once (2 agents: use epochs 2).
+# seed: 0                        # seeds names, seat permutation, first speakers and tie orders
+# names: nato_random             # agent names: drawn per season from the NATO alphabet
+# board: pull                    # pull: unread count + read_board(); push: new posts in the state
+# comms: full                    # full: chat + board; planning_only: chat only; none: no talking
+# debrief: private               # private: one private turn (score, note) after each round; score_only: the score only ("full" = old name of private)
+# reflection: true               # after the last round each agent answers the reflection questions (free text)
+# rules: full                    # full: everything for the best play; bare: identity, goal, one line on rounds; open: bare without a goal (also: recipe, minimal, minimal_hint)
+# compact_at_tokens: 32000       # summarise an agent's conversation past this many tokens
+# providers:
+#   pick: cheapest               # how to pick an OpenRouter endpoint when none is pinned
+#   min_quant: fp8               # lowest quantisation accepted when picking
+## agents: provider pins an OpenRouter endpoint; reasoning_off: false for endpoints that refuse
+## to turn reasoning off (e.g. z-ai/glm-5.3-flash@morph/fp8). CLI: --model M --provider P
+## (self-play) or --agents "m1@p1,m2@p2" (a "!reasoning" suffix = reasoning_off: false).
+# agents:                        # (required) the agent specs; cycled up to n_agents
+#   - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+#   - {model: openrouter/google/gemma-4-31b-it, provider: deepinfra/fp8}
+# n_agents: null                 # agents per season (null: len(agents)); per level: level_overrides.<level>.n_agents

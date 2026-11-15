@@ -1,0 +1,3521 @@
+{
+ "header": {
+  "kind": "header",
+  "config_name": "split_room_min",
+  "level": "forced_coordination",
+  "map": [
+   "XXXPX",
+   "O X P",
+   "O X X",
+   "D X X",
+   "XXXSX"
+  ],
+  "agents": [
+   {
+    "name": "Kilo",
+    "letter": "K",
+    "model": "mockllm/model",
+    "provider": null
+   },
+   {
+    "name": "Tango",
+    "letter": "T",
+    "model": "mockllm/model",
+    "provider": "baidu/fp8"
+   }
+  ],
+  "seed": 7,
+  "epoch": 1,
+  "round_s": 40,
+  "rounds": 1
+ },
+ "records": [
+  {
+   "kind": "post",
+   "phase": "chat",
+   "round": 1,
+   "t": 0,
+   "agent": "Kilo",
+   "text": "I'm in the room with the pots and the serving hatch. I'll cook and serve."
+  },
+  {
+   "kind": "decision",
+   "phase": "chat",
+   "round": 1,
+   "t": 0,
+   "lands_t": null,
+   "agent": "Kilo",
+   "reasoning": "I see two pots and the hatch on my side but no onions. Tango must be across the middle counter. Propose a handoff there.",
+   "text": null,
+   "plan": [],
+   "post": "I'm in the room with the pots and the serving hatch. I'll cook and serve.",
+   "note": null,
+   "read_board": false,
+   "ready": true,
+   "cutoff": false,
+   "input_tokens": 900,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "post",
+   "phase": "chat",
+   "round": 1,
+   "t": 1,
+   "agent": "Tango",
+   "text": "I have the onion crates and dish rack. I'll put onions and dishes on the middle counter at (2,2)."
+  },
+  {
+   "kind": "decision",
+   "phase": "chat",
+   "round": 1,
+   "t": 1,
+   "lands_t": null,
+   "agent": "Tango",
+   "reasoning": "Onions and dishes are on my side. The counter column x=2 is the only link. Use (2,2).",
+   "text": null,
+   "plan": [],
+   "post": "I have the onion crates and dish rack. I'll put onions and dishes on the middle counter at (2,2).",
+   "note": null,
+   "read_board": false,
+   "ready": true,
+   "cutoff": false,
+   "input_tokens": 907,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "post",
+   "phase": "chat",
+   "round": 1,
+   "t": 2,
+   "agent": "Kilo",
+   "text": "Deal. I pick up from (2,2) standing at (3,2). Three onions per soup, then one dish."
+  },
+  {
+   "kind": "decision",
+   "phase": "chat",
+   "round": 1,
+   "t": 2,
+   "lands_t": null,
+   "agent": "Kilo",
+   "reasoning": "Confirm the protocol.",
+   "text": null,
+   "plan": [],
+   "post": "Deal. I pick up from (2,2) standing at (3,2). Three onions per soup, then one dish.",
+   "note": null,
+   "read_board": false,
+   "ready": true,
+   "cutoff": false,
+   "input_tokens": 914,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "post",
+   "phase": "chat",
+   "round": 1,
+   "t": 3,
+   "agent": "Tango",
+   "text": "Agreed. Post when the soup is served."
+  },
+  {
+   "kind": "decision",
+   "phase": "chat",
+   "round": 1,
+   "t": 3,
+   "lands_t": null,
+   "agent": "Tango",
+   "reasoning": null,
+   "text": null,
+   "plan": [],
+   "post": "Agreed. Post when the soup is served.",
+   "note": null,
+   "read_board": false,
+   "ready": true,
+   "cutoff": false,
+   "input_tokens": 921,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "type": "phase_start",
+   "agent": null,
+   "data": {}
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "lands_t": 2,
+   "agent": "Kilo",
+   "reasoning": "Tango will feed onions through (2,2). I stand at (3,2) to collect, then carry them to pot_1 at (3,0) from (3,1).",
+   "text": null,
+   "plan": [
+    "move down",
+    "pickup left",
+    "move up",
+    "interact up"
+   ],
+   "post": null,
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 900,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 2,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "post",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "agent": "Tango",
+   "text": "Onions coming through (2,2). Kilo, grab from there."
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "type": "decision_start",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "lands_t": 2,
+   "agent": "Tango",
+   "reasoning": "Fetch an onion from the crate (0,2) to my west, drop it on counter (2,2) to my east. Repeat 3 times.",
+   "text": null,
+   "plan": [
+    "pickup left",
+    "putdown right",
+    "wait",
+    "wait",
+    "pickup left"
+   ],
+   "post": "Onions coming through (2,2). Kilo, grab from there.",
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 900,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 2,
+   "type": "decision_land",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 0,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 1,
+   "type": "pickup",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "0,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 1,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 2,
+   "type": "putdown",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 2,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {
+    "2,2": "onion"
+   },
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 3,
+   "type": "pickup",
+   "agent": "Kilo",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 3,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 4,
+   "type": "read_board",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 4,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 4,
+   "lands_t": 6,
+   "agent": "Kilo",
+   "reasoning": "Check whether Tango posted anything before committing more steps.",
+   "text": null,
+   "plan": [
+    "interact up",
+    "move down",
+    "pickup left",
+    "move up",
+    "interact up"
+   ],
+   "post": null,
+   "note": null,
+   "read_board": true,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 928,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 6,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 4,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 5,
+   "type": "pickup",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "0,2"
+   }
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 5,
+   "type": "add_to_pot",
+   "agent": "Kilo",
+   "data": {
+    "pot": "pot_1",
+    "item": "onion",
+    "onions": 1
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 5,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 1,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 6,
+   "type": "putdown",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 6,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 1,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {
+    "2,2": "onion"
+   },
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 7,
+   "type": "pickup",
+   "agent": "Kilo",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 7,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 1,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 8,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 1,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 9,
+   "type": "pickup",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "0,2"
+   }
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 9,
+   "type": "add_to_pot",
+   "agent": "Kilo",
+   "data": {
+    "pot": "pot_1",
+    "item": "onion",
+    "onions": 2
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 9,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 2,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 10,
+   "type": "putdown",
+   "agent": "Tango",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "post",
+   "phase": "round",
+   "round": 1,
+   "t": 10,
+   "agent": "Tango",
+   "text": "3 onions delivered. Dish next."
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 10,
+   "type": "decision_start",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 10,
+   "lands_t": 12,
+   "agent": "Tango",
+   "reasoning": "Three onions sent. Now a dish: the rack (0,3) is below the crate; stand at (1,3).",
+   "text": null,
+   "plan": [
+    "move down",
+    "pickup left",
+    "move up",
+    "putdown right"
+   ],
+   "post": "3 onions delivered. Dish next.",
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 970,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 12,
+   "type": "decision_land",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 10,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 2,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {
+    "2,2": "onion"
+   },
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 11,
+   "type": "pickup",
+   "agent": "Kilo",
+   "data": {
+    "item": "onion",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 11,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 2,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 12,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 12,
+   "lands_t": 14,
+   "agent": "Kilo",
+   "reasoning": "Third onion goes in, then the pot cooks 20s by itself.",
+   "text": null,
+   "plan": [
+    "interact up",
+    "move down",
+    "wait",
+    "pickup left",
+    "move up"
+   ],
+   "post": null,
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 984,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 14,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 12,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "onion",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 2,
+     "state": "filling",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 13,
+   "type": "pickup",
+   "agent": "Tango",
+   "data": {
+    "item": "dish",
+    "at": "0,3"
+   }
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 13,
+   "type": "add_to_pot",
+   "agent": "Kilo",
+   "data": {
+    "pot": "pot_1",
+    "item": "onion",
+    "onions": 3
+   }
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 13,
+   "type": "cook_start",
+   "agent": "Kilo",
+   "data": {
+    "pot": "pot_1",
+    "onions": 3
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 13,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      3
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 20
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 14,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "acting"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 19
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 15,
+   "type": "putdown",
+   "agent": "Tango",
+   "data": {
+    "item": "dish",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 15,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 18
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {
+    "2,2": "dish"
+   },
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 16,
+   "type": "pickup",
+   "agent": "Kilo",
+   "data": {
+    "item": "dish",
+    "at": "2,2"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 16,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 17
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "post",
+   "phase": "round",
+   "round": 1,
+   "t": 17,
+   "agent": "Kilo",
+   "text": "Soup cooking, ready at about t=33. I'll serve right after."
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 17,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 17,
+   "lands_t": 19,
+   "agent": "Kilo",
+   "reasoning": "Dish in hand. Soup finishes around t=33. Wait at (3,1).",
+   "text": null,
+   "plan": [
+    "wait",
+    "wait",
+    "wait"
+   ],
+   "post": "Soup cooking, ready at about t=33. I'll serve right after.",
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 1019,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 19,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 17,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 16
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 18,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 15
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 19,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 14
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 20,
+   "type": "order_new",
+   "agent": null,
+   "data": {
+    "order": 2
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 20,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 13
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 21,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 12
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 22,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 11
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 23,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 10
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 24,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 9
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 25,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 8
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 26,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 7
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 27,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 6
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 28,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 28,
+   "lands_t": 30,
+   "agent": "Kilo",
+   "reasoning": "Ran out of tokens before choosing an action, so the reply had no act().",
+   "text": null,
+   "plan": [],
+   "post": null,
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": true,
+   "input_tokens": 1096,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 30,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 30,
+   "type": "cutoff",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 28,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 5
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 29,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 4
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 30,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 3
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 31,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 2
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "post",
+   "phase": "round",
+   "round": 1,
+   "t": 32,
+   "agent": "Kilo",
+   "text": "Plating now, serving in about 3s."
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 32,
+   "type": "decision_start",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 32,
+   "lands_t": 34,
+   "agent": "Kilo",
+   "reasoning": "Plate at 33, then down to the hatch (3,4) from (3,3).",
+   "text": null,
+   "plan": [
+    "interact up",
+    "move down",
+    "move down",
+    "interact down"
+   ],
+   "post": "Plating now, serving in about 3s.",
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 1124,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 34,
+   "type": "decision_land",
+   "agent": "Kilo",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 32,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "dish",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 3,
+     "state": "cooking",
+     "ready_in": 1
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 33,
+   "type": "plate",
+   "agent": "Kilo",
+   "data": {
+    "pot": "pot_1",
+    "item": "soup"
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 33,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      1
+     ],
+     "holding": "soup",
+     "plan": [],
+     "status": "deciding"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 34,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      2
+     ],
+     "holding": "soup",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 35,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": "soup",
+     "plan": [],
+     "status": "acting"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 1,
+     "dish": "onion_soup",
+     "created_t": 0,
+     "due_t": 60
+    },
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 0,
+   "served": 0,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 36,
+   "type": "serve",
+   "agent": "Kilo",
+   "data": {
+    "item": "soup",
+    "order": 1,
+    "points": 20
+   }
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 36,
+   "type": "decision_start",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "decision",
+   "phase": "round",
+   "round": 1,
+   "t": 36,
+   "lands_t": 38,
+   "agent": "Tango",
+   "reasoning": "The next order is due at 38; not enough time for a second soup.",
+   "text": null,
+   "plan": [
+    "wait"
+   ],
+   "post": null,
+   "note": null,
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 1152,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 38,
+   "type": "decision_land",
+   "agent": "Tango",
+   "data": {}
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 36,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 20,
+   "served": 1,
+   "missed": 0
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 37,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "deciding"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [
+    {
+     "id": 2,
+     "dish": "onion_soup",
+     "created_t": 20,
+     "due_t": 38
+    }
+   ],
+   "score": 20,
+   "served": 1,
+   "missed": 0
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 38,
+   "type": "order_missed",
+   "agent": null,
+   "data": {
+    "order": 2,
+    "points": -10
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 38,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [],
+   "score": 10,
+   "served": 1,
+   "missed": 1
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 39,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [],
+   "score": 10,
+   "served": 1,
+   "missed": 1
+  },
+  {
+   "kind": "event",
+   "phase": "round",
+   "round": 1,
+   "t": 40,
+   "type": "phase_end",
+   "agent": null,
+   "data": {
+    "duration_s": 40
+   }
+  },
+  {
+   "kind": "frame",
+   "phase": "round",
+   "round": 1,
+   "t": 40,
+   "agents": [
+    {
+     "name": "Kilo",
+     "pos": [
+      3,
+      3
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    },
+    {
+     "name": "Tango",
+     "pos": [
+      1,
+      2
+     ],
+     "holding": null,
+     "plan": [],
+     "status": "idle"
+    }
+   ],
+   "pots": [
+    {
+     "id": "pot_1",
+     "pos": [
+      3,
+      0
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    },
+    {
+     "id": "pot_2",
+     "pos": [
+      4,
+      1
+     ],
+     "onions": 0,
+     "state": "empty",
+     "ready_in": null
+    }
+   ],
+   "counters": {},
+   "orders": [],
+   "score": 10,
+   "served": 1,
+   "missed": 1
+  },
+  {
+   "kind": "post",
+   "phase": "debrief",
+   "round": 1,
+   "t": 0,
+   "agent": "Kilo",
+   "text": "Handoff worked. Next time start a second pot earlier so the 38s order isn't missed."
+  },
+  {
+   "kind": "decision",
+   "phase": "debrief",
+   "round": 1,
+   "t": 0,
+   "lands_t": null,
+   "agent": "Kilo",
+   "reasoning": "One soup served, one order missed because cooking takes 20s.",
+   "text": null,
+   "plan": [],
+   "post": "Handoff worked. Next time start a second pot earlier so the 38s order isn't missed.",
+   "note": "Use both pots; ask Tango for 6 onions early.",
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 900,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  },
+  {
+   "kind": "post",
+   "phase": "debrief",
+   "round": 1,
+   "t": 1,
+   "agent": "Tango",
+   "text": "Agreed. I'll batch onions and send two dishes."
+  },
+  {
+   "kind": "decision",
+   "phase": "debrief",
+   "round": 1,
+   "t": 1,
+   "lands_t": null,
+   "agent": "Tango",
+   "reasoning": null,
+   "text": null,
+   "plan": [],
+   "post": "Agreed. I'll batch onions and send two dishes.",
+   "note": "Keep the (2,2) handoff; batch onions.",
+   "read_board": false,
+   "ready": false,
+   "cutoff": false,
+   "input_tokens": 907,
+   "output_tokens": 140,
+   "reasoning_tokens": 90,
+   "served_by": "baidu/fp8"
+  }
+ ]
+}

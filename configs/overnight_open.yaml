@@ -1,0 +1,9 @@
+# Overnight: no goal (rules open). Set the model per run with --model/--provider.
+name: overnight_open
+levels: [cramped_room, asymmetric_advantages]
+rules: open
+epochs: 3
+practice_s: 120
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

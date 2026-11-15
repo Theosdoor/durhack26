@@ -1,0 +1,16 @@
+# Pilot extension: the three levels the first pilot skipped, goal-only rules, DeepSeek self-play,
+# one season each. Set comms per run:
+#   uv run undercooked run configs/pilot_more_maps.yaml --rules minimal --comms full|none
+# Same settings as configs/pilot_rules_comms.yaml otherwise (3 rounds of 180 s, 120 s practice).
+name: pilot_more_maps
+scoring: orders                     # as these configs ran (before the soups default)
+levels: [forced_coordination, coordination_ring, counter_circuit]
+level_overrides:
+  forced_coordination: {orders: {every_s: 20}}
+  coordination_ring: {orders: {every_s: 20}}
+  counter_circuit: {orders: {every_s: 30}}
+epochs: 1
+practice_s: 120   # longer practice so goal-only agents can explore; finish_practice() ends it early
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

@@ -1,0 +1,16 @@
+# Pilot: rules x comms, DeepSeek self-play on three levels. Set the cell per run:
+#   uv run undercooked run configs/pilot_rules_comms.yaml --rules full|minimal --comms full|none
+# Order rates per level from the bot tuning (configs/all_levels_nocomms.yaml). Every option not
+# set here is the default (configs/template.yaml): practice on, 3 rounds of 180 s.
+name: pilot_rules_comms
+scoring: orders                     # as these configs ran (before the soups default)
+levels: [split_room, cramped_room, asymmetric_advantages]
+level_overrides:
+  split_room: {orders: {every_s: 20}}
+  cramped_room: {orders: {every_s: 15}}
+  asymmetric_advantages: {orders: {every_s: 15}}
+epochs: 2
+practice_s: 120   # longer practice so goal-only agents can explore; finish_practice() ends it early
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}

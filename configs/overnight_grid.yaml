@@ -1,0 +1,11 @@
+# Overnight main grid: self-play, 2 agents, every level but forced_coordination (split_room v1), 3 seasons each. Set the model and the
+# instructions per run, e.g.
+#   uv run undercooked run configs/overnight_grid.yaml --rules full|bare \
+#       --model openrouter/deepseek/deepseek-v4.1-flash --provider baidu/fp8
+name: overnight_grid
+levels: [split_room, cramped_room, asymmetric_advantages, coordination_ring, counter_circuit]
+epochs: 3
+practice_s: 120
+agents:
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
+  - {model: openrouter/deepseek/deepseek-v4.1-flash, provider: baidu/fp8}
