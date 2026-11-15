@@ -728,6 +728,7 @@ function play() {
   if (S.playing) return;
   if (S.t >= S.phase.hi) S.t = 0;
   S.playing = true;
+  if (window.UCAudio) UCAudio.setPlaying(true);
   const ms = interval();
   S.timer = setInterval(() => {
     if (S.t >= S.phase.hi) { stop(); update(); return; }
@@ -743,6 +744,7 @@ function stop() {
   if (S.timer) clearInterval(S.timer);
   S.timer = null;
   if (S.playing) { S.playing = false; const b = $("#play"); if (b) b.innerHTML = "&#9654; Play"; }
+  if (window.UCAudio && !HL.active) UCAudio.setPlaying(false);
 }
 
 function toggle() { if (S.playing) stop(); else play(); update(); }
@@ -898,6 +900,7 @@ function exitHighlight() {
   const was = HL.active;
   HL.active = false; HL.token++;
   S.speaking = null;
+  if (window.UCAudio) UCAudio.setPlaying(false);
   if (window.UCAudio) UCAudio.setHighlight(false);
   if (S.phase && $("#stage")) updateSpeech();
   if (S.playing) { S.playing = false; const b = $("#play"); if (b) b.innerHTML = "&#9654; Play"; }
@@ -923,6 +926,7 @@ const speakInfo = (m) => (m.bridge ? { narrator: true, text: m.text } : { agent:
 
 async function runHighlight(h, token) {
   HL.active = true;
+  UCAudio.setPlaying(true);
   const alive = () => HL.active && token === HL.token;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const say = async (src, info) => {
@@ -966,6 +970,7 @@ async function runHighlight(h, token) {
   if (!alive()) return;
   HL.active = false;
   S.playing = false; update();
+  UCAudio.setPlaying(false);
   hlStatus("finished");
   UCAudio.setHighlight(false);
 }

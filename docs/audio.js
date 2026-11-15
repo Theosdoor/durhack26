@@ -2,8 +2,8 @@
    files, no network) except optional voice clips listed in audio/manifest.json.
 
    Three toggles, remembered in localStorage:
-   - music (default off): an original, procedurally scheduled loop: oom-pah bass, accordion-ish
-     chord stabs and a marimba-like melody over a short chord progression;
+   - music (default off): an original café-musette waltz (3/4): musette accordion in A minor,
+     then a Neapolitan mandolin-tremolo half in C major; plays only while a replay is playing;
    - voices (default off): plays the mp3 the manifest lists for a board post when that post
      appears during playback; does nothing when there is no manifest or no entry;
    - sfx (default on): short sounds for game events during playback, rate-limited.
@@ -44,7 +44,7 @@
   const LOG = /[?&]sfxlog\b/.test(location.search);
   window.__sfxLog = [];
   let ctx = null, master = null, sfxBus = null, musicBus = null;
-  let inReplay = false;   // music plays only while a replay is open, never on the home page
+  let inReplay = false, playing = false;   // music plays only while a replay is open AND playing
 
   function ensureCtx() {
     if (!ctx) {
@@ -62,7 +62,7 @@
   }
   // browsers allow audio only after a user gesture: start (or resume) the context on the first one
   for (const ev of ["pointerdown", "keydown"]) {
-    document.addEventListener(ev, () => { ensureCtx(); if (on.music && inReplay) startMusic(); }, { capture: true });
+    document.addEventListener(ev, () => { ensureCtx(); if (musicWanted()) startMusic(); }, { capture: true });
   }
 
   /* ---------------------------------------------------------- building blocks */
@@ -119,38 +119,75 @@
   }
 
   /* ---------------------------------------------------------- music: an original loop */
-  // 8 bars in F major, 4/4 at 116 bpm: F  Dm  Bb  C  |  F  Am  Bb  C (chord roots, MIDI)
-  const BARS = [[53, [65, 69, 72]], [50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]],
-    [53, [65, 69, 72]], [45, [64, 69, 72]], [46, [62, 65, 70]], [48, [64, 67, 70]]];
-  // melody: [bar, eighth (0-7), midi, eighths long]; written for this site
-  const MELODY = [[0, 0, 77, 1], [0, 1, 79, 1], [0, 2, 81, 2], [0, 5, 79, 1], [0, 6, 77, 2],
-    [1, 0, 74, 2], [1, 3, 77, 1], [1, 4, 81, 3],
-    [2, 0, 82, 1], [2, 1, 81, 1], [2, 2, 79, 2], [2, 4, 77, 1], [2, 5, 74, 1], [2, 6, 77, 2],
-    [3, 0, 76, 3], [3, 4, 79, 1], [3, 5, 76, 1], [3, 6, 72, 2],
-    [4, 0, 72, 1], [4, 1, 77, 1], [4, 2, 81, 1], [4, 3, 84, 2], [4, 6, 81, 2],
-    [5, 0, 76, 2], [5, 2, 81, 1], [5, 3, 79, 1], [5, 4, 76, 3],
-    [6, 0, 74, 1], [6, 1, 77, 1], [6, 2, 82, 2], [6, 4, 81, 1], [6, 5, 79, 1], [6, 6, 77, 2],
-    [7, 0, 79, 2], [7, 2, 76, 1], [7, 3, 72, 1], [7, 4, 76, 2], [7, 6, 79, 2]];
-  const BPM = 116, EIGHTH = 60 / BPM / 2;
+  // An original café-musette waltz written for this site (3/4, 160 bpm), in two halves:
+  //  A (Paris): A minor, musette accordion (three reeds tuned apart, so they beat), oom-pah-pah bass.
+  //  B (Napoli): C major, mandolin tremolo melody over the same waltz, tambourine jingles.
+  const BPM = 160, EIGHTH = 60 / BPM / 2, STEPS = 6;   // a bar = 6 eighths
+  const CH = { Am: [45, 40, [57, 60, 64]], Dm: [38, 45, [57, 62, 65]], E7: [40, 47, [56, 59, 62, 64]],
+    C: [36, 43, [55, 60, 64]], G7: [43, 38, [55, 59, 62, 65]], F: [41, 48, [57, 60, 65]] };
+  const PROG = ["Am", "Dm", "E7", "Am", "Am", "Dm", "E7", "Am",      // A: Paris
+    "C", "G7", "G7", "C", "F", "C", "G7", "C"];                    // B: Napoli
+  // melody: [bar, eighth (0-5), midi, eighths long]
+  const MELODY = [
+    [0, 0, 76, 2], [0, 2, 75, 1], [0, 3, 76, 1], [0, 4, 81, 2],
+    [1, 0, 77, 3], [1, 3, 76, 1], [1, 4, 74, 2],
+    [2, 0, 71, 1], [2, 1, 72, 1], [2, 2, 74, 1], [2, 3, 76, 1], [2, 4, 80, 2],
+    [3, 0, 81, 4], [3, 4, 76, 2],
+    [4, 0, 72, 2], [4, 2, 71, 1], [4, 3, 72, 1], [4, 4, 76, 2],
+    [5, 0, 77, 2], [5, 2, 81, 2], [5, 4, 77, 2],
+    [6, 0, 76, 1], [6, 1, 74, 1], [6, 2, 72, 1], [6, 3, 71, 1], [6, 4, 68, 2],
+    [7, 0, 69, 4], [7, 4, 64, 1], [7, 5, 68, 1],
+    [8, 0, 79, 3], [8, 3, 76, 3],
+    [9, 0, 77, 3], [9, 3, 74, 3],
+    [10, 0, 71, 2], [10, 2, 74, 2], [10, 4, 77, 2],
+    [11, 0, 76, 6],
+    [12, 0, 77, 2], [12, 2, 81, 2], [12, 4, 84, 2],
+    [13, 0, 84, 3], [13, 3, 79, 3],
+    [14, 0, 77, 2], [14, 2, 76, 2], [14, 4, 74, 2],
+    [15, 0, 72, 4], [15, 4, 71, 1], [15, 5, 75, 1]];
+  const NAPOLI = (bar) => bar >= 8;
   let musicTimer = null, nextStep = 0, step = 0;
 
+  // accordion: three detuned reeds (musette tuning) through a soft low-pass, with bellows swell
+  function accordion(n, t, dur, gain) {
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 2600; f.Q.value = 0.8;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.03);
+    g.gain.setValueAtTime(gain, t + Math.max(0.04, dur - 0.06));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    f.connect(g); g.connect(musicBus);
+    for (const [ratio, type, lvl] of [[1, "sawtooth", 0.5], [1.0075, "sawtooth", 0.35], [0.9926, "square", 0.25]]) {
+      const o = ctx.createOscillator(), og = ctx.createGain();
+      o.type = type; o.frequency.setValueAtTime(midi(n) * ratio, t); og.gain.value = lvl;
+      o.connect(og); og.connect(f); o.start(t); o.stop(t + dur + 0.05);
+    }
+  }
+  // mandolin: a pair of plucked, slightly detuned strings, repeated as a tremolo
+  function mandolin(n, t, dur, gain) {
+    const step = EIGHTH / 3;
+    for (let x = 0; x < dur - 0.01; x += step) {
+      const g2 = gain * (x === 0 ? 1 : 0.7);
+      tone(midi(n), t + x, step * 1.6, { type: "triangle", gain: g2, bus: musicBus, attack: 0.002 });
+      tone(midi(n) * 1.003, t + x + 0.004, step * 1.4, { type: "sawtooth", gain: g2 * 0.18, bus: musicBus, attack: 0.002 });
+    }
+  }
   function scheduleStep(s, t) {
-    const bar = Math.floor(s / 8) % BARS.length, e = s % 8;
-    const [root, chord] = BARS[bar];
-    if (e === 0 || e === 4) tone(midi(e === 0 ? root - 12 : root - 5), t, EIGHTH * 1.6, { type: "triangle", gain: 0.55, bus: musicBus });
-    if (e === 2 || e === 6) {   // off-beat "pah": a short, slightly buzzy chord (accordion-ish)
-      for (const n of chord) {
-        tone(midi(n - 12), t, EIGHTH * 0.9, { type: "sawtooth", gain: 0.06, bus: musicBus, attack: 0.01 });
-        tone(midi(n - 12) * 1.004, t, EIGHTH * 0.9, { type: "square", gain: 0.03, bus: musicBus, attack: 0.01 });
-      }
+    const bar = Math.floor(s / STEPS) % PROG.length, e = s % STEPS;
+    const [root, fifth, chord] = CH[PROG[bar]];
+    if (e === 0) {   // oom: bass alternates root and fifth bar by bar
+      const b = bar % 2 ? fifth : root;
+      tone(midi(b), t, EIGHTH * 1.8, { type: "triangle", gain: 0.6, bus: musicBus });
+      tone(midi(b) * 2, t, EIGHTH * 1.2, { type: "sine", gain: 0.15, bus: musicBus });
     }
+    if (e === 2 || e === 4) for (const n of chord) accordion(n - 12, t, EIGHTH * 0.8, 0.045);   // pah, pah
     for (const [b, at, n, len] of MELODY) {
-      if (b === bar && at === e) {   // marimba-ish: sine plus a quick high partial
-        tone(midi(n), t, EIGHTH * len + 0.15, { gain: 0.3, bus: musicBus, attack: 0.003 });
-        tone(midi(n) * 4, t, 0.05, { gain: 0.05, bus: musicBus, attack: 0.002 });
-      }
+      if (b !== bar || at !== e) continue;
+      if (NAPOLI(bar)) mandolin(n, t, EIGHTH * len, 0.2);
+      else accordion(n, t, EIGHTH * len * 0.95, 0.11);
     }
-    if (e % 2 === 1) noise(t, 0.03, { gain: 0.05, filter: 8000, type: "highpass", bus: musicBus });   // shaker
+    if (NAPOLI(bar) && (e === 2 || e === 4)) noise(t, 0.09, { gain: 0.07, filter: 7000, q: 2, type: "bandpass", bus: musicBus });   // tambourine
+    if (!NAPOLI(bar) && e === 0) noise(t, 0.04, { gain: 0.04, filter: 3000, type: "highpass", bus: musicBus });   // brush
   }
   function startMusic() {
     const c = ensureCtx();
@@ -247,7 +284,7 @@
       on[k] = !on[k];
       store.set(k, on[k]);
       ensureCtx();
-      if (k === "music") { if (on.music && inReplay) startMusic(); else stopMusic(); }
+      if (k === "music") { if (musicWanted()) startMusic(); else stopMusic(); }
       if (k === "voices" && on.voices) loadManifest();
       if (k === "voices" && !on.voices && voice) voice.pause();
       b.setAttribute("aria-pressed", String(on[k]));
@@ -256,11 +293,10 @@
     }));
   }
 
-  function setReplay(v) {
-    inReplay = !!v;
-    if (!inReplay) stopMusic();
-    else if (on.music && ctx) startMusic();
-  }
-  const api = { setReplay, advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
+  function musicWanted() { return on.music && inReplay && playing; }
+  function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
+  function setReplay(v) { inReplay = !!v; if (!inReplay) playing = false; syncMusic(); }
+  function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); syncMusic(); }
+  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();
