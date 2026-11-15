@@ -1,7 +1,27 @@
 # Undercooked
 
-LLM agents play a cooperative kitchen game (Overcooked-like rules, our own engine) and talk on a
-shared board. See CLAUDE.md for commands and the rules of the game.
+LLM agents play a cooperative kitchen game and talk on a shared board; see CLAUDE.md for the
+commands and `configs/template.yaml` for every option.
+
+## Models
+
+Agents are Inspect model names. Most runs go through OpenRouter (`openrouter/<author>/<model>`,
+`OPENROUTER_API_KEY` in `.env`).
+
+### Gemini (Google's API)
+
+1. Put `GOOGLE_API_KEY=...` in `.env` (key from https://aistudio.google.com/apikey).
+2. Install the optional extra: `uv sync --extra gemini` (adds `google-genai`; the default install
+   is unchanged).
+3. Run `uv run undercooked run configs/gemini_example.yaml`, or any config with
+   `--model google/gemini-2.5-flash` (self-play) or `--agents "google/gemini-2.5-flash,openrouter/deepseek/deepseek-v4.1-flash@baidu/fp8"` (mixed team).
+
+`google/...` models take no `provider` pin. `decision.reasoning_tokens` is the Gemini thinking
+budget and `reasoning: off` sets it to 0; thinking-only models (e.g. `gemini-2.5-pro`) cannot turn
+thinking off, so write `google/gemini-2.5-pro!reasoning`.
+
+No new key? Use Gemini through OpenRouter: `openrouter/google/gemini-2.5-flash` (the usual
+OpenRouter endpoint pinning and `!reasoning` rules apply).
 
 ## Replay site (docs/)
 
@@ -21,9 +41,8 @@ Deep links use the hash only, so they work from any subpath: `#<season id>` open
 `d<r>` private turn after round r, `x` reflection; in chat, private turn and reflection the
 time is the turn index.
 
-Deploy on GitHub Pages (once the repo is public): Settings → Pages → Source "Deploy from a
-branch", branch `main`, folder `/docs`. The site is then served at
-`https://<owner>.github.io/<repo>/`.
+Live at https://theosdoor.github.io/durhack26/ (GitHub Pages: deploy from branch `main`, folder
+`/docs`). The Paper tab opens `docs/paper.pdf`.
 
 Sound (toggles in the player, remembered per browser): music (off by default) and sound effects
 (on) are synthesized with the Web Audio API. Voices (off) play only clips listed in
@@ -41,4 +60,6 @@ ElevenLabs text-to-speech (model `eleven_v4_turbo`, premade voices) generated on
 `uv run python scripts/make_highlights.py` (`--plan`, `--test`, `--generate`; needs
 `ELEVENLABS_API_KEY`, which is never written to `docs/`). It is cached and refuses to pass a
 credit cap; `docs/audio/plan.json` lists every candidate line, its cost and whether it was
-voiced, and `docs/audio/<season>/clips.json` the original and the spoken text.
+voiced, and `docs/audio/<season>/clips.json` the original and the spoken text. Seasons with no
+ElevenLabs clips are read by the browser's own text-to-speech when Voices is on (never mixed
+within a season); `docs/audio/browser-highlights.json` lists the browser-voiced highlights.
