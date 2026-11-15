@@ -33,8 +33,9 @@ def rows(level: str) -> list[str]:
 
 
 def base_rows(level: str) -> list[str]:
-    """The layout with the extra start spots (digits 3 and 4, added for N-agent runs) as floor."""
-    return [r.replace("3", " ").replace("4", " ") for r in rows(level)]
+    """The layout with the extra start spots (digits 3 and 4, added for N-agent runs) as floor and
+    the bins (B) as counters: what the layouts were before bins."""
+    return [r.replace("3", " ").replace("4", " ").replace("B", "X") for r in rows(level)]
 
 
 @pytest.mark.parametrize("level", list(OVERCOOKED_AI))

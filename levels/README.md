@@ -1,7 +1,8 @@
 # Levels
 
 One kitchen per file: `X` counter, ` ` floor, `O` onion crate, `D` dish rack, `P` pot,
-`S` serving hatch, `1`..`9` start positions. Coordinates are (x = column, y = row), origin
+`S` serving hatch, `B` bin (trash: interact while holding anything to throw it away),
+`1`..`9` start positions. Coordinates are (x = column, y = row), origin
 top-left. A room is a connected area of floor; a counter that touches two rooms is a
 pass-through counter, the only way items cross between rooms.
 
@@ -16,15 +17,38 @@ pass-through counter, the only way items cross between rooms.
 | `open_plan` | ours | 1 | Earlier test kitchen, two pots. |
 | `practice` | ours | 1 | The one-player practice kitchen. |
 
+## Bins
+
+Every level has one bin per room an agent can stand in (`B`, ids `bin_1`, `bin_2`, ... in reading
+order). Each replaces a plain wall counter that touches floor, never a shared (pass-through)
+counter and never a tile that blocks a path or the only access to an object, placed next to the
+dish rack or hatch where possible. Bins are opt-in: with the default `bins: false` every `B` is
+loaded as a plain counter (the layouts and prompts of runs before bins existed, including the 213
+earlier seasons); `bins: true` makes them bins.
+
+| Level | Bins (x, y) | Where |
+|---|---|---|
+| `forced_coordination` | `bin_1` (4,3), `bin_2` (1,4) | right room under the pot column, by the hatch; left room below the rack |
+| `split_room` | `bin_1` (1,4), `bin_2` (5,4) | left room by the hatch; right room by the dish rack |
+| `cramped_room` | `bin_1` (2,3) | bottom wall, between the rack and the hatch |
+| `asymmetric_advantages` | `bin_1` (2,4), `bin_2` (6,4) | bottom wall, beside each room's dish rack |
+| `coordination_ring` | `bin_1` (3,4) | bottom wall, beside the hatch |
+| `counter_circuit` | `bin_1` (7,1) | right wall, beside the hatch |
+| `open_plan` | `bin_1` (6,2) | right wall, between the rack and the hatch |
+| `practice` | `bin_1` (2,2) | bottom wall, beside the rack |
+
+With `bins: true`, `forced_coordination`, `cramped_room`, `asymmetric_advantages`, `coordination_ring` and
+`counter_circuit` differ from the Overcooked-AI grids by those `B` tiles (each is an `X` there).
+
 Every level used in two-player rounds has start positions 1 and 2; `practice` has only 1.
 
 ## Credit
 
 `forced_coordination`, `cramped_room`, `asymmetric_advantages`, `coordination_ring` and
 `counter_circuit` are the layouts of the same names from
-[Overcooked-AI](https://github.com/HumanCompatibleAI/overcooked_ai) (MIT licence), copied verbatim from the `grid` field of
+[Overcooked-AI](https://github.com/HumanCompatibleAI/overcooked_ai) (MIT licence), copied (apart from the bins above, `X` in the originals) from the `grid` field of
 `overcooked_ai_py/data/layouts/<name>.layout` in overcooked-ai 1.1.0 (`counter_circuit` is
 `counter_circuit_o_1order`). Only the grids are reused: the rules, timings and orders are our
-own engine's. `tests/test_levels.py` pins the copies.
+own engine's. `tests/test_levels.py` pins the copies with the bins turned back into counters.
 
 `split_room`, `open_plan` and `practice` are ours.

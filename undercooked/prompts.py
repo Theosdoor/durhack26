@@ -214,7 +214,8 @@ def kitchen_overview(game: Game, me: str) -> str:
     objs = [load("messages", "kitchen_overview.object_item", id=o.id, x=o.pos[0], y=o.pos[1])
             for o in k.objects.values() if o.kind != "counter"]
     lines.append(load("messages", "kitchen_overview.objects", objects=", ".join(objs)))
-    shared = sorted((o.pos for o in k.shared_counters()), key=lambda p: (p[1], p[0]))
+    shared = sorted((o.pos for o in k.shared_counters()) if game.cfg.counters_shown == "shared"
+                    else (), key=lambda p: (p[1], p[0]))
     if shared:
         lines.append(load("messages", "kitchen_overview.counters", counters=", ".join(
             load("messages", "kitchen_overview.counter_item", x=x, y=y) for x, y in shared)))

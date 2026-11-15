@@ -59,6 +59,8 @@ class Header(BaseModel):
     rules: Literal["full", "bare", "open", "recipe", "minimal", "minimal_hint"] = "full"
     scoring: Literal["soups", "orders"] = "orders"    # "soups": no orders (Frame.orders empty)
     reflection: bool = False
+    counters_shown: Literal["occupied", "shared"] = "shared"   # older logs listed the shared counters
+    bins: bool = False             # the kitchen had bins ("B" tiles in map); older logs had none
 
 
 class AgentState(BaseModel):
@@ -102,7 +104,7 @@ class Frame(BaseModel):
 
 class Event(BaseModel):
     """Something that happened. `type` values:
-    pickup, putdown, add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
+    pickup, putdown, trash (item thrown in a bin), add_to_pot, cook_start, cook_done, plate, serve, fail (action failed),
     bump (blocked by another agent), order_new, order_missed, decision_start, decision_land,
     cutoff (reply had no act), read_board, note, compaction, phase_start, phase_end,
     forced_answer (no act at first, then act on the one follow-up call; see season.py),

@@ -354,13 +354,13 @@ class Season:
     async def run(self) -> dict[str, Any]:
         cfg = self.cfg
         self.log(Header(
-            config_name=cfg.name, level=cfg.level, map=Kitchen.load(cfg.level).map_rows(),
+            config_name=cfg.name, level=cfg.level, map=Kitchen.load(cfg.level, cfg.bins).map_rows(),
             agents=[AgentInfo(name=a.name, letter=a.letter, model=a.am.spec.model,
                               provider=a.am.provider, seat=a.seat,
                               reasoning_off=a.am.spec.reasoning_off) for a in self.agents],
             seed=cfg.seed, epoch=self.epoch, round_s=cfg.round_s, rounds=cfg.rounds,
             cook_s=cfg.cook_s, practice_s=cfg.practice_s if cfg.practice else None,
-            **condition(cfg)))
+            bins=cfg.bins, counters_shown=cfg.counters_shown, **condition(cfg)))
         clock = time.monotonic()
         self.event("briefing", 0, 0, "phase_start")
         self.event("briefing", 0, 0, "phase_end", duration_s=round(time.monotonic() - clock, 1))
@@ -839,7 +839,7 @@ class Season:
     async def practice(self) -> None:
         clock = time.monotonic()
         self.event("practice", 0, 0, "phase_start")
-        kitchen = Kitchen.load(self.cfg.practice_level)
+        kitchen = Kitchen.load(self.cfg.practice_level, self.cfg.bins)
         games = [(Game(kitchen, [a.name], self.cfg, phase="practice", round=0,
                        seed=self._game_seed("practice", 0, a.name)), [a])
                  for a in self.agents]
@@ -852,7 +852,7 @@ class Season:
     async def round(self, r: int) -> Game:
         clock = time.monotonic()
         self.event("round", r, 0, "phase_start")
-        game = Game(Kitchen.load(self.cfg.level), self.seated, self.cfg, phase="round", round=r,
+        game = Game(Kitchen.load(self.cfg.level, self.cfg.bins), self.seated, self.cfg, phase="round", round=r,
                     seed=self._game_seed("round", r))
         intro = prompts.round_start(self.cfg, r,
                                     chat_turn_limit=self._chat_turn_limit.get(r, False))
@@ -881,7 +881,7 @@ class Season:
         first = first_speaker(cfg.seed, self.epoch, r, len(self.agents), level=self.stream)
         names = [a.name for a in self.agents]
         self.event("chat", r, 0, "phase_start", first=names[first])
-        preview = Game(Kitchen.load(cfg.level), self.seated, cfg, phase="round", round=r)
+        preview = Game(Kitchen.load(cfg.level, cfg.bins), self.seated, cfg, phase="round", round=r)
         cap = cfg.chat_max_posts
         used = {n: 0 for n in names}
         ready = {n: False for n in names}

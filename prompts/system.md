@@ -29,10 +29,22 @@ time expires: -{penalty} points.
 ## scoring.soups
 Scoring: every soup served at the serving hatch scores +{reward} points.
 
+## bin.map_key
+   B bin (trash)
+
+## bin.interact_row
+bin         + holding item -> you throw the item away (it is gone); with empty hands it fails
+
+## bin.ids
+bin_1, 
+
+## bin.kind
+, bin
+
 ## map_key
 MAP KEY
 X counter (a wall; any counter next to the floor can hold one item)   ' ' floor
-O onion crate   D dish rack   P pot   S serving hatch
+O onion crate   D dish rack   P pot   S serving hatch{bin_key}
 Capital letters on the floor are players (the first letter of their name).
 Coordinates are (x, y): x is the column (left to right), y is the row (top to bottom),
 both starting at 0, as labelled around the map.
@@ -44,8 +56,8 @@ move_to(x, y)     walk to that floor tile.
 move_to(<id>)     walk next to that object without interacting.
 wait(<seconds>)   stand still for {wait_min} to {wait_max} s.
 Object ids are numbered in reading order (row by row, left to right): onion_crate_1,
-dish_rack_1, pot_1, pot_2, hatch_1, ... Counters are named by position: counter_2_1 is the
-counter at (2,1). An unnumbered id (onion_crate, dish_rack, pot, hatch) means the nearest one
+dish_rack_1, pot_1, pot_2, hatch_1, {bin_ids}... Counters are named by position: counter_2_1 is the
+counter at (2,1). An unnumbered id (onion_crate, dish_rack, pot, hatch{bin_kind}) means the nearest one
 you can reach. You interact from any floor tile beside the object; facing does not matter.
 
 ## interact_table
@@ -56,7 +68,7 @@ counter     + holding item -> you put it on the counter (if the counter is empty
 counter     + empty hands  -> you pick up the item on the counter
 pot         + onion        -> the onion goes in (max 3; not while cooking or ready)
 pot         + dish         -> if the soup is ready, you now hold the soup and the pot is empty
-hatch       + soup         -> {hatch_soup}
+hatch       + soup         -> {hatch_soup}{bin_row}
 
 ## hatch_soup.orders
 served: fills the open order due soonest

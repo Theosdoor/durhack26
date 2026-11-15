@@ -1,5 +1,5 @@
 XXPXPXX
 O     D
-X 1   X
+X 1   B
 O   2 S
 XXXXXXX

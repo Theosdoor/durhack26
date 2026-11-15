@@ -98,7 +98,7 @@ def _step_aside(game: Game, name: str) -> list[str] | None:
     free = [p for p in k.floor_neighbours(me.pos) if p not in taken]
     if not free:
         return None
-    busy = {p for o in k.objects.values() if o.kind != "counter" for p in k.access_tiles(o.id)}
+    busy = {p for o in k.objects.values() if o.kind not in ("counter", "bin") for p in k.access_tiles(o.id)}
     x, y = min(free, key=lambda p: (p in busy, p[1] < me.pos[1], p))
     return [f"move_to({x}, {y})"]
 
@@ -120,7 +120,7 @@ def _idle(game: Game, name: str) -> list[str]:
     me = game.agent(name)
     k = game.kitchen
     pot_tiles = {p for o in k.of_kind("pot") for p in k.access_tiles(o.id)}
-    busy = {p for o in k.objects.values() if o.kind != "counter" for p in k.access_tiles(o.id)}
+    busy = {p for o in k.objects.values() if o.kind not in ("counter", "bin") for p in k.access_tiles(o.id)}
 
     def badness(p: Pos) -> tuple[bool, bool]:      # pot tiles are the most contended
         return (p in pot_tiles, p in busy)

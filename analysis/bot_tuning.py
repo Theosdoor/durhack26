@@ -27,7 +27,7 @@ def play(cfg: Config, level: str, who: str, seed: int) -> tuple[int, int, int]:
     """One round of `level`: who = "1 bot", "2 bots" (bots.team) or "2 shared" (SoloBots that
     share every pot). Returns (score, served, missed)."""
     n = 1 if who == "1 bot" else 2
-    game = Game(Kitchen.load(level), NAMES[:n], cfg, seed=f"tuning|{level}|{seed}")
+    game = Game(Kitchen.load(level, cfg.bins), NAMES[:n], cfg, seed=f"tuning|{level}|{seed}")
     if who == "1 bot":
         bots = {NAMES[0]: SoloBot(NAMES[0])}
     elif who == "2 shared":
@@ -51,7 +51,7 @@ def with_every(cfg: Config, every: int) -> Config:
 def table(cfg: Config, levels: list[str] = LEVELS) -> list[dict]:
     rows = []
     for level in levels:
-        shared = len(set(Kitchen.load(level).room_of.values())) == 1
+        shared = len(set(Kitchen.load(level, cfg.bins).room_of.values())) == 1
         whos = ["1 bot", "2 bots"] + (["2 shared"] if shared else [])
         for every in EVERY_S:
             alt = with_every(cfg, every)

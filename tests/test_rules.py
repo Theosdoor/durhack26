@@ -29,7 +29,7 @@ def kw(cfg) -> dict:
     o = cfg.orders
     return dict(cook_s=cfg.cook_s, every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
                 reward=o.reward, penalty=o.penalty, max_plan_len=cfg.max_plan_len, wait_min=1,
-                wait_max=30, blocked_limit=3)
+                wait_max=30, blocked_limit=3, bin_key="", bin_row="", bin_ids="", bin_kind="")
 
 
 @pytest.mark.parametrize("mode", MODES)

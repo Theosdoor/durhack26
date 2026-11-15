@@ -217,7 +217,6 @@ The kitchen for round 1:
 ⟦messages.md › kitchen_overview.start_you⟧You (Yankee, Y) start at (5,1).⟦/⟧
 ⟦messages.md › kitchen_overview.start_mate⟧Lima (L) starts at (1,2).⟦/⟧
 ⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (5,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (6,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (6,3)⟦/⟧.⟦/⟧
-⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(3,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,3)⟦/⟧.⟦/⟧
 ⟦/⟧
 
 ⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
@@ -286,7 +285,7 @@ tool call: ready({})
 ⟦state.md › you⟧You (Yankee, Y): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
 ⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
 ⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › counters_none⟧Counters: all empty.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -340,9 +339,9 @@ tool call: act({"plan": ["wait(1)"]})
 4 XXXXXXX⟦/⟧
 
 ⟦state.md › you⟧You (Yankee, Y): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.onion⟧an onion⟦/⟧.⟦/⟧
 ⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › counters_none⟧Counters: all empty.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -391,9 +390,9 @@ tool call: act({"plan": ["wait(1)"]})
 4 XXXXXXX⟦/⟧
 
 ⟦state.md › you⟧You (Yankee, Y): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.onion⟧an onion⟦/⟧.⟦/⟧
 ⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › counters_none⟧Counters: all empty.⟦/⟧
 ⟦state.md › board_unread⟧Board: 1 unread post.⟦/⟧
 ```
 
@@ -469,7 +468,6 @@ The kitchen for round 2:
 ⟦messages.md › kitchen_overview.start_you⟧You (Yankee, Y) start at (5,1).⟦/⟧
 ⟦messages.md › kitchen_overview.start_mate⟧Lima (L) starts at (1,2).⟦/⟧
 ⟦messages.md › kitchen_overview.objects⟧Objects: ⟦messages.md › kitchen_overview.object_item⟧pot_1 (5,0)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_1 (0,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧pot_2 (6,1)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧onion_crate_2 (0,2)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧hatch_1 (0,3)⟦/⟧, ⟦messages.md › kitchen_overview.object_item⟧dish_rack_1 (6,3)⟦/⟧.⟦/⟧
-⟦messages.md › kitchen_overview.counters⟧Counters listed in your state: ⟦messages.md › kitchen_overview.counter_item⟧(3,1)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,2)⟦/⟧, ⟦messages.md › kitchen_overview.counter_item⟧(3,3)⟦/⟧.⟦/⟧
 ⟦/⟧
 
 ⟦communication.md › chat_turn.notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
@@ -504,7 +502,51 @@ tool call: post({"message": "I am at the pots. Put onions then a dish on (2,1) p
 ⟦tools.md › post.posted⟧Posted.⟦/⟧
 ```
 
-### 101. user: compaction summary
+### 101. user: chat before round 2, later turn
+
+*Later turns of the same chat.*
+
+```text
+⟦communication.md › chat_turn.later⟧Your turn in the chat before round 2.⟦/⟧
+⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
+⟦communication.md › chat_turn.status⟧Posts left: 1. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
+```
+
+### 102. assistant: tool calls (post)
+
+```text
+tool call: post({"message": "Still here (2)."})
+```
+
+### 103. tool result: post
+
+```text
+⟦tools.md › post.posted⟧Posted.⟦/⟧
+```
+
+### 104. user: chat before round 2, later turn
+
+*Later turns of the same chat.*
+
+```text
+⟦communication.md › chat_turn.later⟧Your turn in the chat before round 2.⟦/⟧
+⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
+⟦communication.md › chat_turn.status⟧Posts left: 0. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
+```
+
+### 105. assistant: tool calls (post)
+
+```text
+tool call: post({"message": "Still here (3)."})
+```
+
+### 106. tool result: post
+
+```text
+⟦tools.md › post.not_posted⟧Not posted: ⟦tools.md › post.cap_reached⟧you have used all 2 posts for this chat⟦/⟧⟦/⟧
+```
+
+### 107. user: compaction summary
 
 *Inserted by Inspect when the conversation passes compact_at_tokens; the model then sees the summary in place of older messages.*
 
@@ -516,30 +558,6 @@ The following is a summary of work completed on this task so far. It was generat
 Summary: I am a cook; we pass onions and a dish over counter (2,1).
 
 Please continue working on this task from where you left off.
-```
-
-*(1 more decision like this, messages 102-104 omitted; they use the same sections as the ones above.)*
-
-### 105. user: chat before round 2, later turn
-
-*Later turns of the same chat.*
-
-```text
-⟦communication.md › chat_turn.later⟧Your turn in the chat before round 2.⟦/⟧
-⟦communication.md › chat_turn.no_new_posts⟧No new posts.⟦/⟧
-⟦communication.md › chat_turn.status⟧Posts left: 0. Call post(message) and/or ready(), or reply without a tool call to pass.⟦/⟧
-```
-
-### 106. assistant: tool calls (post)
-
-```text
-tool call: post({"message": "Still here (3)."})
-```
-
-### 107. tool result: post
-
-```text
-⟦tools.md › post.not_posted⟧Not posted: ⟦tools.md › post.cap_reached⟧you have used all 2 posts for this chat⟦/⟧⟦/⟧
 ```
 
 *(1 more decision like this, messages 108-109 omitted; they use the same sections as the ones above.)*
@@ -565,7 +583,7 @@ tool call: post({"message": "Still here (3)."})
 ⟦state.md › you⟧You (Yankee, Y): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧none yet⟦/⟧.⟦/⟧
 ⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
 ⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › counters_none⟧Counters: all empty.⟦/⟧
 ⟦state.md › board_none⟧Board: no unread posts.⟦/⟧
 ⟦state.md › notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
 ```
@@ -604,9 +622,9 @@ tool call: act({"plan": ["wait(1)"]})
 4 XXXXXXX⟦/⟧
 
 ⟦state.md › you⟧You (Yankee, Y): at (5,1), holding ⟦state.md › item.nothing⟧nothing⟦/⟧. Last plan: ⟦code: engine/game.py › last_plan_result⟧done⟦/⟧.⟦/⟧
-⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.nothing⟧nothing⟦/⟧.⟦/⟧
+⟦state.md › teammate⟧Lima (L): at (1,2), holding ⟦state.md › item.onion⟧an onion⟦/⟧.⟦/⟧
 ⟦state.md › pot⟧pot_1 (5,0): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧ ⟦state.md › pot⟧pot_2 (6,1): ⟦state.md › pot.empty⟧empty⟦/⟧.⟦/⟧
-⟦state.md › counters⟧Counters: ⟦state.md › counter⟧(3,1) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,2) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧, ⟦state.md › counter⟧(3,3) ⟦state.md › counter.empty⟧empty⟦/⟧⟦/⟧.⟦/⟧
+⟦state.md › counters_none⟧Counters: all empty.⟦/⟧
 ⟦state.md › board_none⟧Board: no unread posts.⟦/⟧
 ⟦state.md › notepad⟧Your notepad: "cook: Onions and the dish go on (2,1)."⟦/⟧
 ```
@@ -762,6 +780,10 @@ Sections of `prompts/*.md` that no marker above names, with the condition that m
 |---|---|
 | `system.md › identity.many_mates` | 3 or more agents (n_agents or several agents) |
 | `system.md › scoring.orders` | scoring: orders (rules full) |
+| `system.md › bin.map_key` | config bins: true (rules full): the map key names the bin |
+| `system.md › bin.interact_row` | config bins: true (rules full): the interact table has a bin row |
+| `system.md › bin.ids` | config bins: true (rules full): the id list names bin_1 |
+| `system.md › bin.kind` | config bins: true (rules full): unnumbered ids include bin |
 | `system.md › hatch_soup.orders` | scoring: orders (rules full, inside interact_table) |
 | `system.md › afresh.orders` | scoring: orders (inside season) |
 | `system.md › practice_intro_no_comms` | practice: on, comms: none |
@@ -786,6 +808,8 @@ Sections of `prompts/*.md` that no marker above names, with the condition that m
 | `messages.md › season_intro.no_chat` | practice: off, comms: none |
 | `messages.md › practice_start.no_comms` | practice on and comms: none |
 | `messages.md › orders_rules` | scoring: orders, rules full, first chat turn |
+| `messages.md › kitchen_overview.counters` | counters_shown shared: the chat overview names the shared counters |
+| `messages.md › kitchen_overview.counter_item` | counters_shown shared: the chat overview names the shared counters |
 | `messages.md › forced_why.act_no_reasoning` | reasoning: off, a decision without act() |
 | `messages.md › forced_why.chat_no_reasoning` | reasoning: off, a chat reply cut off |
 | `messages.md › forced_why.debrief_no_reasoning` | reasoning: off, a debrief reply cut off |
@@ -798,12 +822,14 @@ Sections of `prompts/*.md` that no marker above names, with the condition that m
 | `state.md › orders` | scoring: orders, a decision with open orders |
 | `state.md › order_item` | scoring: orders, rules full or recipe |
 | `state.md › orders_none` | scoring: orders, a decision when no order is open |
-| `state.md › item.onion` | an agent holding an onion |
 | `state.md › item.dish` | an agent holding a dish |
 | `state.md › item.soup` | an agent holding soup |
 | `state.md › pot.ready` | a pot that finished cooking |
 | `state.md › pot.cooking` | a pot cooking |
 | `state.md › pot.onions` | a pot with 1 or 2 onions |
+| `state.md › counters` | a counter holds an item (counters_shown shared: also the empty shared counters) |
+| `state.md › counter` | a counter holds an item (counters_shown shared: also the empty shared counters) |
+| `state.md › counter.empty` | counters_shown shared: an empty shared counter |
 | `state.md › push_new_posts` | board: push, decision with new teammate posts |
 | `state.md › push_none` | board: push, decision with no new posts |
 | `state.md › order_item_minimal` | rules not full: an order line that names no dish |

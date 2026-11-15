@@ -78,7 +78,8 @@ def state_text(game: "Game", agent: str, *, unread_posts: int, notepad: str | No
                               y=a.pos[1], item=_item(a.holding)))
     if game.pots:
         lines.append(" ".join(_pot_text(p) for p in game.pots.values()))
-    shown = {o.pos for o in k.shared_counters()} | set(game.counters)
+    shared = {o.pos for o in k.shared_counters()} if game.cfg.counters_shown == "shared" else set()
+    shown = shared | set(game.counters)
     if shown:
         parts = [load("state", "counter", x=x, y=y,
                       what=game.counters.get((x, y), load("state", "counter.empty")))
@@ -103,22 +104,25 @@ def rules_text(cfg: Config) -> str:
     scoring and interact table are replaced by the section rules_<cfg.rules> (rules_recipe_soups
     for recipe under scoring "soups"); kitchen_rules, map_key, actions and plans stay."""
     o = cfg.orders
+    bin_kw = (dict(bin_key=load("system", "bin.map_key"), bin_row="\n" + load("system", "bin.interact_row"),
+                   bin_ids=load("system", "bin.ids"), bin_kind=load("system", "bin.kind"))
+              if cfg.bins else dict(bin_key="", bin_row="", bin_ids="", bin_kind=""))
     kw = dict(cook_s=cfg.cook_s, every_s=o.every_s, max_open=o.max_open, due_s=o.due_s,
               reward=o.reward, penalty=o.penalty, max_plan_len=cfg.max_plan_len,
-              wait_min=WAIT_MIN, wait_max=WAIT_MAX, blocked_limit=BLOCKED_LIMIT)
+              wait_min=WAIT_MIN, wait_max=WAIT_MAX, blocked_limit=BLOCKED_LIMIT, **bin_kw)
     if cfg.rules in ("bare", "open"):
         return ""
     if cfg.rules == "full":
         hatch = load("system", f"hatch_soup.{cfg.scoring}", reward=o.reward)
         parts = [load("system", "kitchen_rules"), load("system", "recipe", cook_s=cfg.cook_s),
-                 load("system", f"scoring.{cfg.scoring}", **kw), load("system", "map_key"),
+                 load("system", f"scoring.{cfg.scoring}", **kw), load("system", "map_key", **bin_kw),
                  load("system", "actions", **kw),
-                 load("system", "interact_table", hatch_soup=hatch), load("system", "plans", **kw)]
+                 load("system", "interact_table", hatch_soup=hatch, **bin_kw), load("system", "plans", **kw)]
         return "\n\n".join(parts) + "\n"
     legacy = f"rules_{cfg.rules}"
     if cfg.rules == "recipe" and cfg.scoring == "soups":
         legacy = "rules_recipe_soups"           # rules_recipe talks about orders
     parts = [load("system", "kitchen_rules"), load("system", legacy)]
-    parts += [load("system", "map_key"), load("system", "actions", **kw),
+    parts += [load("system", "map_key", **bin_kw), load("system", "actions", **kw),
               load("system", "plans", **kw)]
     return "\n\n".join(parts) + "\n"

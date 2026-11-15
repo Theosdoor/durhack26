@@ -394,7 +394,7 @@ class Game:
         serving); False if it takes one (counter pick-up, crate, rack, plating). Interactions
         that will fail go where their kind would; failing changes nothing."""
         kind = self.kitchen.objects[obj_id].kind
-        if kind == "counter":
+        if kind in ("counter", "bin"):
             return a.holding is not None
         if kind == "pot":
             return a.holding == "onion"
@@ -432,6 +432,12 @@ class Game:
                 fail = f"{obj_id} is empty and you are holding nothing"
             else:
                 fail = f"{obj_id} already holds {_a(here)}; a counter holds one item"
+        elif obj.kind == "bin":
+            if h is not None:
+                a.holding = None
+                self._emit("trash", a.name, item=h, at=at)
+            else:
+                fail = "the bin is for throwing items away; you are holding nothing"
         elif obj.kind == "pot":
             pot = self.pots[obj_id]
             if h == "onion":
