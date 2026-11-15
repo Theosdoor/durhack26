@@ -210,7 +210,7 @@ function renderGrid() {
   let rows = S.index.filter((r) => (!f.team || r.team === f.team) && (!f.rules || r.rules === f.rules)
     && (!f.n || String(r.n_agents) === String(f.n)) && (!f.level || r.level === f.level)
     && (!f.pair || (f.pair === "mixed") === r.mixed)
-    && (!f.voiced || HL.list.some((h) => h.season === r.id)));
+    && (!f.voiced || elevenHL(r.id)));
   const by = {
     "score-desc": (a, b) => b.total - a.total, "score-asc": (a, b) => a.total - b.total,
     level: (a, b) => a.level.localeCompare(b.level) || b.total - a.total,
@@ -224,7 +224,7 @@ function renderGrid() {
   $("#grid").innerHTML = rows.map((r) => {
     const pm = predictedMean(r);
     const bars = r.rounds.map((v, i) => `<div class="b" title="Round ${i + 1}: ${fmt(v)}"><span>${fmt(v)}</span><i style="height:${Math.max(4, ((v || 0) / maxRound) * 100)}%"></i></div>`).join("");
-    const hl = HL.list.find((h) => h.season === r.id);
+    const hl = elevenHL(r.id);   // only ElevenLabs seasons are tagged "voiced"
     return `<a class="card season-card${hl ? " voiced" : ""}" href="#${esc(r.id)}">
       <div class="row">
         <div><div class="title">${esc(levelName(r.level))} <span class="muted">· season ${r.epoch}</span></div>
@@ -730,8 +730,10 @@ function play() {
   S.playing = true;
   if (window.UCAudio) UCAudio.setPlaying(true);
   const ms = interval();
+  if (S.t === 0 && window.UCAudio) { try { UCAudio.advance(S.season, S.phase, -1, 0, S.speed); } catch (e) { console.warn(e); } }   // posts at t=0 (first chat speaker)
   S.timer = setInterval(() => {
     if (S.t >= S.phase.hi) { stop(); update(); return; }
+    if (window.UCAudio && UCAudio.holdClock(S.phase, S.speed)) return;   // a post is being read aloud (browser voices)
     const from = S.t;
     seek(S.t + 1, Math.min(ms * 0.9, 400));
     if (window.UCAudio) { try { UCAudio.advance(S.season, S.phase, from, S.t, S.speed); } catch (e) { console.warn(e); } }
@@ -855,13 +857,18 @@ function updateSpeech() {
    the saved Voices setting is not touched. Music and Effects toggles apply as usual. */
 const HL = { list: [], cur: -1, token: 0, active: false, busy: false, loaded: false };
 
+const elevenHL = (id) => HL.list.find((h) => h.season === id && h.tts !== "browser");
+const isBrowserHL = (h) => h.tts === "browser";
+
 async function loadHighlights() {
   if (HL.loaded) return HL.list;
   HL.loaded = true;
-  try {
-    const res = await fetch("audio/manifest.json");
-    if (res.ok) HL.list = ((await res.json()).highlights || []).filter((h) => h.season && h.phases && h.phases.length);
-  } catch { /* no manifest: no reel */ }
+  const get = async (url) => { try { const res = await fetch(url); return res.ok ? ((await res.json()).highlights || []) : []; } catch { return []; } };
+  const ok = (h) => h.season && h.phases && h.phases.length;
+  // ElevenLabs highlights first (audio/manifest.json), then whole seasons read by the browser's voices
+  const [el, br] = await Promise.all([get("audio/manifest.json"), get("audio/browser-highlights.json")]);
+  const elSeasons = new Set(el.map((h) => h.season));
+  HL.list = [...el.filter(ok), ...br.filter(ok).filter((h) => !elSeasons.has(h.season)).map((h) => ({ ...h, tts: "browser" }))];
   return HL.list;
 }
 
@@ -869,15 +876,24 @@ function renderReel() {
   const el = $("#reel");
   if (!el || !HL.list.length) return;
   el.hidden = false;
-  el.innerHTML = `<div class="reel-head"><h2>Highlight reel</h2>
-    <p class="muted">Narrated replays (full seasons, or only the rounds that are fully voiced), with agents voiced by text-to-speech. Needs sound; Music and Effects toggles still apply.</p>
-    <button type="button" class="primary" id="reel-all">&#9654; Play the reel</button></div>
-    <div class="reel-cards">${HL.list.map((h, i) => `<article class="card hl-card">
+  const card = (h, i) => `<article class="card hl-card${isBrowserHL(h) ? " browser" : ""}">
       <h3>${esc(h.title)}</h3><p>${esc(h.teaser)}</p>
-      <div class="tags"><span class="tag">${esc(h.team)}</span><span class="tag rules-${esc(h.rules_key || "")}">${esc(h.rules)}</span>
-        <span class="tag">${esc(h.score)} points</span><span class="tag">${esc(h.covers || "")}</span><span class="tag">${h.posts_voiced} of ${h.posts_total} posts voiced</span><span class="tag">${esc(levelName(h.level || ""))}</span></div>
+      <div class="tags"><span class="tag voice-src ${isBrowserHL(h) ? "src-browser" : "src-eleven"}">${isBrowserHL(h) ? "browser voices" : "ElevenLabs voices"}</span>
+        <span class="tag">${esc(h.team)}</span><span class="tag rules-${esc(h.rules_key || "")}">${esc(h.rules)}</span>
+        <span class="tag">${esc(h.score)} points</span><span class="tag">${esc(h.covers || "")}</span>
+        <span class="tag">${isBrowserHL(h) ? "every post read aloud" : `${h.posts_voiced} of ${h.posts_total} posts voiced`}</span><span class="tag">${esc(levelName(h.level || ""))}</span></div>
       <div class="hl-actions"><button type="button" data-hl="${i}">&#9654; Play highlight</button>
-        <a href="#${esc(h.season)}">Open replay</a></div></article>`).join("")}</div>`;
+        <a href="#${esc(h.season)}">Open replay</a></div></article>`;
+  const group = (title, note, pick) => {
+    const items = HL.list.map((h, i) => [h, i]).filter(([h]) => pick(h));
+    return items.length ? `<h3 class="reel-sub">${title} <span class="muted">${note}</span></h3>
+      <div class="reel-cards">${items.map(([h, i]) => card(h, i)).join("")}</div>` : "";
+  };
+  el.innerHTML = `<div class="reel-head"><h2>Highlight reel</h2>
+    <p class="muted">Whole seasons replayed with the agents talking out loud. Needs sound; Music and Effects toggles still apply.</p>
+    <button type="button" class="primary" id="reel-all">&#9654; Play the reel</button></div>
+    ${group("ElevenLabs voices", "(natural-sounding, narrated)", (h) => !isBrowserHL(h))}
+    ${group("Browser voices", "(bare-rules chaos read by your browser's built-in text-to-speech: robotic, and the voices depend on your device)", isBrowserHL)}`;
   el.querySelectorAll("button[data-hl]").forEach((b) => b.addEventListener("click", () => startHighlight(Number(b.dataset.hl))));
   $("#reel-all").addEventListener("click", () => startHighlight(0));
 }
@@ -887,7 +903,7 @@ function hlBar(h, status) {
   if (!bar) return;
   if (!h) { bar.hidden = true; bar.innerHTML = ""; return; }
   bar.hidden = false;
-  bar.innerHTML = `<span class="hl-now"><b>Highlight ${HL.cur + 1} of ${HL.list.length}</b>: ${esc(h.title)}
+  bar.innerHTML = `<span class="hl-now"><b>Highlight ${HL.cur + 1} of ${HL.list.length}</b>: ${esc(h.title)} <span class="tag voice-src ${isBrowserHL(h) ? "src-browser" : "src-eleven"}">${isBrowserHL(h) ? "browser voices" : "ElevenLabs voices"}</span>
     <span class="muted" id="hlstat">${esc(status || "")}</span></span>
     <span class="hl-btns"><button type="button" id="hlnext">Next highlight &raquo;</button>
     <button type="button" class="ghost" id="hlexit">Exit highlight</button></span>`;
@@ -935,11 +951,20 @@ async function runHighlight(h, token) {
     await UCAudio.speak(src);
     S.speaking = null; if (S.phase) updateSpeech();
   };
-  const marks = [...(h.bridges || []).map((b) => ({ ...b, bridge: true })), ...(h.clips || [])];
+  const browser = isBrowserHL(h);
+  // browser voices: every board post of the season is spoken as it appears (no narrator, no mp3s)
+  const sayPost = async (m) => {
+    if (!alive()) return;
+    S.speaking = { agent: m.agent, text: m.text }; updateSpeech();
+    await UCAudio.speakText(m.text, m.agent, S.season);
+    S.speaking = null; if (S.phase) updateSpeech();
+  };
+  const marks = browser ? S.season.posts.map((r) => ({ code: S.season.phases.find((p) => p.posts.includes(r))?.code, t: r.t, agent: r.agent, text: r.text }))
+    : [...(h.bridges || []).map((b) => ({ ...b, bridge: true })), ...(h.clips || [])];
+  const talk = browser ? sayPost : (m) => say(m.src, speakInfo(m));
   S.playing = true;
-  hlStatus("introduction");
-  await say(h.intro, { narrator: true, text: h.intro_text });
-  for (const code of h.phases) {
+  if (!browser) { hlStatus("introduction"); await say(h.intro, { narrator: true, text: h.intro_text }); }
+  for (const code of (browser ? S.season.phases.map((p) => p.code) : h.phases)) {
     if (!alive()) return;
     const ph = S.season.phases.find((p) => p.code === code);
     if (!ph) continue;
@@ -948,7 +973,7 @@ async function runHighlight(h, token) {
     hlStatus(ph.title);
     const mine = marks.filter((m) => m.code === code);
     const at = (t) => mine.filter((m) => m.t === t).sort((a, b) => (b.bridge ? 1 : 0) - (a.bridge ? 1 : 0));
-    for (const m of at(0)) { await say(m.src, speakInfo(m)); if (!alive()) return; }
+    for (const m of at(0)) { await talk(m); if (!alive()) return; }
     let t = 0;
     while (t < ph.hi) {
       const near = mine.some((m) => m.t > t && m.t - t <= 2);
@@ -960,13 +985,12 @@ async function runHighlight(h, token) {
       t += 1;
       seek(t, Math.min(ms * 0.9, 400));
       try { UCAudio.advance(S.season, ph, from, t, near ? S.speed : S.speed * 8); } catch (e) { console.warn(e); }
-      for (const m of at(t)) { await say(m.src, speakInfo(m)); if (!alive()) return; }
+      for (const m of at(t)) { await talk(m); if (!alive()) return; }
     }
     await sleep(500);
   }
   if (!alive()) return;
-  hlStatus("conclusion");
-  await say(h.outro, { narrator: true, text: h.outro_text });
+  if (!browser) { hlStatus("conclusion"); await say(h.outro, { narrator: true, text: h.outro_text }); }
   if (!alive()) return;
   HL.active = false;
   S.playing = false; update();

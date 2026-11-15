@@ -31,6 +31,18 @@
    The highlight player (app.js) uses UCAudio.speak(src) / stopSpeak() and setHighlight(on): in
    highlight mode the saved Voices setting is untouched and ignored, so clips never overlap.
 
+   Browser voices: a season with NO entry in the manifest (no key under "posts", not a highlight)
+   is read aloud by the browser's own speech synthesis (speechSynthesis) when Voices is on. The two
+   sources are never mixed within a season: any ElevenLabs entry means ElevenLabs only (posts without
+   a clip stay silent). Each agent seat gets a fixed voice (spread over the installed English voices)
+   plus its own pitch and rate. Posts are cleaned of markdown and cut to ~300 characters. Queue policy
+   while playing: up to 2x speed a post is spoken as it appears; during the live game at 1x a new post
+   waits for the current one to finish (only the latest waiting post is kept), at 2x it replaces the one
+   being spoken; above 2x nothing is spoken. In chat and other turn-based phases the playhead waits for
+   the speech to end (UCAudio.holdClock). Speech is cancelled on pause, seek, phase/season change, leaving
+   the replay and Voices off. Without speechSynthesis everything stays silent. Browser-voice highlights
+   (docs/audio/browser-highlights.json) use UCAudio.speakText(), which resolves when the speech ends.
+
    Test mode: add ?sfxlog to the URL: every sound call is console.logged as "[sfx] <name> ..."
    and pushed to window.__sfxLog. */
 "use strict";
@@ -223,14 +235,116 @@
     const k = same.indexOf(post);
     return k > 0 ? `${base}-${k + 1}` : base;
   }
-  async function playVoice(season, post, code) {
+  const usesEleven = (m, id) => !!m && (Object.keys(m.posts?.[id] || {}).length > 0 || (m.highlights || []).some((h) => h.season === id));
+  async function playVoice(season, post, code, speed = 1, game = true) {
     if (!on.voices || hlMode) return;
     const m = await loadManifest();
+    if (!on.voices || hlMode || !playing || !inReplay) return;   // state changed while the manifest loaded
+    if (!usesEleven(m, season.id)) { speakPost(season, post, speed, game); return; }   // never mix sources in a season
     const key = postKey(season, post, code);
     const src = m?.posts?.[season.id]?.[key];
     if (LOG) console.log(`[sfx] voice ${key} ${src || "(none)"}`);
     if (!src) return;
     try { if (voice) voice.pause(); voice = new Audio(src); voice.volume = 0.9; await voice.play(); } catch { /* blocked or missing */ }
+  }
+
+  /* ---------------------------------------------------------- browser voices (speechSynthesis) */
+  const synth = (() => { try { return window.speechSynthesis && typeof SpeechSynthesisUtterance !== "undefined" ? window.speechSynthesis : null; } catch { return null; } })();
+  const SEAT_PITCH = [1.0, 0.75, 1.25, 0.9, 1.15, 0.8, 1.1, 0.95];
+  const SEAT_RATE = [1.0, 1.06, 0.94, 1.1, 0.98, 1.04, 0.92, 1.08];
+  let pool = [], ttsGen = 0, ttsBusy = false, ttsPending = null, ttsDone = null, ttsDog = null;
+
+  function refreshVoices() {
+    if (!synth) return;
+    let all = [];
+    try { all = synth.getVoices() || []; } catch { all = []; }
+    const en = all.filter((v) => /^en([-_]|$)/i.test(v.lang || ""));
+    const seen = new Set();
+    pool = (en.length ? en : all).filter((v) => !seen.has(v.name) && seen.add(v.name))
+      .sort((a, b) => (a.lang || "").localeCompare(b.lang || "") || a.name.localeCompare(b.name));
+  }
+  if (synth) {
+    refreshVoices();
+    try { synth.addEventListener("voiceschanged", refreshVoices); } catch { synth.onvoiceschanged = refreshVoices; }
+  }
+  const seatOf = (season, agent) => {
+    const i = (season.header?.agents || []).findIndex((a) => a.name === agent);
+    return i < 0 ? 0 : i;
+  };
+  // the voice for a seat: seats are spread over the pool (stride) so neighbours differ
+  function voiceFor(season, seat) {
+    if (!pool.length) return null;
+    const n = Math.max(1, season.header?.agents?.length || 1);
+    return pool[(seat * Math.max(1, Math.floor(pool.length / n))) % pool.length];
+  }
+  // strip what reads badly, cap the length at a word boundary
+  function speakable(text) {
+    let t = String(text || "")
+      .replace(/```[\s\S]*?```/g, " ").replace(/`([^`]*)`/g, "$1")
+      .replace(/\*\*?([^*]+)\*\*?/g, "$1").replace(/^\s*#{1,6}\s+/gm, "").replace(/^\s*[-*>]\s+/gm, "")
+      .replace(/^\s*[A-Za-z]{1,2}:\s+/, "")                                   // "R: " / "C: " speaker initials
+      .replace(/\(\s*(\d+)\s*,\s*(\d+)\s*\)/g, "$1 $2")                    // (3,1) -> 3 1
+      .replace(/(?:->|=>|\u2192)/g, ", then ").replace(/&/g, " and ").replace(/~/g, " about ")
+      .replace(/(\w)_(\w)/g, "$1 $2").replace(/_/g, " ")
+      .replace(/[\u{1F000}-\u{1FAFF}\u2600-\u27BF\uFE0F]/gu, " ")             // emoji and dingbats
+      .replace(/[#*=|<>{}\[\]\\^]/g, " ")
+      .replace(/([!?.])\1+/g, "$1").replace(/\s+/g, " ").trim();
+    if (t.length > 300) {
+      const cut = t.slice(0, 300), k = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+      t = k > 150 ? cut.slice(0, k + 1) : cut.slice(0, cut.lastIndexOf(" ") > 150 ? cut.lastIndexOf(" ") : 300);
+    }
+    return t;
+  }
+  function ttsCancel() {
+    ttsGen++; ttsPending = null; ttsBusy = false;
+    if (ttsDog) { clearTimeout(ttsDog); ttsDog = null; }
+    const f = ttsDone; ttsDone = null;
+    if (synth) { try { synth.cancel(); } catch { /* nothing to cancel */ } }
+    if (f) f();
+  }
+  // speak one item now (caller has cancelled whatever was speaking); done() runs once when it ends
+  function utterNow(item, done) {
+    const text = speakable(item.text);
+    const gen = ++ttsGen;
+    if (!text) { if (done) done(); return; }
+    const seat = seatOf(item.season, item.agent);
+    if (LOG) { console.log(`[sfx] tts ${item.agent}: ${text}`); window.__sfxLog.push({ name: "tts", agent: item.agent, seat, text }); }
+    const finish = () => {
+      if (gen !== ttsGen) return;               // cancelled or superseded: stale event
+      ttsBusy = false; ttsDone = null;
+      if (ttsDog) { clearTimeout(ttsDog); ttsDog = null; }
+      if (done) done();
+      const next = ttsPending; ttsPending = null;
+      if (next && on.voices && playing) { ttsGen++; utterNow(next); }   // gen bump: nothing older can fire
+    };
+    ttsBusy = true; ttsDone = done || null;
+    const est = 3000 + text.length * 120;       // watchdog: some browsers never fire end events
+    if (!synth) { ttsDog = setTimeout(finish, Math.min(est, 2500 + text.length * 55)); return; }
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      const v = voiceFor(item.season, seat);
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-GB";
+      u.pitch = SEAT_PITCH[seat % SEAT_PITCH.length]; u.rate = SEAT_RATE[seat % SEAT_RATE.length]; u.volume = 1;
+      u.onend = finish; u.onerror = finish;
+      ttsDog = setTimeout(finish, est);
+      synth.speak(u);
+    } catch { finish(); }
+  }
+  function speakPost(season, post, speed, game) {
+    if (!synth || !on.voices || hlMode) return;
+    const item = { text: post.text, agent: post.agent, season };
+    if (speed > 2) { ttsCancel(); return; }    // too fast to follow: say nothing
+    if (!ttsBusy) { utterNow(item); return; }
+    if (game && speed > 1) { ttsCancel(); utterNow(item); return; }   // 2x: the newest post replaces the stale one
+    ttsPending = item;                          // 1x: wait for the current one; only the latest waiting post survives
+  }
+  // highlight player: speak a post and resolve when it has ended (or was cancelled)
+  function speakText(text, agent, season) {
+    return new Promise((resolve) => { ttsCancel(); utterNow({ text, agent, season }, resolve); });
+  }
+  // app.js asks before ticking a turn-based phase (chat...): wait while a post is being read aloud
+  function holdClock(phase, speed) {
+    return !!(synth && ttsBusy && on.voices && !hlMode && phase && !phase.game && speed <= 2);
   }
 
   // highlight player: speak one clip and resolve when it ends (or fails, or after 90 s)
@@ -247,8 +361,10 @@
       a.play().catch(fin);
     });
   }
-  function stopSpeak() { const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
+  function stopSpeak() { ttsCancel(); const f = spkFin; if (voice) { try { voice.pause(); } catch { /* gone */ } } if (f) f(); }
   function setHighlight(v) { hlMode = !!v; if (!v) stopSpeak(); }
+
+  addEventListener("pagehide", () => { if (synth) { try { synth.cancel(); } catch { /* gone */ } } });
 
   /* ---------------------------------------------------------- player hooks */
   // called by app.js while playing, after time moved from `from` to `to` in phase `p`
@@ -264,7 +380,7 @@
     for (const r of p.posts) {
       if (!hit(r)) continue;
       play("post", { type: "post", t: r.t, agent: r.agent }, speed);
-      playVoice(season, r, p.code);
+      playVoice(season, r, p.code, speed, !!p.game);
     }
   }
 
@@ -274,9 +390,11 @@
     return `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z" fill="currentColor"/>${wave}</svg>`;
   }
   const LABEL = { music: "Music", voices: "Voices", sfx: "Effects" };
+  const HELP = { voices: " (ElevenLabs voices on narrated seasons; every other season is read aloud by your browser's own, more robotic, voice)" };
+  const tip = (k) => `${LABEL[k]}: ${on[k] ? "on" : "off"}${HELP[k] || ""}`;
   function controlsHTML() {
     return `<div class="sound" role="group" aria-label="Sound">${Object.keys(LABEL).map((k) =>
-      `<button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${LABEL[k]}: ${on[k] ? "on" : "off"}">${svgIcon(k, on[k])}<span>${LABEL[k]}</span></button>`).join("")}</div>`;
+      `<button type="button" class="ghost snd" data-snd="${k}" aria-pressed="${on[k]}" title="${tip(k)}">${svgIcon(k, on[k])}<span>${LABEL[k]}</span></button>`).join("")}</div>`;
   }
   function bind(root) {
     root.querySelectorAll("button[data-snd]").forEach((b) => b.addEventListener("click", () => {
@@ -286,17 +404,17 @@
       ensureCtx();
       if (k === "music") { if (musicWanted()) startMusic(); else stopMusic(); }
       if (k === "voices" && on.voices) loadManifest();
-      if (k === "voices" && !on.voices && voice) voice.pause();
+      if (k === "voices" && !on.voices) { if (voice) voice.pause(); ttsCancel(); }
       b.setAttribute("aria-pressed", String(on[k]));
-      b.title = `${LABEL[k]}: ${on[k] ? "on" : "off"}`;
+      b.title = tip(k);
       b.innerHTML = `${svgIcon(k, on[k])}<span>${LABEL[k]}</span>`;
     }));
   }
 
   function musicWanted() { return on.music && inReplay && playing; }
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
-  function setReplay(v) { inReplay = !!v; if (!inReplay) playing = false; syncMusic(); }
-  function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); syncMusic(); }
-  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, stopSpeak, setHighlight, highlights: [], state: on };
+  function setReplay(v) { inReplay = !!v; if (!inReplay) { playing = false; if (!hlMode) ttsCancel(); } syncMusic(); }
+  function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
+  const api = { setReplay, setPlaying, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();

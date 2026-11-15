@@ -272,3 +272,11 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 18px; }
 .speed { display: inline-flex; align-items: center; gap: 6px; font-size: .85rem; }
 .speed input { width: 90px; }
 .speed b { min-width: 2.6em; font-variant-numeric: tabular-nums; }
+
+/* highlight reel: ElevenLabs vs browser voices */
+.reel-sub { margin: 14px 0 6px; font-size: 1rem; }
+.reel-sub .muted { font-weight: 400; font-size: .85rem; }
+.hl-card.browser { border-top-color: var(--muted, #8a8f98); }
+.tag.voice-src { font-weight: 600; }
+.tag.src-eleven { background: var(--accent); color: var(--accent-ink); }
+.tag.src-browser { background: transparent; color: inherit; border: 1px dashed currentColor; }
