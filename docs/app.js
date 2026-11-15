@@ -864,12 +864,12 @@ function renderReel() {
   if (!el || !HL.list.length) return;
   el.hidden = false;
   el.innerHTML = `<div class="reel-head"><h2>Highlight reel</h2>
-    <p class="muted">Whole seasons, narrated, with agents voiced by text-to-speech. Needs sound; Music and Effects toggles still apply.</p>
+    <p class="muted">Narrated replays (full seasons, or only the rounds that are fully voiced), with agents voiced by text-to-speech. Needs sound; Music and Effects toggles still apply.</p>
     <button type="button" class="primary" id="reel-all">&#9654; Play the reel</button></div>
     <div class="reel-cards">${HL.list.map((h, i) => `<article class="card hl-card">
       <h3>${esc(h.title)}</h3><p>${esc(h.teaser)}</p>
       <div class="tags"><span class="tag">${esc(h.team)}</span><span class="tag rules-${esc(h.rules_key || "")}">${esc(h.rules)}</span>
-        <span class="tag">${esc(h.score)} points</span><span class="tag">${h.posts_voiced === h.posts_total ? "every post voiced" : `${h.posts_voiced} of ${h.posts_total} posts voiced`}</span><span class="tag">${esc(levelName(h.level || ""))}</span></div>
+        <span class="tag">${esc(h.score)} points</span><span class="tag">${esc(h.covers || "")}</span><span class="tag">${h.posts_voiced} of ${h.posts_total} posts voiced</span><span class="tag">${esc(levelName(h.level || ""))}</span></div>
       <div class="hl-actions"><button type="button" data-hl="${i}">&#9654; Play highlight</button>
         <a href="#${esc(h.season)}">Open replay</a></div></article>`).join("")}</div>`;
   el.querySelectorAll("button[data-hl]").forEach((b) => b.addEventListener("click", () => startHighlight(Number(b.dataset.hl))));

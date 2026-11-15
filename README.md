@@ -34,7 +34,8 @@ Speaking: in every replay, when an agent posts, a speech bubble in its colour ap
 chef (a bar above the transcript in chat, private turns and reflections) and the post is
 highlighted on the Board, whatever the sound settings.
 
-Highlight reel: the home page opens with whole, narrated seasons (intro, bridges, outro by a
+Highlight reel: the home page opens with narrated replays: whole seasons or, where credits ran out,
+only the rounds in which every board post is voiced (the script refuses to include a phase with an unvoiced post). They are (intro, bridges, outro by a
 narrator voice; board posts and some reflection lines voiced per agent). The clips are
 ElevenLabs text-to-speech (model `eleven_v4_turbo`, premade voices) generated once by
 `uv run python scripts/make_highlights.py` (`--plan`, `--test`, `--generate`; needs

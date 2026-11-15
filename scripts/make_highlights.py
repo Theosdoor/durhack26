@@ -27,7 +27,7 @@ DOCS = ROOT / "docs"
 AUDIO = DOCS / "audio"
 MODEL = "eleven_v4_turbo"
 MULT = float(os.environ.get("UC_MULT", "0.5"))   # credits per character: 0.5 from GET /v1/models; the usage counter showed ~0.38-0.40 (second run: UC_MULT=0.4)
-HARD_CAP = 9800                 # never exceed (account limit is 10,000)
+HARD_CAP = float(os.environ.get("UC_HARD_CAP", "9800"))                 # never exceed (account limit is 10,000)
 PLAN_CAP = float(os.environ.get("UC_PLAN_CAP", "9700"))                 # planned total, leaving a margin for normalisation differences
 FORMAT = "mp3_44100_64"
 API = "https://api.elevenlabs.io"
@@ -43,7 +43,7 @@ VOICES = {   # premade voices, distinct per agent within a game
 }
 
 GAMES = [
-    dict(season="jxktNEEN-split-room-e1", title="The deadlock and the fix",
+    dict(season="jxktNEEN-split-room-e1", title="The deadlock and the fix", covers="Full season",
          teaser="Two GLM agents jam the wall counters in round one, then agree one rule that scores 60.",
          intro="Two GLM 5.3 Flash agents, Lima and Whiskey, share a split kitchen under full rules. Lima has the onions and the hatch, Whiskey has the pots. A wall of three counters is their only handoff. Watch what happens when it fills up.",
          bridges={("c2", 0): "Round one scored nothing. Here is the chat where they agree on a fix.",
@@ -52,7 +52,7 @@ GAMES = [
                   ("c1", 0): "Chat before round one.", ("r1", 0): "Round one.",
                   ("c3", 0): "Round two scored sixty. Chat before round three."},
          outro="One hundred and twenty in total: zero, sixty, sixty. One rule for one counter made the difference."),
-    dict(season="5Yqi6vJD-split-room-e3", title="Deadlocked and shouting",
+    dict(season="5Yqi6vJD-split-room-e3", title="Deadlocked and shouting", covers="Full season",
          teaser="Two Gemma agents with bare rules fill every counter, and one of them starts shouting.",
          intro="Two Gemma 4 31B agents, Zulu and Mike, play the same split kitchen with bare rules: only the goal and the tool syntax. They have to discover how the kitchen works. Watch for the capital letters.",
          bridges={("c2", 0): "Round one scored nothing. Before round two, Mike tries to fix it, but Zulu cannot reach the pots.",
@@ -62,17 +62,12 @@ GAMES = [
                   ("c3", 0): "Round two scored nothing again. Chat before round three.", ("r3", 0): "Round three."},
          outro="Twenty in total: zero, zero, then one soup in round three. Mike concluded that Zulu thought the counters were walls."),
     dict(season="Fe4CuKi8-asymmetric-advantages-e1", title="Four chefs split a kitchen",
-         teaser="Four DeepSeek agents learn the map is cut in two, then fight over one tile on each side.",
-         intro="Four DeepSeek V4.1 Flash agents, November, Uniform, Yankee and Hotel, play asymmetric advantages with full rules. In the chat they split the kitchen, then find out the map is cut in two.",
+         phases=["r1", "r2", "r3"], covers="Rounds 1 to 3 (no chats)", intro_key="intro-rounds",
+         teaser="Four DeepSeek agents share a kitchen cut in two, and keep getting in each other's way over one tile on each side.",
+         intro="Four DeepSeek V4.1 Flash agents play asymmetric advantages with full rules. Here are their three rounds.",
          bridges={("r1", 0): "Round one. Each half has one tile that everybody needs.",
                   ("x", 0): "The reflections: the cooks rate each other, and themselves."},
          outro="One hundred and twenty, then one hundred and forty, then one hundred. Three hundred and sixty in total: eighteen soups."),
-    dict(season="m2VujhQL-coordination-ring-e2", title="Too many cooks",
-         teaser="Three DeepSeek agents, one chokepoint tile, and a plan that is called final over and over.",
-         intro="Three DeepSeek V4.1 Flash agents, Uniform, Quebec and Kilo, cook on the coordination ring with bare rules. One tile, three-one, becomes the chokepoint. Rounds one and two scored twenty each. Watch the plans.",
-         bridges={("r3", 0): "Round three. Every plan has been called final. Now they have to walk it.",
-                  ("x", 0): "The reflections: each cook blames the endless re-planning."},
-         outro="Round three scored zero, so the season total was forty: two soups in nine minutes of play."),
 ]
 
 # Hand-picked reflection excerpts: (season, agent, first words, last words); text is cut verbatim.
@@ -181,8 +176,11 @@ def build_candidates():
         assert set(VOICES[sid]) == set(names), (sid, names)
         posts = [r for r in x["records"] if r["kind"] == "post"]
         assert all(r["phase"] in ("chat", "round") for r in posts)
+        keep = g.get("phases")           # None: whole season; else only these phase codes are played and voiced
         for p in posts:
             code = code_of(p)
+            if keep and code not in keep:
+                continue
             same = [q for q in posts if q["phase"] == p["phase"] and q["round"] == p["round"] and q["t"] == p["t"] and q["agent"] == p["agent"]]
             gold = any(p["text"].startswith(gs) for gs in GOLD)
             cands.append(dict(season=sid, kind="post", code=code, t=p["t"], agent=p["agent"], key=post_key(code, p, same),
@@ -190,7 +188,7 @@ def build_candidates():
         refl = {(r["agent"]): r for r in x["records"] if r["kind"] == "decision" and r["phase"] == "reflection" and r.get("text")}
         count = {}
         for (s2, agent, a, b) in REFLECTIONS:
-            if s2 != sid:
+            if s2 != sid or (keep and "x" not in keep):
                 continue
             r = refl[agent]
             i = r["text"].index(a)
@@ -203,10 +201,11 @@ def build_candidates():
         # narration
         mk = lambda key, text, code, t, kind: dict(season=sid, kind=kind, code=code, t=t, agent="Narrator", key=key,
                                                     orig=text, spoken=speak(text), score=100, gold=True)
-        cands.append(mk("intro", g["intro"], "p1", 0, "intro"))
+        cands.append(mk(g.get("intro_key", "intro"), g["intro"], "p1", 0, "intro"))
         cands.append(mk("outro", g["outro"], "x", 9999, "outro"))
         for n, ((code, t), text) in enumerate(g["bridges"].items(), 1):
-            cands.append(mk(f"bridge-{n}", text, code, t, "bridge"))
+            if not keep or code in keep:
+                cands.append(mk(f"bridge-{n}", text, code, t, "bridge"))
         assert len(g["intro"]) <= 350 and len(g["outro"]) <= 150, sid
         assert all(len(t) <= 120 for t in g["bridges"].values()), sid
     return cands, meta
@@ -286,6 +285,23 @@ def tts(key, c):
     return api(f"/v1/text-to-speech/{voice}?output_format={FORMAT}", key, {"text": c["spoken"], "model_id": MODEL})
 
 
+def check_coverage(hl):
+    """Hard rule: every phase a highlight plays must have a clip for EVERY board post in it."""
+    bad = []
+    for ent in hl:
+        x = load(ent["season"])
+        voiced = {(c["code"], c["t"], c["agent"]) for c in ent["clips"] if c["kind"] == "post"}
+        print(f"coverage {ent['season']} ({ent['covers']}):")
+        for code in ent["phases"]:
+            ps = [r for r in x["records"] if r["kind"] == "post" and code_of(r) == code]
+            n = sum(1 for r in ps if (code, r["t"], r["agent"]) in voiced)
+            print(f"   {code}: {n}/{len(ps)} posts voiced")
+            if n != len(ps):
+                bad.append((ent["season"], code, n, len(ps)))
+    if bad:
+        sys.exit(f"REFUSING: phases with unvoiced posts are included in a highlight: {bad}")
+
+
 def write_outputs(order):
     """manifest.json + per-season clips.json (verbatim original vs spoken text) + plan.json; from the clips on disk."""
     posts, hl = {}, []
@@ -295,17 +311,18 @@ def write_outputs(order):
         rel = lambda c: f"audio/{sid}/{c['key']}.mp3"
         posts[sid] = {c["key"]: rel(c) for c in mine if c["kind"] == "post"}
         x = load(sid)
+        total_posts = [r for r in x["records"] if r["kind"] == "post" and (not g.get("phases") or code_of(r) in g["phases"])]
         h = x["header"]
         rows = [r for r in json.load(open(DOCS / "data/index.json"))["seasons"] if r["id"] == sid][0]
-        ent = dict(id=sid, season=sid, title=g["title"], teaser=g["teaser"], team=rows["team"], rules=rows["rules_label"], rules_key=rows["rules"], level=h["level"],
-                   score=rows["total"], rounds=rows["rounds"], phases=season_phases(x))
+        ent = dict(id=sid, season=sid, title=g["title"], covers=g["covers"], teaser=g["teaser"], team=rows["team"], rules=rows["rules_label"], rules_key=rows["rules"], level=h["level"],
+                   score=rows["total"], rounds=rows["rounds"], phases=g.get("phases") or season_phases(x))
         by = {c["kind"]: [] for c in mine}
         for c in mine:
             by[c["kind"]].append(c)
         ent["intro"] = rel(by["intro"][0]) if by.get("intro") else None
         ent["outro"] = rel(by["outro"][0]) if by.get("outro") else None
         allp = [r for r in x["records"] if r["kind"] == "post"]
-        ent["posts_total"], ent["posts_voiced"] = len(allp), sum(1 for c in mine if c["kind"] == "post")
+        ent["posts_total"], ent["posts_voiced"] = len(total_posts), sum(1 for c in mine if c["kind"] == "post")
         ent["intro_text"] = by["intro"][0]["orig"] if by.get("intro") else ""
         ent["outro_text"] = by["outro"][0]["orig"] if by.get("outro") else ""
         ent["bridges"] = [dict(code=c["code"], t=c["t"], src=rel(c), text=c["orig"]) for c in by.get("bridge", [])]
@@ -317,6 +334,7 @@ def write_outputs(order):
         (AUDIO / sid / "clips.json").write_text(json.dumps(
             {c["key"]: dict(kind=c["kind"], agent=c["agent"], code=c["code"], t=c["t"], original=c["orig"], spoken=c["spoken"])
              for c in mine}, indent=1, ensure_ascii=False))
+    check_coverage(hl)
     (AUDIO / "manifest.json").write_text(json.dumps({"version": 2, "model": MODEL, "posts": posts, "highlights": hl}, indent=1))
     (AUDIO / "plan.json").write_text(json.dumps(dict(
         model=MODEL, credits_per_char=MULT, cap=HARD_CAP, planned_total=sum(c["credits"] for c in order if c["planned"]),
