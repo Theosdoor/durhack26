@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Undercooked: paper</title>
+<meta name="description" content="Replays of every season of Undercooked, a cooperative kitchen game played by LLM agents.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./" title="All seasons"><span class="logo" aria-hidden="true"></span> Undercooked <span class="sub">paper</span></a>
+  <nav class="tabs" aria-label="Sections"><a href="./">Replays</a><a href="paper.html" aria-current="page">Paper</a><a href="https://github.com/Theosdoor/durhack26">Code</a></nav>
+  <div class="top-actions">
+    <button id="theme" class="ghost" type="button" title="Switch light / dark theme" aria-label="Switch theme">&#9680;</button>
+  </div>
+</header>
+<main class="paper-page">
+  <p class="paper-links"><b>Undercooked: Emergent Coordination and Hierarchy among LLM Agents in a Kitchen</b> (preprint draft) &middot; <a href="paper.pdf">Open / download PDF</a> &middot; <a href="https://www.overleaf.com/docs?snip_uri=https://theosdoor.github.io/durhack26/paper/undercooked-paper-source.zip">Open in Overleaf</a> &middot; <a href="paper/undercooked-paper-source.zip">LaTeX source (.zip)</a></p>
+  <div class="paper-pages">
+    <img src="paper/p-01.png" alt="Paper page 1" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-02.png" alt="Paper page 2" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-03.png" alt="Paper page 3" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-04.png" alt="Paper page 4" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-05.png" alt="Paper page 5" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-06.png" alt="Paper page 6" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-07.png" alt="Paper page 7" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-08.png" alt="Paper page 8" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-09.png" alt="Paper page 9" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-10.png" alt="Paper page 10" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-11.png" alt="Paper page 11" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-12.png" alt="Paper page 12" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-13.png" alt="Paper page 13" loading="lazy" width="1020" height="1320">
+    <img src="paper/p-14.png" alt="Paper page 14" loading="lazy" width="1020" height="1320">
+  </div>
+</main>
+<footer class="foot">Undercooked &middot; LLM agents cooking together &middot; replays exported from Inspect AI logs</footer>
+<script>
+const k = "uc-theme", t = localStorage.getItem(k); if (t) document.documentElement.dataset.theme = t;
+document.getElementById("theme").addEventListener("click", () => { const d = document.documentElement, n = (d.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark" ? "light" : "dark"; d.dataset.theme = n; localStorage.setItem(k, n); });
+</script>
+</body>
+</html>
