@@ -878,6 +878,10 @@ const HL = { list: [], cur: -1, token: 0, active: false, busy: false, loaded: fa
 
 const elevenHL = (id) => HL.list.find((h) => h.season === id && h.tts !== "browser");
 const isBrowserHL = (h) => h.tts === "browser";
+// "Skip practice" in the highlight bar: remembered, so every highlight goes straight to the first chat
+HL.skipPractice = (() => { try { return localStorage.getItem("uc-hl-skip-practice") === "1"; } catch { return false; } })();
+const hasPractice = (h) => isBrowserHL(h) || (h.phases || []).some((c) => /^p\d/.test(c));
+const skipPh = (ph) => HL.skipPractice && ph && ph.phase === "practice";
 
 async function loadHighlights() {
   if (HL.loaded) return HL.list;
@@ -924,10 +928,19 @@ function hlBar(h, status) {
   bar.hidden = false;
   bar.innerHTML = `<span class="hl-now"><b>Highlight ${HL.cur + 1} of ${HL.list.length}</b>: ${esc(h.title)} <span class="tag voice-src ${isBrowserHL(h) ? "src-browser" : "src-eleven"}">${isBrowserHL(h) ? "browser voices" : "ElevenLabs voices"}</span>
     <span class="muted" id="hlstat">${esc(status || "")}</span></span>
-    <span class="hl-btns"><button type="button" id="hlnext">Next highlight &raquo;</button>
+    <span class="hl-btns">${hasPractice(h) ? `<button type="button" class="ghost" id="hlskip" aria-pressed="${HL.skipPractice}" title="Practice rounds (each agent alone) are skipped in every highlight">${HL.skipPractice ? "&#10003; Skipping practice" : "Skip practice"}</button>` : ""}
+    <button type="button" id="hlnext">Next highlight &raquo;</button>
     <button type="button" class="ghost" id="hlexit">Exit highlight</button></span>`;
   $("#hlnext").addEventListener("click", () => startHighlight((HL.cur + 1) % HL.list.length));
   $("#hlexit").addEventListener("click", () => exitHighlight());
+  $("#hlskip")?.addEventListener("click", (e) => {
+    HL.skipPractice = !HL.skipPractice;
+    try { localStorage.setItem("uc-hl-skip-practice", HL.skipPractice ? "1" : "0"); } catch { /* private mode */ }
+    const b = e.currentTarget;
+    b.setAttribute("aria-pressed", String(HL.skipPractice));
+    b.innerHTML = HL.skipPractice ? "&#10003; Skipping practice" : "Skip practice";
+    if (HL.active && skipPh(S.phase) && !S.speaking?.narrator && window.UCAudio) UCAudio.stopSpeak();   // cut a practice post (never the narrator); the player moves on
+  });
 }
 function hlStatus(text) { const el = $("#hlstat"); if (el) el.textContent = text; }
 
@@ -951,7 +964,8 @@ async function startHighlight(i) {
   HL.cur = i;
   UCAudio.setHighlight(true);
   hlBar(h, "loading\u2026");
-  history.pushState(null, "", `#${h.season}--${h.phases[0]}-t0`);
+  const first = (HL.skipPractice && h.phases.find((c) => !/^p\d/.test(c))) || h.phases[0];
+  history.pushState(null, "", `#${h.season}--${first}-t0`);
   await route();
   if (token !== HL.token) return;
   runHighlight(h, token);
@@ -994,16 +1008,16 @@ async function runHighlight(h, token) {
   for (const code of (browser ? S.season.phases.map((p) => p.code) : h.phases)) {
     if (!alive()) return;
     const ph = S.season.phases.find((p) => p.code === code);
-    if (!ph) continue;
+    if (!ph || skipPh(ph)) continue;
     HL.busy = true; selectPhase(ph, 0); HL.busy = false;
     await gate(); if (!alive()) return;
     S.playing = true; update();
     hlStatus(ph.title);
     const mine = marks.filter((m) => m.code === code);
     const at = (t) => mine.filter((m) => m.t === t).sort((a, b) => (b.bridge ? 1 : 0) - (a.bridge ? 1 : 0));
-    for (const m of at(0)) { await talk(m); if (!alive()) return; }
+    for (const m of at(0)) { await talk(m); if (!alive()) return; if (skipPh(ph)) break; }
     let t = 0;
-    while (t < ph.hi) {
+    while (t < ph.hi && !skipPh(ph)) {
       const near = mine.some((m) => m.t > t && m.t - t <= 2);
       const base = interval();
       const ms = near ? base : base / (ph.game ? 8 : 3);
@@ -1013,9 +1027,9 @@ async function runHighlight(h, token) {
       t += 1;
       seek(t, Math.min(ms * 0.9, 400));
       try { UCAudio.advance(S.season, ph, from, t, near ? S.speed : S.speed * 8); } catch (e) { console.warn(e); }
-      for (const m of at(t)) { await talk(m); if (!alive()) return; }
+      for (const m of at(t)) { await talk(m); if (!alive()) return; if (skipPh(ph)) break; }
     }
-    await sleep(500);
+    if (!skipPh(ph)) await sleep(500);
   }
   if (!alive()) return;
   if (!browser) { hlStatus("conclusion"); await say(h.outro, { narrator: true, text: h.outro_text }); }
