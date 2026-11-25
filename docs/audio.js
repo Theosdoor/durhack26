@@ -275,7 +275,26 @@
     const src = m?.posts?.[season.id]?.[key];
     if (LOG) console.log(`[sfx] voice ${key} ${src || "(none)"}`);
     if (!src) return;
-    try { if (voice) voice.pause(); voice = new Audio(src); voice.volBase = 0.9; voice.volume = voiceVol(0.9); await voice.play(); } catch { /* blocked or missing */ }
+    // a clip still playing is not cut: the newest post waits for it (only the latest waiting post survives),
+    // except in a kitchen phase at 2x and up, where the newest post replaces the stale one
+    if (clipBusy() && (speed <= 1 || (!game && speed <= 2))) { clipPending = src; return; }
+    startClip(src);
+  }
+  let clipPending = null, clipStart = 0;
+  // a board post's ElevenLabs clip is playing (or loading); capped at 60 s in case a clip stalls
+  function clipBusy() { return !!(voice && !hlMode && !voice.paused && !voice.ended && Date.now() - clipStart < 60000); }
+  function startClip(src) {
+    clipPending = null;
+    try { if (voice) voice.pause(); } catch { /* gone */ }
+    const a = new Audio(src);
+    a.volBase = 0.9; a.volume = voiceVol(0.9); voice = a; clipStart = Date.now();
+    const next = () => {
+      if (voice !== a) return;
+      const src2 = clipPending; clipPending = null;
+      if (src2 && on.voices && playing && inReplay && !hlMode) startClip(src2);
+    };
+    a.addEventListener("ended", next); a.addEventListener("error", next);
+    a.play().catch(() => { /* blocked or missing */ });
   }
 
   /* ---------------------------------------------------------- browser voices (speechSynthesis) */
@@ -374,7 +393,12 @@
   }
   // app.js asks before ticking a turn-based phase (chat...): wait while a post is being read aloud
   function holdClock(phase, speed) {
-    return !!(synth && ttsBusy && on.voices && !hlMode && phase && !phase.game && speed <= 2);
+    return !!(phase && !phase.game && postSpeaking(speed));
+  }
+  // a board post is still being read aloud (browser voice or ElevenLabs clip) at a speed we wait for;
+  // app.js also asks before moving on to the next phase, so the last post of a phase is not cut
+  function postSpeaking(speed) {
+    return !!(on.voices && !hlMode && speed <= 2 && ((synth && ttsBusy) || clipBusy()));
   }
 
   // highlight player: speak one clip and resolve when it ends (or fails, or after 90 s)
@@ -455,7 +479,7 @@
       if (hlMode) hlMuted = !on.voices && (wasOn || hlMuted);   // muting during a highlight silences it
       if (voice) voice.volume = voiceVol(voice.volBase || 0.9);
       if (on.voices && !wasOn) loadManifest();
-      if (!on.voices && wasOn && !hlMode) { if (voice) voice.pause(); ttsCancel(); }
+      if (!on.voices && wasOn && !hlMode) { clipPending = null; if (voice) voice.pause(); ttsCancel(); }
     }
   }
   function refresh(root) {
@@ -510,12 +534,12 @@
   function musicWanted() { return on.music && inReplay && playing; }
   function syncMusic() { if (musicWanted() && ctx) startMusic(); else stopMusic(); }
   // stop a board post being read aloud (clip or browser speech); the highlight player handles its own
-  function quietPosts() { if (hlMode) return; ttsCancel(); if (voice) { try { voice.pause(); } catch { /* gone */ } } }
+  function quietPosts() { if (hlMode) return; ttsCancel(); clipPending = null; if (voice) { try { voice.pause(); } catch { /* gone */ } } }
   // every navigation (to the season list, another season, or a link to a moment) silences posts
   function setReplay(v) { inReplay = !!v; quietPosts(); if (!inReplay) { playing = false; stopMusic(true); } syncMusic(); }
   function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
   // a user's pause stops the music and any post being read at once; setPlaying(false) alone waits, as phase changes restart playback
   const pauseMusic = () => { stopMusic(true); quietPosts(); };
-  const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
+  const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, postSpeaking, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
   window.UCAudio = api;
 })();
