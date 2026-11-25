@@ -282,7 +282,7 @@
   }
   let clipPending = null, clipStart = 0;
   // a board post's ElevenLabs clip is playing (or loading); capped at 60 s in case a clip stalls
-  function clipBusy() { return !!(voice && !hlMode && !voice.paused && !voice.ended && Date.now() - clipStart < 60000); }
+  function clipBusy() { return !!(voice && !hlMode && !voice.paused && !voice.ended && !voice.error && Date.now() - clipStart < 60000); }
   function startClip(src) {
     clipPending = null;
     try { if (voice) voice.pause(); } catch { /* gone */ }
@@ -537,7 +537,7 @@
   function quietPosts() { if (hlMode) return; ttsCancel(); clipPending = null; if (voice) { try { voice.pause(); } catch { /* gone */ } } }
   // every navigation (to the season list, another season, or a link to a moment) silences posts
   function setReplay(v) { inReplay = !!v; quietPosts(); if (!inReplay) { playing = false; stopMusic(true); } syncMusic(); }
-  function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else if (!hlMode) ttsCancel(); syncMusic(); }
+  function setPlaying(v) { playing = !!v; if (playing) ensureCtx(); else { clipPending = null; if (!hlMode) ttsCancel(); } syncMusic(); }
   // a user's pause stops the music and any post being read at once; setPlaying(false) alone waits, as phase changes restart playback
   const pauseMusic = () => { stopMusic(true); quietPosts(); };
   const api = { setReplay, setPlaying, pauseMusic, advance, controlsHTML, bind, postKey, play, speak, speakText, stopSpeak, pauseSpeak, resumeSpeak, holdClock, postSpeaking, canSpeak: !!synth, usesEleven: (id) => usesEleven(manifest, id), setHighlight, highlights: [], state: on };
