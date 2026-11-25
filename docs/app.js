@@ -734,6 +734,7 @@ function play() {
   S.timer = setInterval(() => {
     if (window.UCAudio && UCAudio.holdClock(S.phase, S.speed)) return;   // a post is being read aloud (browser voices)
     if (S.t >= S.phase.hi) {   // end of this phase: carry on into the next one, stop at the end of the season
+      if (window.UCAudio && UCAudio.postSpeaking(S.speed)) return;   // let the last post finish before moving on
       const ph = S.season.phases, nxt = ph[ph.indexOf(S.phase) + 1];
       if (nxt) { selectPhase(nxt, 0); play(); } else { stop(); update(); }
       return;
